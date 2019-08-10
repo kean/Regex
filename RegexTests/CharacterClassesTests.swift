@@ -243,32 +243,37 @@ class SpecialCharactersTests: XCTestCase {
 
     func testDigits() throws {
         let regex = try Regex("\\d")
+
         XCTAssertTrue(regex.isMatch("1"))
         XCTAssertFalse(regex.isMatch("a"))
     }
 
     func testNonDigits() throws {
         let regex = try Regex("\\D")
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertFalse(regex.isMatch("1"))
     }
 
     func testWhitespaces() throws {
         let regex = try Regex("\\s")
+
         XCTAssertTrue(regex.isMatch(" "))
         XCTAssertTrue(regex.isMatch("\t"))
         XCTAssertFalse(regex.isMatch("a"))
     }
 
-    func testWhitespacesInverted() throws {
+    func testNotWhitespaces() throws {
         let regex = try Regex("\\S")
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertFalse(regex.isMatch(" "))
         XCTAssertFalse(regex.isMatch("\t"))
     }
 
-    func testWordCharacter() throws {
+    func testWordCharacters() throws {
         let regex = try Regex("\\w")
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("F"))
         XCTAssertTrue(regex.isMatch("2"))
@@ -278,8 +283,9 @@ class SpecialCharactersTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("*"))
     }
 
-    func testWordCharacterInverted() throws {
+    func testNotWordCharacters() throws {
         let regex = try Regex("\\W")
+
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertFalse(regex.isMatch("F"))
         XCTAssertFalse(regex.isMatch("2"))

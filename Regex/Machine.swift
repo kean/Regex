@@ -100,7 +100,7 @@ struct Machine: CustomStringConvertible {
 /// performed. The context is copied throughout the execution making the execution
 /// functional/stateless.
 /// - warning: Avoid using reference types in context!
-typealias Context = [AnyHashable: Any]
+typealias Context = [AnyHashable: AnyHashable]
 
 /// A transition between two states.
 struct Transition: CustomStringConvertible {

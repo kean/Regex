@@ -24,6 +24,9 @@
 		0CB3057422FED0740083B406 /* CharacterEscapesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056A22FED0740083B406 /* CharacterEscapesTests.swift */; };
 		0CB3057522FED0740083B406 /* CharacterClassesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056B22FED0740083B406 /* CharacterClassesTests.swift */; };
 		0CB3057622FED0740083B406 /* OptionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056C22FED0740083B406 /* OptionsTests.swift */; };
+		0CB3057A22FEE9970083B406 /* MatchesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057922FEE9970083B406 /* MatchesTests.swift */; };
+		0CB3057C22FF08ED0083B406 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057B22FF08ED0083B406 /* Extensions.swift */; };
+		0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057D22FF19920083B406 /* RegexSpecTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +72,9 @@
 		0CB3056B22FED0740083B406 /* CharacterClassesTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CharacterClassesTests.swift; sourceTree = "<group>"; };
 		0CB3056C22FED0740083B406 /* OptionsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OptionsTests.swift; sourceTree = "<group>"; };
 		0CB3057822FED0DC0083B406 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		0CB3057922FEE9970083B406 /* MatchesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchesTests.swift; sourceTree = "<group>"; };
+		0CB3057B22FF08ED0083B406 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		0CB3057D22FF19920083B406 /* RegexSpecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegexSpecTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,10 +120,10 @@
 			children = (
 				0CB3055C22FED05D0083B406 /* Regex.swift */,
 				0CB3055B22FED05D0083B406 /* Compiler.swift */,
-				0CB3055A22FED05D0083B406 /* Cursor.swift */,
-				0CB3055922FED05D0083B406 /* Extensions.swift */,
-				0CB3055822FED05D0083B406 /* Machine.swift */,
 				0CB3055722FED05D0083B406 /* Parser.swift */,
+				0CB3055A22FED05D0083B406 /* Cursor.swift */,
+				0CB3055822FED05D0083B406 /* Machine.swift */,
+				0CB3055922FED05D0083B406 /* Extensions.swift */,
 			);
 			path = Regex;
 			sourceTree = "<group>";
@@ -136,6 +142,9 @@
 				0CB3056522FED0740083B406 /* QuantifiersTests.swift */,
 				0CB3056822FED0740083B406 /* RangeQuantifierTests.swift */,
 				0CB3056922FED0740083B406 /* RegexTests.swift */,
+				0CB3057922FEE9970083B406 /* MatchesTests.swift */,
+				0CB3057D22FF19920083B406 /* RegexSpecTests.swift */,
+				0CB3057B22FF08ED0083B406 /* Extensions.swift */,
 			);
 			path = RegexTests;
 			sourceTree = "<group>";
@@ -250,6 +259,9 @@
 				0CB3057522FED0740083B406 /* CharacterClassesTests.swift in Sources */,
 				0CB3057622FED0740083B406 /* OptionsTests.swift in Sources */,
 				0CB3056D22FED0740083B406 /* IntegrationTests.swift in Sources */,
+				0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */,
+				0CB3057A22FEE9970083B406 /* MatchesTests.swift in Sources */,
+				0CB3057C22FF08ED0083B406 /* Extensions.swift in Sources */,
 				0CB3057222FED0740083B406 /* RangeQuantifierTests.swift in Sources */,
 				0CB3057022FED0740083B406 /* AnchorsTests.swift in Sources */,
 				0CB3057322FED0740083B406 /* RegexTests.swift in Sources */,

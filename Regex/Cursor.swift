@@ -4,35 +4,57 @@
 
 import Foundation
 
-/// Cursor represents a string and a position within this string.
+/// Cursor represents the slice in which we are performing the matching and the
+/// current index in this slice.
 struct Cursor { // Not sure this is the best word
-    let string: [Character]
+    /// The entire input string in which we are performing the search.
+    let string: String
+
+    /// The characters in the input string.
+    let characters: [Character]
+
+    /// The range in which we are performing the search.
+    var range: Range<Int>
+
+    /// The index of the current element being matched.
     var index: Int
 
-    init(string: [Character], index: Int) {
+    init(string: String) {
         self.string = string
-        self.index = index
+        self.characters = Array(string)
+        self.range = characters.startIndex..<characters.endIndex
+        self.index = characters.startIndex
     }
 
+    /// Focuses the cursor on the range which starts at the given index.
+    func startingAt(_ index: Int) -> Cursor {
+        var cursor = self
+        cursor.index = index
+        cursor.range = index..<characters.endIndex
+        return cursor
+    }
+
+    /// Returns the character at the current `index`.
     var character: Character? {
-        guard !isEmpty else {
-            return nil
-        }
-        return string[index]
+        return character(at: index)
     }
 
-    func character(at index: Int) -> Character? {
-        guard string.indices.contains(index) else {
+    /// Returns the character at the given index if it exists. Returns `nil` otherwise.
+    private func character(at index: Int) -> Character? {
+        guard characters.indices.contains(index) else {
             return nil
         }
-        return string[index]
+        return characters[index]
     }
 
+    /// Returns the character at the index with the given offset from the
+    /// current index.
     func character(offsetBy offset: Int) -> Character? {
         return character(at: index + offset)
     }
 
+    /// Returns `true` if there are no more characters to match.
     var isEmpty: Bool {
-        return index >= string.endIndex
+        return index >= characters.endIndex
     }
 }

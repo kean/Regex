@@ -64,53 +64,82 @@ public final class Regex {
         public static let caseInsensitive = Options(rawValue: 1 << 0)
     }
 
-    public init(_ p: String, _ options: Options = []) throws {
+    public init(_ pattern: String, _ options: Options = []) throws {
         do {
-            self.machine = try Compiler.compile(Array(p))
+            self.machine = try Compiler.compile(Array(pattern))
             self.options = options
             os_log(.default, log: Regex.log, "Machine: \n\n%{PUBLIC}@", machine.description)
         } catch {
             var error = error as! Error
-            error.pattern = p // Attach additional context
+            error.pattern = pattern // Attach additional context
             throw error
         }
     }
 
-    public func isMatch(_ s: String) -> Bool {
+    /// Determine whether the regular expression pattern occurs in the input text.
+    public func isMatch(_ string: String) -> Bool {
+        var isMatchFound = false
+        forMatch(in: string) { match in
+            isMatchFound = true
+            return false // It's enough to find one match
+        }
+        return isMatchFound
+    }
+
+    /// Returns an array containing all the matches in the string.
+    public func matches(in string: String) -> [Match] {
+        var matches = [Match]()
+        forMatch(in: string) { match in
+            matches.append(match)
+            return true // Continue finding matches
+        }
+        return matches
+    }
+
+    // MARK: Match (Private)
+
+    /// - parameter closure: Return `false` to stop.
+    private func forMatch(in string: String, _ closure: (Match) -> Bool) {
         // Print number of iterations performed, this is for debug purporses only but
         // it is effectively the only thing making Regex non-thread-safe which we ignore.
-        os_log(.default, log: Regex.log, "%{PUBLIC}@", "Started, input: \(s)")
+        os_log(.default, log: Regex.log, "%{PUBLIC}@", "Started, input: \(string)")
         iterations = 0
         defer {
             os_log(.default, log: Regex.log, "%{PUBLIC}@", "Finished, iterations: \(iterations)")
         }
 
+        let string = options.contains(.caseInsensitive) ? string.lowercased() : string
+        var cursor = Cursor(string: string)
 
-        let s = options.contains(.caseInsensitive) ? s.lowercased() : s
-        let a = Array(s)
-        guard !a.isEmpty else {
-            // We still need to run the regex to check if regex matches the empty string
-            return isMatchBacktracking(Cursor(string: a, index: 0), [:], machine.start, Cache(), 0)
-        }
-        return a.indices.contains { index in // Check from every index
-            isMatchBacktracking(Cursor(string: a, index: index), [:], machine.start, Cache(), 0)
+        let cache = Cache()
+        while let match = firstMatch(cursor, cache), closure(match) {
+            cursor = cursor.startingAt(match.rangeInCharacters.upperBound)
         }
     }
 
-    // MARK: Match (Backtracking)
+    private func firstMatch(_ cursor: Cursor, _ cache: Cache) -> Match? {
+        // If the input string is empty, we still need to run the regex once to verify
+        // that the empty string matches, thus `isEmpty` check.
+        for i in (cursor.characters.isEmpty ? 0..<1 : cursor.range) {
+            if let match = firstMatch(cursor.startingAt(i), [:], machine.start, cache) {
+                return match
+            }
+        }
+        return nil
+    }
 
     // A simple backtracking implementation with cache.
-    private func isMatchBacktracking(_ cursor: Cursor, _ context: Context, _ state: State, _ cache: Cache, _ level: Int) -> Bool {
+    private func firstMatch(_ cursor: Cursor, _ context: Context, _ state: State, _ cache: Cache, _ level: Int = 0) -> Match? {
         iterations += 1
         os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(state)")
 
         guard !state.isEnd else {
-            return true // Found a match!
+            return Match(cursor) // Found a match!
         }
 
-        let key = Cache.Key(index: cursor.index, state: state)
-        if let isMatch = cache[key] {
-            return isMatch
+        let key = Cache.Key(index: cursor.index, state: state, context: context)
+        if let match = cache[key] {
+            return match.get()
         }
 
         let isBranching = state.transitions.count > 1
@@ -128,19 +157,22 @@ public final class Regex {
             let context = transition.perform(context)
             var cursor = cursor
             if !transition.isEpsilon {
-                cursor.index += 1
+                cursor.index += 1 // Consume a character
             }
-            let isMatch = isMatchBacktracking(cursor, context, transition.toState, cache, isBranching ? level + 1 : level)
+            let match = firstMatch(cursor, context, transition.toState, cache, isBranching ? level + 1 : level)
+
             if isBranching {
-                os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(isMatch ? "✅" : "❌")")
+                os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")
             }
-            if isMatch {
-                return true
+
+            if let match = match {
+                cache[key] = .match(match)
+                return match
             }
         }
 
-        cache[key] = false
-        return false
+        cache[key] = .failed
+        return nil
     }
 }
 
@@ -148,13 +180,47 @@ private final class Cache {
     struct Key: Hashable {
         let index: Int
         let state: State
+        let context: Context // TODO: verify whether this check is necessary
     }
 
-    private var cache = [Key: Bool]()
+    enum Entry {
+        // TODO: I don't actually see scenarios where storing matches in
+        // cache is useful, should probably be simplified.
+        case match(Regex.Match)
+        case failed
 
-    subscript(key: Key) -> Bool? {
+        func get() -> Regex.Match? {
+            switch self {
+            case let .match(match): return match
+            case .failed: return nil
+            }
+        }
+    }
+
+    private var cache = [Key: Entry]()
+
+    subscript(key: Key) -> Entry? {
         get { return cache[key] }
         set { cache[key] = newValue }
+    }
+}
+
+// MARK: - Regex.Match
+
+public extension Regex {
+    struct Match {
+        public let value: Substring
+        public let range: Range<String.Index>
+        let rangeInCharacters: Range<Int>
+
+        init(_ cursor: Cursor) {
+            let string = cursor.string
+            let lb = string.index(string.startIndex, offsetBy: cursor.range.lowerBound)
+            let ub = string.index(string.startIndex, offsetBy: cursor.index)
+            self.range = lb..<ub
+            self.value = string[range]
+            self.rangeInCharacters =  cursor.range.lowerBound..<cursor.index
+        }
     }
 }
 
