@@ -94,6 +94,7 @@ final class Compiler {
         switch c {
         case "b": return .wordBoundary
         case "B": return .nonWordBoundary
+        case "z": return .endOfString
         default:
             guard let machine = compileSpecialCharacter(c) else {
                 throw Regex.Error("Invalid special character '\(c)'", i)

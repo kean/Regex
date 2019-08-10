@@ -248,6 +248,11 @@ extension Machine {
         return anchor("End of string") { cursor, _ in cursor.isEmpty}
     }
 
+    /// Matches not the end of the string.
+    static var notEndOfString: Machine {
+        return anchor("End of string") { cursor, _ in !cursor.isEmpty}
+    }
+
     /// The match must occur on a word boundary.
     static var wordBoundary: Machine {
         return anchor("Word boundary") { cursor, _ in cursor.isAtWordBoundary }

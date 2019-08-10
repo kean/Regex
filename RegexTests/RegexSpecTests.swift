@@ -9,6 +9,7 @@ import Regex
 class RegexSpecTests: XCTestCase {
 
     // MARK: Character Classes
+    // https://docs.microsoft.com/en-us/dotnet/standard/base-types/character-classes-in-regular-expressions
 
     // TODO: implement Unicode categories support
     func testCharacterClasses1() throws {
@@ -39,5 +40,15 @@ class RegexSpecTests: XCTestCase {
         let matches = regex.matches(in: string).map { $0.value }
 
         XCTAssertEqual(matches, ["thing", "them", "through", "thus", "this"])
+    }
+
+    func testCharacterClasses4() throws {
+        let pattern = #"\b.*[.?!;:](\s|\z)"#
+        let string = "this. what: is? go, thing."
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.value }
+
+        XCTAssertEqual(matches, ["this. what: is? go, thing."])
     }
 }

@@ -18,6 +18,7 @@ A character class matches any one of a set of characters.
 - <code><b>\w</b></code> - matches any word character (negation: <code><b>\W</b></code>)
 - <code><b>\s</b></code> - matches any whitespace characte (negation: <code><b>\S</b></code>)
 - <code><b>\d</b></code> - matches any decimal digit (negation: <code><b>\D</b></code>)
+- <code><b>\z</b></code> - matches end of string (negation: <code><b>\Z</b></code>)
 
 ## Options
 
