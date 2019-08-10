@@ -7,6 +7,8 @@ import Regex
 
 class OptionsTests: XCTestCase {
 
+    // MARK: .caseInsensitive
+
     func testCaseInsensitive() throws {
         let regex = try Regex("a", [.caseInsensitive])
         XCTAssertTrue(regex.isMatch("a"))
@@ -20,5 +22,21 @@ class OptionsTests: XCTestCase {
         XCTAssertTrue(regex.isMatch("A"))
         XCTAssertTrue(regex.isMatch("b"))
         XCTAssertFalse(regex.isMatch("_"))
+    }
+
+    // MARK: .multiline
+
+    func testMultiline() throws {
+        let pattern = #"^\d$"#
+        let string = """
+        1
+        1b
+        2
+        """
+
+        let regex = try Regex(pattern, [.multiline])
+        let matches = regex.matches(in: string).map { $0.value }
+
+        XCTAssertEqual(matches, ["1", "2"])
     }
 }

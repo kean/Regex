@@ -62,6 +62,12 @@ public final class Regex {
 
         /// Match letters in the pattern independent of case.
         public static let caseInsensitive = Options(rawValue: 1 << 0)
+
+        /// Control the behavior of "^" and "$" in a pattern. By default these
+        /// will only match at the start and end, respectively, of the input text.
+        /// If this flag is set, "^" and "$" will also match at the start and end
+        /// of each line within the input text.
+        public static let multiline = Options(rawValue: 1 << 1)
     }
 
     public init(_ pattern: String, _ options: Options = []) throws {
@@ -108,12 +114,21 @@ public final class Regex {
             os_log(.default, log: Regex.log, "%{PUBLIC}@", "Finished, iterations: \(iterations)")
         }
 
-        let string = options.contains(.caseInsensitive) ? string.lowercased() : string
-        var cursor = Cursor(string: string)
+        for substring in preprocess(string) {
+            let cache = Cache()
+            var cursor = Cursor(string: substring)
+            while let match = firstMatch(cursor, cache), closure(match) {
+                cursor = cursor.startingAt(match.rangeInCharacters.upperBound)
+            }
+        }
+    }
 
-        let cache = Cache()
-        while let match = firstMatch(cursor, cache), closure(match) {
-            cursor = cursor.startingAt(match.rangeInCharacters.upperBound)
+    private func preprocess(_ string: String) -> [Substring] {
+        let string = (options.contains(.caseInsensitive) ? string.lowercased() : string)
+        if options.contains(.multiline) {
+            return string.split(separator: "\n")
+        } else {
+            return [string[...]]
         }
     }
 
