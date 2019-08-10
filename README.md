@@ -1,8 +1,33 @@
 # Regex
 
-Open source regex implementation.
+Open source regular expression implementation.
 
-Not meant for production, created strickly for learning purposes!
+> Created primarily for learning purposes, not meant for production.
+
+# Usage
+
+Create a `Regex` object by providing a pattern and an optional set of options (`Regex.Options`):
+
+```swift
+let regex = try Regex(#"<\/?[\w\s]*>|<.+[\W]>"#)
+```
+
+The pattern is parsed and compiled to the special internal representation. If there is an error in the pattern, the initializer will throw a detailed error with an index of the failing token and an error message. 
+
+Use `isMatch(_:)` method to check if the regular expression patterns occurs in the input text:
+
+```swift
+regex.isMatch("<h1>Title</h1>")
+```
+
+Retrieve one or all occurences text that matches the regular expression by calling `matched(in:)` method. Each match contains a range in the input string.
+
+```swift
+for match in regex.matches("<h1>Title</h1>\n<p>Text</p>") {
+	print(match.value)
+	// Prints ["<h1>", "</h1>", "<p>", "</p>"]
+}
+```
 
 # Supported Features
 
