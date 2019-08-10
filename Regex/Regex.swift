@@ -12,12 +12,6 @@ import os.log
 // Supported Features
 // ==================
 //
-//   Character Escapes
-//
-// \ - before keyword escapes the keyword, e.g. '\{' means "match {". If used
-//       inside the character group escapes the square brackets, e.g. "[\]]"
-//       matches a closing square bracket.
-//
 //   Anchors
 //
 // ^ - matches the beginning of a string

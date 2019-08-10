@@ -9,18 +9,35 @@ class CharacterEscapesTests: XCTestCase {
 
     func testEscapeOpeningParantheses() throws {
         let regex = try Regex(#"\("#)
+
         XCTAssertTrue(regex.isMatch("("))
     }
 
     func testEscapeBackslash() throws {
         let regex = try Regex(#"\\"#)
+
         XCTAssertTrue(regex.isMatch(#"\"#))
     }
 
     func testEspaceBracketsInsideCharacterGroup() throws {
         let regex = try Regex(#"[\[\]]"#)
+
         XCTAssertTrue(regex.isMatch("["))
         XCTAssertTrue(regex.isMatch("]"))
+        XCTAssertFalse(regex.isMatch("a"))
+    }
+
+    func testTab() throws {
+        let regex = try Regex("\t")
+
+        XCTAssertTrue(regex.isMatch("\t"))
+        XCTAssertFalse(regex.isMatch("a"))
+    }
+
+    func testUnicodeSymbol() throws {
+        let regex = try Regex("\u{0020}") // We use Swift unicode support
+
+        XCTAssertTrue(regex.isMatch(" "))
         XCTAssertFalse(regex.isMatch("a"))
     }
 

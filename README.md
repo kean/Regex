@@ -10,16 +10,21 @@ Not meant for production, created strickly for learning purposes!
 
 A character class matches any one of a set of characters.
 
-
-- <code><b>[</b><i>character_group</i><b>]</b></code> – matches any single character in *character_group*, example `[ae]`
-- <code><b>[^</b><i>character_group</i><b>]</b></code> – negation, matches any single character taht is not in *character_group*, example `[^ae]`
-- <code><b>[</b><i>first</i><b>-</b><i>last</i><b>]</b></code> – character range, matches any single character in the given range from *fisrt* to *last*, example `[a-z]`
+- <code><b>[</b><i>character_group</i><b>]</b></code> – matches any single character in *character_group*, e.g. `[ae]`
+- <code><b>[^</b><i>character_group</i><b>]</b></code> – negation, matches any single character taht is not in *character_group*, e.g. `[^ae]`
+- <code><b>[</b><i>first</i><b>-</b><i>last</i><b>]</b></code> – character range, matches any single character in the given range from *fisrt* to *last*, e.g. `[a-z]`
 - <code><b>.</b></code> – wildcard, matches any single character except `\n`
 - <code><b>\w</b></code> - matches any word character (negation: <code><b>\W</b></code>)
 - <code><b>\s</b></code> - matches any whitespace characte (negation: <code><b>\S</b></code>)
 - <code><b>\d</b></code> - matches any decimal digit (negation: <code><b>\D</b></code>)
 - <code><b>\z</b></code> - matches end of string (negation: <code><b>\Z</b></code>)
-- <code><b>\p{</b><i>name</i><b>}</code></b> - matches characters from the given unicode category, example `\p{P}` for punctuation characters (only categories supported by `CharacterSet` are currently supported) (negation: <code><b>\P</b></code>)
+- <code><b>\p{</b><i>name</i><b>}</code></b> - matches characters from the given unicode category, e.g. `\p{P}` for punctuation characters (only categories supported by `CharacterSet` are currently supported) (negation: <code><b>\P</b></code>)
+
+## Character Escapes
+
+The backslash (<code>\\</code>) either indicates that the character that follows is a special character, e.g. `\b` indicates a word boundary, or that the keyword should be intepreted literally, e.g. `\{` matches the opening bracket.
+
+- <code><b>\u{</b><i>nnnn</i><b>}</b></code> – matches a UTF-16 code unit, e.g. `\u0020` matches escape (Swift-specific feature)
 
 ## Options
 
