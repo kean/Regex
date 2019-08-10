@@ -482,4 +482,101 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("23:59:9"))
         XCTAssertTrue(regex.isMatch("23:59:19"))
     }
+
+    // MARK: HTML
+
+    // https://www.regexpal.com/95941
+    func testHTMLTags() throws {
+        let pattern = #"<\/?[\w\s]*>|<.+[\W]>"#
+        let string = """
+        <h2 class="offscreen">Webontwikkeling leren</h2>
+        <h1>Regular Expressions</h1>
+        <p>"Alle onderdelen van MDN (documenten en de website zelf) worden gemaakt door een open gemeenschap."</p>
+        <a href="/nl/docs/MDN/Getting_started">Aan de slag</a>
+        <bed el = ekf"eee>
+        """
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.value }
+
+        XCTAssertEqual(matches, [
+            #"<h2 class="offscreen">"#,
+            "</h2>",
+            "<h1>",
+            "</h1>",
+            "<p>",
+            "</p>",
+            #"<a href="/nl/docs/MDN/Getting_started">"#,
+            "</a>"]
+        )
+    }
+
+    // MARK: JavaScript
+
+    // https://www.regexpal.com/?fam=104055
+    func testJavaScriptHandler() throws {
+        let pattern = #"\bon\w+=\S+(?=.*>)"#
+        let string = """
+        <img src="foo.jpg" onload=function_xyz />
+        <img onmessage="javascript:execute()">
+            <a notonmessage="nomatch-here" onfocus="alert('hey')" onclick=foo() disabled>
+        <p>
+            Things that are just onfoo="something" shouldn't match either, since they are outside of a tag
+        </p>
+        """
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.value }
+
+        XCTAssertEqual(matches, [
+            "onload=function_xyz",
+            #"onmessage="javascript:execute()""#,
+            #"onfocus="alert('hey')""#,
+            "onclick=foo()"]
+        )
+    }
+
+    // https://www.regexpal.com/94641
+    func testJavaScriptHandlerWithElement() throws {
+        let pattern = #"(?:<[^>]+\s)(on\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"']))+.)["']?"#
+        let string = """
+        <img src="foo.jpg" onload="something" />
+            <img onmessage="javascript:foo()">
+        <a notonmessage="nomatch-here">
+        <p>
+        things that are just onfoo="bar" shouldn't match either, outside of a tag
+        </p>
+        """
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.value }
+
+        XCTAssertEqual(matches, [
+            #"<img src="foo.jpg" onload="something"#,
+            #"<img onmessage="javascript:foo()"#]
+        )
+    }
+
+    // MARK: Slug
+
+    // https://www.regexpal.com/?fam=104056
+    func testSlug() throws {
+        let pattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+
+        let regex = try Regex(pattern, [.caseInsensitive])
+
+        XCTAssertTrue(regex.isMatch("hello"))
+        XCTAssertTrue(regex.isMatch("Hello"))
+        XCTAssertFalse(regex.isMatch("-"))
+        XCTAssertFalse(regex.isMatch("hello-"))
+        XCTAssertFalse(regex.isMatch("-hello"))
+        XCTAssertFalse(regex.isMatch("-hello-"))
+        XCTAssertTrue(regex.isMatch("hello-world"))
+        XCTAssertFalse(regex.isMatch("hello---"))
+        XCTAssertFalse(regex.isMatch("hello-$-world"))
+        XCTAssertTrue(regex.isMatch("hello-456-world"))
+        XCTAssertTrue(regex.isMatch("456-hello"))
+        XCTAssertTrue(regex.isMatch("456-World"))
+        XCTAssertTrue(regex.isMatch("456"))
+    }
 }
