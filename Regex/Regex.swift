@@ -61,18 +61,22 @@ public final class Regex {
         }
 
         /// Match letters in the pattern independent of case.
-        public static let caseInsensitive = Options(rawValue: 1 << 0)
+        public static let caseInsensitive = Options(rawValue: 1 << 0) // 'i'
 
         /// Control the behavior of "^" and "$" in a pattern. By default these
         /// will only match at the start and end, respectively, of the input text.
         /// If this flag is set, "^" and "$" will also match at the start and end
         /// of each line within the input text.
-        public static let multiline = Options(rawValue: 1 << 1)
+        public static let multiline = Options(rawValue: 1 << 1) // 'm'
+
+        /// Allow `.` to match any character, including line separators.
+        public static let dotMatchesLineSeparators = Options(rawValue: 1 << 2) // 's'
     }
 
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
-            self.machine = try Compiler.compile(Array(pattern))
+            let compiler = Compiler(pattern, options)
+            self.machine = try compiler.compile()
             self.options = options
             os_log(.default, log: Regex.log, "Machine: \n\n%{PUBLIC}@", machine.description)
         } catch {

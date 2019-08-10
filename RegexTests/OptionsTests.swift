@@ -39,4 +39,45 @@ class OptionsTests: XCTestCase {
 
         XCTAssertEqual(matches, ["1", "2"])
     }
+
+    // MARK: .dotMatchesLineSeparators
+
+    func testDotMatchesLineSeparators() throws {
+        let pattern = "^.+"
+        let string = """
+        This is one line and
+        this is the second.
+        """
+
+        let regex = try Regex(pattern, [.dotMatchesLineSeparators])
+        let matches = regex.matches(in: string).map { $0.value }
+
+        XCTAssertEqual(matches, ["This is one line and\nthis is the second."])
+    }
+
+    func testDotMatchesLineSeparatorsWithMutliline() throws {
+        let pattern = "^.+"
+        let string = """
+        This is one line and
+        this is the second.
+        """
+
+        let regex = try Regex(pattern, [.dotMatchesLineSeparators, .multiline])
+        let matches = regex.matches(in: string).map { $0.value }
+
+        XCTAssertEqual(matches, ["This is one line and", "this is the second."])
+    }
+
+    func testDotMatchesLineSeparatorsDisable() throws {
+        let pattern = "^.+"
+        let string = """
+        This is one line and
+        this is the second.
+        """
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.value }
+
+        XCTAssertEqual(matches, ["This is one line and"])
+    }
 }

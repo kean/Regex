@@ -7,16 +7,14 @@ import Foundation
 /// Compiles a pattern into a finite state machine.
 final class Compiler {
     private let parser: Parser
+    private let options: Regex.Options
 
     /// A stack of machines, each machine represents a single expression.
     private var stack = [StackEntry]()
 
-    init(_ pattern: [Character]) {
-        self.parser = Parser(pattern)
-    }
-
-    static func compile(_ pattern: [Character]) throws -> Machine {
-        return try Compiler(pattern).compile()
+    init(_ pattern: String, _ options: Regex.Options) {
+        self.parser = Parser(Array(pattern))
+        self.options = options
     }
 
     private let keywords: Set<Character> = Set(["(", ")", "|", "*", "+", "?", "{", "}", ".", "[", "]", "\\", "/"])
@@ -57,7 +55,7 @@ final class Compiler {
 
             // Character Classes
             case ".": // Any character
-                stack.append(.machine(.anyCharacter))
+                stack.append(.machine(.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))))
             case "[": // Start a character group
                 let set = try parser.readCharacterSet()
                 stack.append(.machine(.characterSet(set)))

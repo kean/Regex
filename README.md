@@ -25,6 +25,7 @@ A character class matches any one of a set of characters.
 
 - `.caseInsensitive` – match letters in the pattern independent of case.
 - `.multiline` –  control the behavior of `^` and `$` anchors. By default, these match at the start and end of the input text. If this flag is set, will match at the start and end of each line within the input text.
+- `.dotMatchesLineSeparators` – allow `.` to match any character, including line separators.
 
 # References
 

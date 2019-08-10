@@ -153,8 +153,8 @@ extension Machine {
     }
 
     /// Matches any character.
-    static var anyCharacter: Machine {
-        return Machine("Match any character") { $0 != "\n" }
+    static func anyCharacter(includingNewline: Bool) -> Machine {
+        return Machine("Match any character") { includingNewline ? true : $0 != "\n" }
     }
 }
 
@@ -165,8 +165,8 @@ extension Machine {
     static func zeroOrMore(_ machine: Machine) -> Machine {
         let quantifier = Machine("Zero or more")
         quantifier.start.transitions = [
-            .epsilon(quantifier.end), // Either skip the current machine
-            .epsilon(machine.start) // Or execute it
+            .epsilon(machine.start), // Loop (greedy by default)
+            .epsilon(quantifier.end) // Skip
         ]
         machine.end.transitions = [
             .epsilon(quantifier.start) // Loop
@@ -181,8 +181,8 @@ extension Machine {
             .epsilon(machine.start) // Execute at least once
         ]
         machine.end.transitions = [
-            .epsilon(quantifier.end), // Complete
             .epsilon(quantifier.start), // Loop
+            .epsilon(quantifier.end) // Complete
         ]
         return quantifier
     }
@@ -191,8 +191,8 @@ extension Machine {
     static func noneOrOne(_ machine: Machine) -> Machine {
         let quantifier = Machine("None or one")
         quantifier.start.transitions = [
-            .epsilon(quantifier.end), // Either skip the current machine
-            .epsilon(machine.start) // Or execute it
+            .epsilon(machine.start), // Loop (greedy by default)
+            .epsilon(quantifier.end) // Skip
         ]
         machine.end.transitions = [
             .epsilon(quantifier.end), // Complete
