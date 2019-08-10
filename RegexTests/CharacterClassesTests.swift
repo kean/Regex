@@ -315,6 +315,14 @@ class CharacterUnicodeCategoriesTests: XCTestCase {
         XCTAssertTrue(regex.isMatch("."))
     }
 
+    func testUnicodeCategoryPunctuationInverted() throws {
+        let regex = try Regex("\\P{P}")
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch(","))
+        XCTAssertFalse(regex.isMatch("."))
+    }
+
     func testUnicodeCategoryCapitalizedLetters() throws {
         let regex = try Regex("\\p{Lt}")
 

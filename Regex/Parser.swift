@@ -133,6 +133,7 @@ final class Parser {
         case "w": return CharacterSet.word
         case "W": return CharacterSet.word.inverted
         case "p": return try readUnicodeCategory()
+        case "P": return try readUnicodeCategory().inverted
         default: return nil
         }
     }
