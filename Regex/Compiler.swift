@@ -17,13 +17,12 @@ final class Compiler {
         self.options = options
     }
 
-    private let keywords: Set<Character> = Set(["(", ")", "|", "*", "+", "?", "{", "}", ".", "[", "]", "\\", "/"])
+    private let keywords: Set<Character> = Set(["(", ")", "|", "*", "+", "?", "{", "}", ".", "[", "]", "\\", "/", "$"])
 
     func compile() throws -> Machine {
         Machine.nextId = 0 // Id are used for logging
 
         let shouldMatchStart = parser.read("^")
-        let shouldMatchEnd = parser.readFromEnd("$")
 
         if shouldMatchStart {
             stack.append(.machine(.startOfString))
@@ -60,6 +59,10 @@ final class Compiler {
                 let set = try parser.readCharacterSet()
                 stack.append(.machine(.characterSet(set)))
 
+            // Anchors
+            case "$":
+                stack.append(.machine(.endOfString))
+
             // Character Escapes
             case "\\":
                 let machine = try compilerCharacterAfterEscape()
@@ -68,10 +71,6 @@ final class Compiler {
             default: // Not a keyword, treat as a plain character
                 stack.append(.machine(.character(c)))
             }
-        }
-
-        if shouldMatchEnd {
-            stack.append(.machine(.endOfString))
         }
 
         let regex = try collapse() // Collapse on regexes in an implicit top group
