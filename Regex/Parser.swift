@@ -5,7 +5,7 @@
 import Foundation
 
 final class Parser {
-    // The index of the next character that wasn't scanned yet.
+    // The index of the next character that wasn't read yet.
     private(set) var i = 0
 
     private var pattern: [Character]
@@ -14,6 +14,7 @@ final class Parser {
         self.pattern = pattern
     }
 
+    /// Returns the next character in the pattern without consuming it.
     func peak() -> Character? {
         guard i < pattern.endIndex else {
             return nil
@@ -21,7 +22,7 @@ final class Parser {
         return pattern[i]
     }
 
-    /// Reads the next character from the pattern.
+    /// Reads the next character in the pattern.
     func readCharacter() -> Character? {
         guard i < pattern.endIndex else {
             return nil
@@ -30,8 +31,8 @@ final class Parser {
         return pattern[i]
     }
 
-    /// Returns true if the next unread character was matching the given character,
-    /// consumes the character if it does.
+    /// Reads the next character if it matches the given character. Returns
+    /// `true` if the character was read successfully.
     func read(_ c: Character) -> Bool {
         guard i < pattern.endIndex else {
             return false
@@ -43,8 +44,8 @@ final class Parser {
         return true
     }
 
-    /// Returns true if the character from the end matches the given
-    /// character, consumerse the charater if it does.
+    /// Reads the character from the end of the pattern if it matches the given
+    /// character. Returns `true` if the character was read successfully.
     func readFromEnd(_ c: Character) -> Bool {
         guard pattern.last == c else {
             return false
@@ -59,12 +60,11 @@ final class Parser {
         let openingBracketIndex = i - 1
 
         // Check if the pattern is negative.
-        let isNegative: Bool
-        if pattern[i] == "^" {
-            i += 1 // Consume '^'
-            isNegative = true
-        } else {
-            isNegative = false
+        let isNegative = read("^")
+
+        // Make sure that the group is not empty
+        guard peak() != "]" else {
+            throw Regex.Error("Character group is empty", openingBracketIndex)
         }
 
         // Read the characters until the group is closed.
@@ -73,7 +73,7 @@ final class Parser {
         func insert(_ c: Character) throws {
             // TODO: this is a temporary limitation, need to figure out a better approach
             guard c.unicodeScalars.count < 2 else {
-                throw Regex.Error("Character \(c) is not supported", i-1)
+                throw Regex.Error("Character \(c) is not supported", i - 1)
             }
             for scalar in c.unicodeScalars {
                 set.insert(scalar)
@@ -200,7 +200,7 @@ final class Parser {
         // TODO: this is probably not the best way to convert these
         guard let lb = Unicode.Scalar(String(lowerBound)),
             let ub = Unicode.Scalar(String(upperBound)) else {
-                throw Regex.Error("Unsupported characters in charcter range", dashIndex)
+                throw Regex.Error("Unsupported characters in character range", dashIndex)
         }
 
         guard ub >= lb else {

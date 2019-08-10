@@ -15,7 +15,7 @@ class CharacterClassesTests: XCTestCase {
         XCTAssertFalse(regex.isMatch(""))
     }
 
-    func testMultipleCharacter() throws {
+    func testTwoCharactersInARow() throws {
         let regex = try Regex("ab")
         XCTAssertTrue(regex.isMatch("ab"))
         XCTAssertFalse(regex.isMatch("a"))
@@ -29,9 +29,10 @@ class CharacterClassesTests: XCTestCase {
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("b"))
         XCTAssertFalse(regex.isMatch(""))
+        XCTAssertFalse(regex.isMatch("\n"))
     }
 
-    func testAnyCharacterMixedWithSomeCharacters() throws {
+    func testAnyCharacterMixedWithSomeCharacter() throws {
         let regex = try Regex(".a")
         XCTAssertTrue(regex.isMatch("aa"))
         XCTAssertTrue(regex.isMatch("ba"))
@@ -41,7 +42,8 @@ class CharacterClassesTests: XCTestCase {
 }
 
 class CharacterGroupsTests: XCTestCase {
-    func testEither() throws {
+
+    func testSimpleCharacterGroup() throws {
         let regex = try Regex("[ab]")
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("b"))
@@ -51,8 +53,18 @@ class CharacterGroupsTests: XCTestCase {
         XCTAssertFalse(regex.isMatch(""))
     }
 
+    func testCharacterGroupOneCharacter() throws {
+        let regex = try Regex("[a]")
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch("ab"))
+        XCTAssertFalse(regex.isMatch("c"))
+        XCTAssertFalse(regex.isMatch(""))
+    }
+
     func testInvertedSet() throws {
         let regex = try Regex("[^ab]")
+
+        // Expect character set to be inverted
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertFalse(regex.isMatch("b"))
         XCTAssertTrue(regex.isMatch("c"))
@@ -62,15 +74,22 @@ class CharacterGroupsTests: XCTestCase {
 
     func testInvertedSetKeywordInsideGroup() throws {
         let regex = try Regex("[a^]")
-        XCTAssertTrue(regex.isMatch("a"))
+
+        // Expect `^` to be treated as a keyword
         XCTAssertTrue(regex.isMatch("^"))
+
+        // Expect character set not to be inveted
+        XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("ab"))
         XCTAssertFalse(regex.isMatch("b"))
         XCTAssertFalse(regex.isMatch(""))
     }
 
-    func testKeywoardsAreTreatesAsCharacters() throws {
+    func testKeywordsAreTreatedAsCharacters() throws {
         let regex = try Regex("[a()|*+?.[]")
+
+        // Expect keywords to be treated as simple characters inside a
+        // character group
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("("))
         XCTAssertTrue(regex.isMatch(")"))
@@ -87,6 +106,8 @@ class CharacterGroupsTests: XCTestCase {
 
     func testSpecialCharacterInsideCharacterGroups() throws {
         let regex = try Regex(#"[a\d]"#)
+
+        // Expect special character (`\d` - digit) to work inside a character group
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("1"))
         XCTAssertTrue(regex.isMatch("ab"))
@@ -94,28 +115,50 @@ class CharacterGroupsTests: XCTestCase {
         XCTAssertFalse(regex.isMatch(""))
     }
 
+    // MARK: Error Handling
+
     func testThrowsMissingClosingBracket() {
-        XCTAssertThrowsError(try Regex("a[bc")) { error in
+        XCTAssertThrowsError(try Regex("[b")) { error in
             guard let error = (error as? Regex.Error) else {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Character group missing closing bracket")
-            XCTAssertEqual(error.index, 1)
+            XCTAssertEqual(error.index, 0)
+        }
+    }
+
+    func testThrowsEmptyCharacterGroup() {
+        XCTAssertThrowsError(try Regex("[]")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Character group is empty")
+            XCTAssertEqual(error.index, 0)
+        }
+    }
+
+    func testThrowsEmptyCharacterGroupWithInvertedSet() {
+        XCTAssertThrowsError(try Regex("[^]")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Character group is empty")
+            XCTAssertEqual(error.index, 0)
         }
     }
 
     func testThrowsUnescapedDelimeterMustBeEscapedWithBackslash() throws {
-        XCTAssertThrowsError(try Regex("a[//]")) { error in
+        XCTAssertThrowsError(try Regex("[/]")) { error in
             guard let error = (error as? Regex.Error) else {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "An unescaped delimiter must be escaped with a backslash")
-            XCTAssertEqual(error.index, 2)
+            XCTAssertEqual(error.index, 1)
         }
     }
 }
 
-class CharacterRangesTests: XCTestCase {
+class CharacterClassesRangesTests: XCTestCase {
 
     func testAlphabet() throws {
         let regex = try Regex("[a-z]")
@@ -139,6 +182,20 @@ class CharacterRangesTests: XCTestCase {
 
     func testIncompleteRangeAsLiterals() throws {
         let regex = try Regex("[a-]")
+
+        // Expect a hyphen character (-) to be interpreted as the range separator
+        // unless it is the first or last character of the group.
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch("-"))
+        XCTAssertFalse(regex.isMatch("c"))
+        XCTAssertFalse(regex.isMatch("1"))
+    }
+
+    func testIncompleteRangeAsLiterals2() throws {
+        let regex = try Regex("[-a]")
+
+        // Expect a hyphen character (-) to be interpreted as the range separator
+        // unless it is the first or last character of the group.
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("-"))
         XCTAssertFalse(regex.isMatch("c"))
@@ -240,5 +297,19 @@ class SpecialCharactersTests: XCTestCase {
             XCTAssertEqual(error.message, "Invalid special character 'p'")
             XCTAssertEqual(error.index, 1)
         }
+    }
+}
+
+class CharacterGroupsIntegrationTests: XCTestCase {
+
+    func testMixingRangesAndSpecialCharacterInAGroup() throws {
+        let regex = try Regex(#"[13-4\s]"#)
+
+        XCTAssertTrue(regex.isMatch("1"))
+        XCTAssertFalse(regex.isMatch("2"))
+        XCTAssertTrue(regex.isMatch("3"))
+        XCTAssertTrue(regex.isMatch("4"))
+        XCTAssertTrue(regex.isMatch(" "))
+        XCTAssertFalse(regex.isMatch("a"))
     }
 }

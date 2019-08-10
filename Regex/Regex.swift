@@ -17,18 +17,6 @@ import os.log
 // \ - before keyword escapes the keyword, e.g. '\{' means "match {". If used
 //       inside the character group escapes the square brackets, e.g. "[\]]"
 //       matches a closing square bracket.
-// \ - before special character
-//       - '\s' - whitespaces (inverted: '\S')
-//       - '\d' - digits (inverted: '\D')
-//       - '\w' - word character (inverted: '\W')
-//
-//   Character Classes
-//
-// a - matches a character
-// . - any character
-// [abc] - a character group matches either a or b or c
-// [^abc] - a negated character group
-// a-z - any character from a to z
 //
 //   Anchors
 //
@@ -48,9 +36,6 @@ import os.log
 //   Alternation Constructs
 //
 // | - match either left side or right side
-//
-// Reference used:
-// https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference
 //
 // Implementation Details
 // ======================

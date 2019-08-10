@@ -126,9 +126,9 @@
 			isa = PBXGroup;
 			children = (
 				0CB3055022FED02D0083B406 /* Info.plist */,
+				0CB3056B22FED0740083B406 /* CharacterClassesTests.swift */,
 				0CB3056422FED0740083B406 /* AlternationConstructsTests.swift */,
 				0CB3056622FED0740083B406 /* AnchorsTests.swift */,
-				0CB3056B22FED0740083B406 /* CharacterClassesTests.swift */,
 				0CB3056A22FED0740083B406 /* CharacterEscapesTests.swift */,
 				0CB3056722FED0740083B406 /* GroupingTests.swift */,
 				0CB3056322FED0740083B406 /* IntegrationTests.swift */,

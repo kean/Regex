@@ -154,7 +154,7 @@ extension Machine {
 
     /// Matches any character.
     static var anyCharacter: Machine {
-        return Machine("Match any character") { _ in true }
+        return Machine("Match any character") { $0 != "\n" }
     }
 }
 
