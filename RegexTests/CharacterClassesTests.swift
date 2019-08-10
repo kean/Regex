@@ -296,11 +296,89 @@ class SpecialCharactersTests: XCTestCase {
     }
 
     func testThrowsInvalidSpecialCharacter() throws {
+        XCTAssertThrowsError(try Regex("\\y")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Invalid special character 'y'")
+            XCTAssertEqual(error.index, 1)
+        }
+    }
+}
+
+class CharacterUnicodeCategoriesTests: XCTestCase {
+    func testUnicodeCategoryPunctuation() throws {
+        let regex = try Regex("\\p{P}")
+
+        XCTAssertFalse(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch(","))
+        XCTAssertTrue(regex.isMatch("."))
+    }
+
+    func testUnicodeCategoryCapitalizedLetters() throws {
+        let regex = try Regex("\\p{Lt}")
+
+        XCTAssertFalse(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch("ǲ"))
+        XCTAssertFalse(regex.isMatch("."))
+    }
+
+    func testUnicodeCategoryLowercasedLetters() throws {
+        let regex = try Regex("\\p{Ll}")
+
+        XCTAssertFalse(regex.isMatch("A"))
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("."))
+    }
+
+    // MARK: Error Handling
+
+    func testMissingCategory() throws {
         XCTAssertThrowsError(try Regex("\\p")) { error in
             guard let error = (error as? Regex.Error) else {
                 return XCTFail("Unexpected error")
             }
-            XCTAssertEqual(error.message, "Invalid special character 'p'")
+            XCTAssertEqual(error.message, "Missing unicode category name")
+            XCTAssertEqual(error.index, 1)
+        }
+    }
+
+    func testMissingCategory2() throws {
+        XCTAssertThrowsError(try Regex("\\p}")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Missing unicode category name")
+            XCTAssertEqual(error.index, 1)
+        }
+    }
+
+    func testCategoryMissingClosingBracket() throws {
+        XCTAssertThrowsError(try Regex("\\p{P")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Missing closing bracket for unicode category name")
+            XCTAssertEqual(error.index, 1)
+        }
+    }
+
+    func testCategoryEmpty() throws {
+        XCTAssertThrowsError(try Regex("\\p{}")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Unicode category name is empty")
+            XCTAssertEqual(error.index, 1)
+        }
+    }
+
+    func testThrowsUnsupportedCategory() throws {
+        XCTAssertThrowsError(try Regex("\\p{Pd}")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Unsupported unicode category 'Pd'")
             XCTAssertEqual(error.index, 1)
         }
     }

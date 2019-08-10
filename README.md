@@ -19,6 +19,7 @@ A character class matches any one of a set of characters.
 - <code><b>\s</b></code> - matches any whitespace characte (negation: <code><b>\S</b></code>)
 - <code><b>\d</b></code> - matches any decimal digit (negation: <code><b>\D</b></code>)
 - <code><b>\z</b></code> - matches end of string (negation: <code><b>\Z</b></code>)
+- <code><b>\p{</b><i>name</i><b>}</code></b> - matches characters from the given unicode category, example `\p{P}` for punctuation characters (only categories supported by `CharacterSet` are currently supported)
 
 ## Options
 

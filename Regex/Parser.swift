@@ -44,6 +44,20 @@ final class Parser {
         return true
     }
 
+    /// Reads the string until reaching the given character. If successfull,
+    /// consumes all the characters including the given character.
+    func read(until c: Character) -> String? {
+        let startIndex = i
+        while i < pattern.endIndex {
+            defer { i += 1 }
+            if pattern[i] == c {
+                return String(pattern[startIndex..<i])
+            }
+        }
+        i = startIndex
+        return nil
+    }
+
     /// Reads the character from the end of the pattern if it matches the given
     /// character. Returns `true` if the character was read successfully.
     func readFromEnd(_ c: Character) -> Bool {
@@ -91,7 +105,7 @@ final class Parser {
                 guard let c = readCharacter() else {
                     throw Regex.Error("Pattern may not end with a trailing backslash", i-1)
                 }
-                if let specialSet = parseSpecialCharacter(c) {
+                if let specialSet = try parseSpecialCharacter(c) {
                     set.formUnion(specialSet)
                 } else {
                     try insert(c)
@@ -110,7 +124,7 @@ final class Parser {
         throw Regex.Error("Character group missing closing bracket", openingBracketIndex)
     }
 
-    func parseSpecialCharacter(_ c: Character) -> CharacterSet? {
+    func parseSpecialCharacter(_ c: Character) throws -> CharacterSet? {
         switch c {
         case "d": return CharacterSet.decimalDigits
         case "D": return CharacterSet.decimalDigits.inverted
@@ -118,29 +132,41 @@ final class Parser {
         case "S": return CharacterSet.whitespaces.inverted
         case "w": return CharacterSet.word
         case "W": return CharacterSet.word.inverted
+        case "p": return try readUnicodeCategory()
         default: return nil
+        }
+    }
+
+    // Reads unicode category set, e.g. "P" stands for all punctuation characters.
+    func readUnicodeCategory() throws -> CharacterSet {
+        let pSymbolIndex = i-1
+        guard read("{") else {
+            throw Regex.Error("Missing unicode category name", pSymbolIndex)
+        }
+        guard let name = read(until: "}") else {
+            throw Regex.Error("Missing closing bracket for unicode category name", pSymbolIndex)
+        }
+        guard !name.isEmpty else {
+            throw Regex.Error("Unicode category name is empty", pSymbolIndex)
+        }
+        switch name {
+        case "P": return .punctuationCharacters
+        case "Lt": return .capitalizedLetters
+        case "Ll": return .lowercaseLetters
+        case "N": return .nonBaseCharacters
+        case "S": return .symbols
+        default: throw Regex.Error("Unsupported unicode category '\(name)'", pSymbolIndex)
         }
     }
 
     // We encounted '{', read a range for range quantifier, e.g. {3}, {3,}
     func readRangeQuantifier() throws -> ClosedRange<Int> {
-        func readClosingBracket() -> Int? {
-            while i < pattern.endIndex {
-                defer { i += 1 }
-                if pattern[i] == "}" {
-                    return i
-                }
-            }
-            return nil
-        }
-
         // Read until we find a closing bracket
         let openingBracketIndex = i-1
-        guard let closingBracketIndex = readClosingBracket() else {
+        guard let rangeSubstring = read(until: "}") else {
             throw Regex.Error("Range quantifier missing closing bracket", openingBracketIndex)
         }
 
-        let rangeSubstring = String(pattern[(openingBracketIndex+1)..<closingBracketIndex])
         guard !rangeSubstring.isEmpty else {
             throw Regex.Error("Range quantifier missing range", openingBracketIndex)
         }

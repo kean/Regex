@@ -11,7 +11,6 @@ class RegexSpecTests: XCTestCase {
     // MARK: Character Classes
     // https://docs.microsoft.com/en-us/dotnet/standard/base-types/character-classes-in-regular-expressions
 
-    // TODO: implement Unicode categories support
     func testCharacterClasses1() throws {
         let pattern = #"gr[ae]y\s\S+?[\s\p{P}]"#
         let string = "The gray wolf jumped over the grey wall."
