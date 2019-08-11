@@ -4,12 +4,6 @@
 
 // MARK: - State
 
-enum Capturing {
-    case none
-    case start
-    case end
-}
-
 /// Represents a state of the finite state machine.
 final class State: Hashable, CustomStringConvertible {
     unowned var capturingEndState: State?
