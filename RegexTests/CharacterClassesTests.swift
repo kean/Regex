@@ -295,14 +295,12 @@ class SpecialCharactersTests: XCTestCase {
         XCTAssertTrue(regex.isMatch("*"))
     }
 
-    func testThrowsInvalidSpecialCharacter() throws {
-        XCTAssertThrowsError(try Regex("\\y")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
-            XCTAssertEqual(error.message, "Invalid special character 'y'")
-            XCTAssertEqual(error.index, 1)
-        }
+    func testNonSpecialCharacterAndNonKeywordInterpretedLiterally() throws {
+        let regex = try Regex(#"\q"#)
+
+        // Expect it to match literally
+        XCTAssertTrue(regex.isMatch("q"))
+        XCTAssertFalse(regex.isMatch("a"))
     }
 }
 

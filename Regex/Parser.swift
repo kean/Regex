@@ -105,7 +105,7 @@ final class Parser {
                 guard let c = readCharacter() else {
                     throw Regex.Error("Pattern may not end with a trailing backslash", i-1)
                 }
-                if let specialSet = try parseSpecialCharacter(c) {
+                if let specialSet = try readCharacterClassSpecialCharacter(c) {
                     set.formUnion(specialSet)
                 } else {
                     try insert(c)
@@ -124,7 +124,7 @@ final class Parser {
         throw Regex.Error("Character group missing closing bracket", openingBracketIndex)
     }
 
-    func parseSpecialCharacter(_ c: Character) throws -> CharacterSet? {
+    func readCharacterClassSpecialCharacter(_ c: Character) throws -> CharacterSet? {
         switch c {
         case "d": return CharacterSet.decimalDigits
         case "D": return CharacterSet.decimalDigits.inverted
@@ -138,7 +138,7 @@ final class Parser {
         }
     }
 
-    // Reads unicode category set, e.g. "P" stands for all punctuation characters.
+    /// Reads unicode category set, e.g. "P" stands for all punctuation characters.
     func readUnicodeCategory() throws -> CharacterSet {
         let pSymbolIndex = i-1
         guard read("{") else {

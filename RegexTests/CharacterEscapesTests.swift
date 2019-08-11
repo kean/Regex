@@ -41,6 +41,14 @@ class CharacterEscapesTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("a"))
     }
 
+    func testNonSpecialCharacterAndNonKeywordInterpretedLiterally() throws {
+        let regex = try Regex(#"\q"#)
+
+        // Expect it to match literally
+        XCTAssertTrue(regex.isMatch("q"))
+        XCTAssertFalse(regex.isMatch("a"))
+    }
+
     func testThrowsEndingWithAtTrailingBackslash() throws {
         XCTAssertThrowsError(try Regex(#"\"#)) { error in
             guard let error = (error as? Regex.Error) else {

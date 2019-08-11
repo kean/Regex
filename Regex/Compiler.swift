@@ -95,21 +95,12 @@ final class Compiler {
         case "B": return .nonWordBoundary
         case "z": return .endOfString
         default:
-            guard let machine = try compileSpecialCharacter(c) else {
-                throw Regex.Error("Invalid special character '\(c)'", i)
+            if let set = try parser.readCharacterClassSpecialCharacter(c) {
+                return .characterSet(set)
+            } else {
+                return .character(c)
             }
-            return machine
         }
-    }
-
-    func compileSpecialCharacter(_ c: Character) throws -> Machine? {
-        if keywords.contains(c) {
-            return .character(c)
-        }
-        if let set = try parser.parseSpecialCharacter(c) {
-            return .characterSet(set)
-        }
-        return nil
     }
 
     /// Returns the index of the character which is currently being processed.
