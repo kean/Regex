@@ -34,27 +34,38 @@ final class Parser {
     /// Reads the next character if it matches the given character. Returns
     /// `true` if the character was read successfully.
     func read(_ c: Character) -> Bool {
-        guard i < pattern.endIndex else {
-            return false
+        return read(String(c))
+    }
+
+    func read(_ s: String) -> Bool {
+        let s = Array(s)
+        var j = i
+        var z = 0
+        while j < pattern.endIndex {
+            guard z < s.endIndex else {
+                i = j
+                return true
+            }
+            guard pattern[j] == s[z] else {
+                return false
+            }
+            j += 1
+            z += 1
         }
-        guard pattern[i] == c else {
-            return false
-        }
-        i += 1 // Matches, consume it
-        return true
+        return false
     }
 
     /// Reads the string until reaching the given character. If successfull,
     /// consumes all the characters including the given character.
     func read(until c: Character) -> String? {
-        let startIndex = i
-        while i < pattern.endIndex {
-            defer { i += 1 }
-            if pattern[i] == c {
-                return String(pattern[startIndex..<i])
+        var j = i
+        while j < pattern.endIndex {
+            if pattern[j] == c {
+                defer { i = j + 1 }
+                return String(pattern[i..<j])
             }
+            j += 1
         }
-        i = startIndex
         return nil
     }
 

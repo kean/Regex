@@ -29,7 +29,8 @@ final class Compiler {
             switch c {
             // Grouping
             case "(":
-                stack.append(.group(index: i))
+                let isCapturing = !parser.read("?:")
+                stack.append(.group(Group(openingBracketIndex: i, isCapturing: isCapturing)))
             case ")":
                 try collapseLastGroup()
 
@@ -73,8 +74,8 @@ final class Compiler {
         let regex = try collapse() // Collapse on regexes in an implicit top group
 
         guard stack.isEmpty else {
-            if case let .group(index)? = stack.last {
-                throw Regex.Error("Unmatched opening parentheses", index)
+            if case let .group(group)? = stack.last {
+                throw Regex.Error("Unmatched opening parentheses", group.openingBracketIndex)
             } else {
                 fatalError("Unsupported error")
             }
@@ -135,12 +136,14 @@ private extension Compiler {
         // Collapses the expression in the group.
         let expression = try collapse()
 
-        guard case .group? = stack.popLast() else {
+        guard case let .group(info)? = stack.popLast() else {
             throw Regex.Error("Unmatched closing parentheses", i)
         }
 
-        let group = Expression("Capturing group")
-        group.start.capturingEndState = group.end // Mark the state as capturing
+        let group = Expression(info.isCapturing ? "Capturing group" : "Non-capturing group")
+        if info.isCapturing {
+            group.start.capturingEndState = group.end // Mark the state as capturing
+        }
         group.start.transitions = [.epsilon(expression.start)]
         expression.end.transitions = [.epsilon(group.end)]
 
@@ -176,10 +179,15 @@ private extension Compiler {
     }
 }
 
-// MARK: - Stack
+// MARK: - Intermeidate Representations
 
 private enum StackEntry {
     case expression(Expression)
-    case group(index: Int) // (
+    case group(Group) // (
     case alternate // |
+}
+
+private struct Group {
+    let openingBracketIndex: Int
+    let isCapturing: Bool
 }

@@ -464,7 +464,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
     }
 
     // https://www.regexpal.com/?fam=104044
-    func _testTimeFormat5() throws {
+    func testTimeFormat5() throws {
         let regex = try Regex(#"(?:[01]\d|2[0123]):(?:[012345]\d):(?:[012345]\d)"#)
 
         XCTAssertFalse(regex.isMatch("12:00"))

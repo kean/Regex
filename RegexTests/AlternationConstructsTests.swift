@@ -66,7 +66,7 @@ class AlternationConstructsTests: XCTestCase {
         }
     }
 
-    // TODO:
+    // TODO: this crashes right now
     func _testAlternationInitEmptyFirstGroup() {
         XCTAssertThrowsError(try Regex("(|b)")) { error in
             guard let error = (error as? Regex.Error) else {

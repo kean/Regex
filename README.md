@@ -71,7 +71,8 @@ Anchors specify a position in the string where a match must occur.
 
 Grouping constructs delineate the subexpressions of a regular expression and capture the substrings of an input string.
 
-<code><b>(</b>subexpression<b>)</b></code> – captures a subexpression in a group
+- <code><b>(</b><i>subexpression</i><b>)</b></code> – captures a subexpression in a group
+- <code><b>(?:</b><i>subexpression</i><b>)</b></code> – non-capturing group
 
 ## Options
 

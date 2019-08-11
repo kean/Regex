@@ -112,6 +112,24 @@ class CapturingGroupsTests: XCTestCase {
         XCTAssertEqual(match.fullMatch, "the red queen")
         XCTAssertEqual(match.groups, ["red queen", "red", "queen"])
     }
+
+    // MARK: Non-Capturing Groups
+
+    func testNonCapturingGroup() throws {
+        let pattern = #"the (?:(red|white) (king|queen))"#
+        let string = "the red queen"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string)
+
+        guard matches.count == 1 else {
+            return XCTFail("Invalid number of matches")
+        }
+
+        let match = matches[0]
+        XCTAssertEqual(match.fullMatch, "the red queen")
+        XCTAssertEqual(match.groups, ["red", "queen"])
+    }
 }
 
 class GroupsWithQuantifiersTests: XCTestCase {
