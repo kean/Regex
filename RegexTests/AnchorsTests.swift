@@ -233,6 +233,22 @@ class MatchFromBothEndsTests: XCTestCase {
     }
 }
 
+// \G
+class MatchWherePreviousMatchEndedTests: XCTestCase {
+
+    func testContiguosMatches() throws {
+        let pattern = #"\G(\w+\s?\w*),?"#
+        let string = "capybara,squirrel,chipmunk,porcupine,gopher,beaver,groundhog,hamster"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.value }
+
+        // We can't currently capture groups so the match is a bit clunky.
+        XCTAssertEqual(matches, ["capybara,", "squirrel,", "chipmunk,", "porcupine,", "gopher,", "beaver,", "groundhog,", "hamster"])
+    }
+}
+
+// \b, \B
 class MatchAtWordBoundaryTests: XCTestCase {
 
     func testMatchAtWordBoundary() throws {

@@ -22,6 +22,9 @@ struct Cursor { // Not sure this is the best word
     /// The index of the current element being matched.
     var index: Int
 
+    /// An index where the previous match occured.
+    var previousMatchIndex: String.Index? = nil
+
     init(string: String, substring: Substring) {
         self.string = string
         self.substring = substring

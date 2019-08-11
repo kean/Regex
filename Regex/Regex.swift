@@ -109,6 +109,7 @@ public final class Regex {
             var cursor = Cursor(string: string, substring: substring)
             while let match = firstMatch(cursor, cache), closure(match) {
                 cursor = cursor.startingAt(match.rangeInCharacters.upperBound)
+                cursor.previousMatchIndex = match.range.upperBound
             }
         }
     }

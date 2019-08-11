@@ -241,7 +241,7 @@ extension Machine {
     /// Matches the beginning of the string (or beginning of the line when
     /// `.multiline` option is enabled).
     static var startOfString: Machine {
-        return anchor("Start of string") { cursor, _ in cursor.index == 0 }
+        return anchor("Start of string (^)") { cursor, _ in cursor.index == 0 }
     }
 
     /// Matches the beginning of the string (ignores `.multiline` option).
@@ -254,7 +254,7 @@ extension Machine {
     /// Matches the end of the string or `\n` at the end of the string
     /// (end of the line in `.multiline` mode).
     static var endOfString: Machine {
-        return anchor("End of string") { cursor, _ in
+        return anchor("End of string ($)") { cursor, _ in
             return cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")
         }
     }
@@ -278,14 +278,28 @@ extension Machine {
         }
     }
 
+    /// Match must occur at the point where the previous match ended. Ensures
+    /// that all matches are contiguous.
+    static var previousMatchEnd: Machine {
+        return anchor("Previous match end (\\G)") { cursor, _ in
+            if cursor.substring.startIndex == cursor.string.startIndex {
+                return true // There couldn't be any matches before the start index
+            }
+            guard let previousMatchIndex = cursor.previousMatchIndex else {
+                return false
+            }
+            return cursor.substring.startIndex == cursor.string.index(after: previousMatchIndex)
+        }
+    }
+
     /// The match must occur on a word boundary.
     static var wordBoundary: Machine {
-        return anchor("Word boundary") { cursor, _ in cursor.isAtWordBoundary }
+        return anchor("Word boundary (\\b)") { cursor, _ in cursor.isAtWordBoundary }
     }
 
     /// The match must occur on a non-word boundary.
     static var nonWordBoundary: Machine {
-        return anchor("Non word boundary") { cursor, _ in !cursor.isAtWordBoundary }
+        return anchor("Non word boundary (\\B)") { cursor, _ in !cursor.isAtWordBoundary }
     }
 
     private static func anchor(_ description: String, _ condition: @escaping (Cursor, Context) -> Bool) -> Machine {
