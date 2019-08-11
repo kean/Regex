@@ -65,6 +65,7 @@ Anchors specify a position in the string where a match must occur.
 - <code><b>\Z</b></code> – matches the end of the string or `\n` at the end of the string (ignores `.multiline` option)
 - <code><b>\z</b></code> – matches the end of the string (ignores `.multiline` option)
 - <code><b>\G</b></code> – match must occur at the point where the previous match ended
+- <code><b>\b</b></code> – match must occur on a boundary between a word character and a non-word character (negation: `\B`)
 
 ## Options
 
