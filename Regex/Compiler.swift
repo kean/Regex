@@ -95,7 +95,7 @@ final class Compiler {
         case "B": return .nonWordBoundary
         case "A": return .startOfStringOnly
         case "Z": return .endOfStringOnly
-        case "z": return .endOfString
+        case "z": return .endOfStringOnlyNotNewline
         default:
             if let set = try parser.readCharacterClassSpecialCharacter(c) {
                 return .characterSet(set)

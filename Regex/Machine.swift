@@ -246,7 +246,7 @@ extension Machine {
 
     /// Matches the beginning of the string (ignores `.multiline` option).
     static var startOfStringOnly: Machine {
-        return anchor("Start of string only") { cursor, _ in
+        return anchor("Start of string only (\\A)") { cursor, _ in
             cursor.index == 0 && cursor.substring.startIndex == cursor.string.startIndex
         }
     }
@@ -261,13 +261,20 @@ extension Machine {
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnly: Machine {
-        return anchor("End of string only") { cursor, _ in
+        return anchor("End of string only (\\Z)") { cursor, _ in
             guard cursor.substring.endIndex == cursor.string.endIndex ||
                 // In multiline mode `\n` are removed from the lines during preprocessing.
                 (cursor.substring.endIndex == cursor.string.index(before: cursor.string.endIndex) && cursor.string.last == "\n") else {
                     return false
             }
             return cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")
+        }
+    }
+
+    /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
+    static var endOfStringOnlyNotNewline: Machine {
+        return anchor("End of string only (\\z)") { cursor, _ in
+            return cursor.substring.endIndex == cursor.string.endIndex && cursor.isEmpty
         }
     }
 

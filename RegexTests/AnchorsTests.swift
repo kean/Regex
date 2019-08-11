@@ -150,6 +150,27 @@ class AnchorEndOfStringOnlyTests: XCTestCase {
     }
 }
 
+// \z
+class AnchorEndOfStringOnlyNotNewlineTests: XCTestCase {
+    func testEndOfStringOnly() throws {
+        let regex = try Regex(#"a\z"#)
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("a\n"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertFalse(regex.isMatch("a\nb"))
+    }
+
+    func testEndOfStringOnlyIgnoresMultilineMode() throws {
+        let regex = try Regex(#"a\z"#, [.multiline])
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("a\n"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertFalse(regex.isMatch("a\nb"))
+    }
+}
+
 class MatchFromBothEndsTests: XCTestCase {
     func testZeroOrMoreTimes() throws {
         let regex = try Regex("^a*$")
