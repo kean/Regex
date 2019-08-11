@@ -89,9 +89,26 @@ final class Compiler {
 private extension Compiler {
 
     func compilerCharacterAfterEscape() throws -> Expression {
-        guard let c = parser.readCharacter() else {
+        guard let c = parser.peak() else {
             throw Regex.Error("Pattern may not end with a trailing backslash", i)
         }
+
+        if let int = parser.readInteger() {
+            return .backreference(int-1)
+        }
+
+        _ = parser.readCharacter()
+
+        if let expression = compileSpecialCharacter(c) {
+            return expression
+        } else if let set = try parser.readCharacterClassSpecialCharacter(c) {
+            return .characterSet(set)
+        } else {
+            return .character(c)
+        }
+    }
+
+    func compileSpecialCharacter(_ c: Character) -> Expression? {
         switch c {
         case "b": return .wordBoundary
         case "B": return .nonWordBoundary
@@ -99,12 +116,7 @@ private extension Compiler {
         case "Z": return .endOfStringOnly
         case "z": return .endOfStringOnlyNotNewline
         case "G": return .previousMatchEnd
-        default:
-            if let set = try parser.readCharacterClassSpecialCharacter(c) {
-                return .characterSet(set)
-            } else {
-                return .character(c)
-            }
+        default: return nil
         }
     }
 

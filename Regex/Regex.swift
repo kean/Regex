@@ -25,7 +25,7 @@ import os.log
 public final class Regex {
     private let options: Options
     private let expression: Expression
-    private static let log: OSLog = .disabled
+    private static let log: OSLog = .default
     private var iterations = 0
 
     /// Returns the number of capture groups in the regular expression.
@@ -232,18 +232,11 @@ public extension Regex {
         let endIndex: Int
 
         init(_ cursor: Cursor) {
-            // Map matches from indexes in characters array to substring indexes.
-            func substring(_ range: Range<Int>) -> Substring {
-                let s = cursor.substring
-                let lb = s.index(s.startIndex, offsetBy: range.lowerBound)
-                let ub = s.index(s.startIndex, offsetBy: range.upperBound)
-                return s[lb..<ub]
-            }
-            self.fullMatch = substring(cursor.range.lowerBound..<cursor.index)
+            self.fullMatch = cursor.substring(cursor.range.lowerBound..<cursor.index)
             self.groups = cursor.groups
                 .sorted(by: { $0.key < $1.key }) // Sort by the index of the group
                 .map { $0.value }
-                .map(substring)
+                .map(cursor.substring)
             self.endIndex = cursor.index
         }
     }

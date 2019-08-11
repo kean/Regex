@@ -74,6 +74,12 @@ Grouping constructs delineate the subexpressions of a regular expression and cap
 - <code><b>(</b><i>subexpression</i><b>)</b></code> – captures a subexpression in a group
 - <code><b>(?:</b><i>subexpression</i><b>)</b></code> – non-capturing group
 
+## Backreferences
+
+Backreferences provide a convenient way to identify a repeated character or substring within a string.
+
+- <code><b>\</b><i>number</i></code> – matches the capture group at the given ordinal position e.g. `\4` matches the content of the fourth group
+
 ## Options
 
 `Regex` can be initialized with a set of options (`Regex.Options`).

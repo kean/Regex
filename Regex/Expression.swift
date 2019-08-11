@@ -281,6 +281,27 @@ extension Expression {
     }
 }
 
+// MARK: - Expression (Backreferences)
+
+extension Expression {
+    static func backreference(_ groupIndex: Int) -> Expression {
+        let expression = Expression("Backreference with index '\(groupIndex)")
+        expression.start.transitions = [
+            Transition(toState: expression.end, condition: { (cursor, context) -> Int? in
+                guard let groupRange = cursor.groups[groupIndex] else {
+                    return nil
+                }
+                let group = cursor.substring(groupRange)
+                guard cursor.remainingSubstring.hasPrefix(group) else {
+                    return nil
+                }
+                return groupRange.count
+            }, perform: { _, context in context })
+        ]
+        return expression
+    }
+}
+
 // MARK: - Expression (Operations)
 
 extension Expression {

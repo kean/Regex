@@ -69,6 +69,16 @@ final class Parser {
         return nil
     }
 
+    /// Reads characters while the closure returns true.
+    func read(while closure: (Character) -> Bool) -> String {
+        var string = ""
+        while i < pattern.endIndex, closure(pattern[i]) {
+            string.append(pattern[i])
+            i += 1
+        }
+        return string
+    }
+
     /// Reads the character from the end of the pattern if it matches the given
     /// character. Returns `true` if the character was read successfully.
     func readFromEnd(_ c: Character) -> Bool {
@@ -77,6 +87,20 @@ final class Parser {
         }
         pattern.removeLast()
         return true
+    }
+
+    func readInteger() -> Int? {
+        let startIndex = i
+        let digits = CharacterSet.decimalDigits
+        let string = read(while: { digits.contains($0) })
+        guard !string.isEmpty else {
+            return nil
+        }
+        guard let int = Int(string) else {
+            i = startIndex
+            return nil
+        }
+        return int
     }
 
     /// We encountered `[`, read a character group, e.g. [abc], [^ab]
