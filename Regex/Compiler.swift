@@ -17,8 +17,6 @@ final class Compiler {
         self.options = options
     }
 
-    private let keywords: Set<Character> = Set(["(", ")", "|", "*", "+", "?", "{", "}", ".", "[", "]", "\\", "/", "$"])
-
     func compile() throws -> Machine {
         Machine.nextId = 0 // Id are used for logging
 
