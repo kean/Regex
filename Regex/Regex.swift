@@ -148,7 +148,7 @@ public final class Regex {
         let isBranching = state.transitions.count > 1
 
         for transition in state.transitions {
-            guard transition.condition(cursor, context) else {
+            guard let consumed = transition.condition(cursor, context) else {
                 os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \("❌")")
                 continue
             }
@@ -159,9 +159,7 @@ public final class Regex {
 
             let context = transition.perform(cursor, context)
             var newCursor = cursor
-            if !transition.isEpsilon {
-                newCursor.index += 1 // Consume a character
-            }
+            newCursor.index += consumed // Consume as many characters as need (zero for epsilon transitions)
             let match = firstMatch(newCursor, context, transition.toState, cache, isBranching ? level + 1 : level)
 
             if isBranching {

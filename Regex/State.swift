@@ -41,11 +41,9 @@ struct Transition: CustomStringConvertible {
     /// A state into which the transition is performed.
     let toState: State
 
-    /// If true, transition doesn't consume a character when performed.
-    let isEpsilon: Bool
-
     /// Determines whether the transition is possible in the given context.
-    let condition: (Cursor, Context) -> Bool
+    /// Returns `nil` if not possible, otherwise returns number of elements to consume.
+    let condition: (Cursor, Context) -> Int?
 
     /// Adds a chance for transition to update update current state.
     let perform: (Cursor, Context) -> (Context)
@@ -56,12 +54,14 @@ struct Transition: CustomStringConvertible {
     static func consuming(_ toState: State, _ match: @escaping (Character) -> Bool) -> Transition {
         return Transition(
             toState: toState,
-            isEpsilon: false,
             condition: { cursor, _ in
                 guard let character = cursor.character else {
-                    return false
+                    return nil
                 }
-                return match(character)
+                guard match(character) else {
+                    return nil
+                }
+                return 1 // Consume one character
             }, perform: { _, context in context }
         )
     }
@@ -73,13 +73,15 @@ struct Transition: CustomStringConvertible {
     static func epsilon(_ toState: State,
                         perform: @escaping (Cursor, Context) -> Context = { _, context in context },
                         _ condition: @escaping (Cursor, Context) -> Bool = { _, _ in true }) -> Transition {
-        return Transition(toState: toState, isEpsilon: true, condition: condition, perform: perform)
+        return Transition(toState: toState, condition: { cursor, context in
+            return condition(cursor, context) ? 0 : nil
+        }, perform: perform)
     }
 
     // MARK: CustomStringConvertible
 
     var description: String {
-        return "\(isEpsilon ? "Epsilon" : "Transition") to \(toState)"
+        return "Transition to \(toState)"
     }
 }
 
