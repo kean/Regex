@@ -57,9 +57,10 @@ class AnchorMatchBeginningOfStringTests: XCTestCase {
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertFalse(regex.isMatch("ca"))
     }
+}
 
-    // MARK: \A (Beginning of String Only)
-
+// \A
+class AnchorBeginningOfStringOnlyTests: XCTestCase {
     func testBeginningOfStringOnly() throws {
         let regex = try Regex(#"\Aa"#)
 
@@ -117,6 +118,35 @@ class AnchorMatchEndOfStringTests: XCTestCase {
 
         XCTAssertTrue(regex.isMatch("a\n"))
         XCTAssertTrue(regex.isMatch("a\nb"))
+    }
+}
+
+// \Z
+class AnchorEndOfStringOnlyTests: XCTestCase {
+    func testEndOfStringOnly() throws {
+        let regex = try Regex(#"a\Z"#)
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch("a\n"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertFalse(regex.isMatch("a\nb"))
+    }
+
+    func testEndOfStringMultilineMode() throws {
+        let regex = try Regex(#"a$"#, [.multiline])
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertTrue(regex.isMatch("a\nb"))
+    }
+
+    func testEndOfStringOnlyIgnoresMultilineMode() throws {
+        let regex = try Regex(#"a\Z"#, [.multiline])
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch("a\n"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertFalse(regex.isMatch("a\nb"))
     }
 }
 
