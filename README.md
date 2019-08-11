@@ -24,12 +24,12 @@ Retrieve one or all occurences text that matches the regular expression by calli
 
 ```swift
 for match in regex.matches("<h1>Title</h1>\n<p>Text</p>") {
-	print(match.value)
-	// Prints ["<h1>", "</h1>", "<p>", "</p>"]
+    print(match.value)
+    // Prints ["<h1>", "</h1>", "<p>", "</p>"]
 }
 ```
 
-# Supported Features
+# Features
 
 ## Character Classes
 
@@ -43,13 +43,15 @@ A character class matches any one of a set of characters.
 - <code><b>\s</b></code> - matches any whitespace characte (negation: <code><b>\S</b></code>)
 - <code><b>\d</b></code> - matches any decimal digit (negation: <code><b>\D</b></code>)
 - <code><b>\z</b></code> - matches end of string (negation: <code><b>\Z</b></code>)
-- <code><b>\p{</b><i>name</i><b>}</code></b> - matches characters from the given unicode category, e.g. `\p{P}` for punctuation characters (only categories supported by `CharacterSet` are currently supported) (negation: <code><b>\P</b></code>)
+- <code><b>\p{</b><i>name</i><b>}</code></b> - matches characters from the given unicode category, e.g. `\p{P}` for punctuation characters (supported categories: `P`, `Lt`, `Ll`, `N`, `S`) (negation: <code><b>\P</b></code>)
 
 ## Character Escapes
 
-The backslash (<code>\\</code>) either indicates that the character that follows is a special character, e.g. `\b` indicates a word boundary, or that the keyword should be intepreted literally, e.g. `\{` matches the opening bracket.
+The backslash (<code>\\</code>) either indicates that the character that follows is a special character or that the keyword should be intepreted literally.
 
-- <code><b>\u{</b><i>nnnn</i><b>}</b></code> – matches a UTF-16 code unit, e.g. `\u0020` matches escape (Swift-specific feature)
+- <code><b>\\</b><i>keyword</i></code> – interprets the keyword literally, e.g. `\{` matches the opening bracket
+- <code><b>\\<i></b>special_character</i></code> – interprets the special character, e.g. `\b` matches word boundary (more info in "Anchors")
+- <code><b>\\u{</b><i>nnnn</i><b>}</b></code> – matches a UTF-16 code unit, e.g. `\u0020` matches escape (Swift-specific feature)
 
 ## Options
 
@@ -58,6 +60,12 @@ The backslash (<code>\\</code>) either indicates that the character that follows
 - `.caseInsensitive` – match letters in the pattern independent of case.
 - `.multiline` –  control the behavior of `^` and `$` anchors. By default, these match at the start and end of the input text. If this flag is set, will match at the start and end of each line within the input text.
 - `.dotMatchesLineSeparators` – allow `.` to match any character, including line separators.
+
+# Unsupported Features
+
+- Most unicode categories are not suppport, e.g.`\p{Sc}` (currency symbols) is not supported
+- Character class subtraction, e.g. `[a-z-[b-f]]`
+- Named blocks, e.g. `\p{IsGreek}`
 
 # References
 
