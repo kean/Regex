@@ -69,7 +69,6 @@ final class Parser {
     }
 
     /// We encountered `[`, read a character group, e.g. [abc], [^ab]
-    /// - warning: doesn't support emoji.
     func readCharacterSet() throws -> CharacterSet {
         let openingBracketIndex = i - 1
 
@@ -83,16 +82,6 @@ final class Parser {
 
         // Read the characters until the group is closed.
         var set = CharacterSet()
-
-        func insert(_ c: Character) throws {
-            // TODO: this is a temporary limitation, need to figure out a better approach
-            guard c.unicodeScalars.count < 2 else {
-                throw Regex.Error("Character \(c) is not supported", i - 1)
-            }
-            for scalar in c.unicodeScalars {
-                set.insert(scalar)
-            }
-        }
 
         while let c = readCharacter() {
             switch c {
@@ -108,7 +97,7 @@ final class Parser {
                 if let specialSet = try readCharacterClassSpecialCharacter(c) {
                     set.formUnion(specialSet)
                 } else {
-                    try insert(c)
+                    set.insert(c)
                 }
             case "/":
                 throw Regex.Error("An unescaped delimiter must be escaped with a backslash", i-1)
@@ -116,7 +105,7 @@ final class Parser {
                 if let range = try readCharacterRange(startingWith: c) {
                     set.insert(charactersIn: range)
                 } else {
-                    try insert(c)
+                    set.insert(c)
                 }
             }
         }

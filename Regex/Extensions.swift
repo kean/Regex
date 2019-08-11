@@ -11,8 +11,17 @@ extension CharacterSet {
     static let word = CharacterSet.alphanumerics
         .union(CharacterSet(charactersIn: "_"))
 
+    /// Insert all the individual unicode scalars which the character
+    /// consists of.
+    mutating func insert(_ c: Character) {
+        for scalar in c.unicodeScalars {
+            insert(scalar)
+        }
+    }
+
+    /// Returns true if all of the unicode scalars in the given character
+    /// are in the characer set.
     func contains(_ c: Character) -> Bool {
-        // TODO: this probablhy isn't correct in certain scenarios
         return c.unicodeScalars.allSatisfy(contains)
     }
 }

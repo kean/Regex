@@ -20,7 +20,7 @@ Use `isMatch(_:)` method to check if the regular expression patterns occurs in t
 regex.isMatch("<h1>Title</h1>")
 ```
 
-Retrieve one or all occurences text that matches the regular expression by calling `matched(in:)` method. Each match contains a range in the input string.
+Retrieve one or all occurrences text that matches the regular expression by calling `matched(in:)` method. Each match contains a range in the input string.
 
 ```swift
 for match in regex.matches("<h1>Title</h1>\n<p>Text</p>") {
@@ -36,18 +36,20 @@ for match in regex.matches("<h1>Title</h1>\n<p>Text</p>") {
 A character class matches any one of a set of characters.
 
 - <code><b>[</b><i>character_group</i><b>]</b></code> – matches any single character in *character_group*, e.g. `[ae]`
-- <code><b>[^</b><i>character_group</i><b>]</b></code> – negation, matches any single character taht is not in *character_group*, e.g. `[^ae]`
-- <code><b>[</b><i>first</i><b>-</b><i>last</i><b>]</b></code> – character range, matches any single character in the given range from *fisrt* to *last*, e.g. `[a-z]`
+- <code><b>[^</b><i>character_group</i><b>]</b></code> – negation, matches any single character that is not in *character_group*, e.g. `[^ae]`
+- <code><b>[</b><i>first</i><b>-</b><i>last</i><b>]</b></code> – character range, matches any single character in the given range from *first* to *last*, e.g. `[a-z]`
 - <code><b>.</b></code> – wildcard, matches any single character except `\n`
 - <code><b>\w</b></code> - matches any word character (negation: <code><b>\W</b></code>)
-- <code><b>\s</b></code> - matches any whitespace characte (negation: <code><b>\S</b></code>)
+- <code><b>\s</b></code> - matches any whitespace character (negation: <code><b>\S</b></code>)
 - <code><b>\d</b></code> - matches any decimal digit (negation: <code><b>\D</b></code>)
 - <code><b>\z</b></code> - matches end of string (negation: <code><b>\Z</b></code>)
 - <code><b>\p{</b><i>name</i><b>}</code></b> - matches characters from the given unicode category, e.g. `\p{P}` for punctuation characters (supported categories: `P`, `Lt`, `Ll`, `N`, `S`) (negation: <code><b>\P</b></code>)
 
+> Characters consisting of **multiple unicode scalars** are interpreted as single characters, e.g. pattern  `"🇺🇸+"` matches `"🇺🇸"` and  `"🇺🇸🇺🇸"` but not `"🇸🇸"`. But when used inside character group, such characters are interpreted as individual unicode scalars, e.g. pattern `"[🇺🇸]"` matches `"🇺🇸"` and `"🇸🇸"` which consist of the same scalars.
+
 ## Character Escapes
 
-The backslash (<code>\\</code>) either indicates that the character that follows is a special character or that the keyword should be intepreted literally.
+The backslash (<code>\\</code>) either indicates that the character that follows is a special character or that the keyword should be interpreted literally.
 
 - <code><b>\\</b><i>keyword</i></code> – interprets the keyword literally, e.g. `\{` matches the opening bracket
 - <code><b>\\<i></b>special_character</i></code> – interprets the special character, e.g. `\b` matches word boundary (more info in "Anchors")
@@ -63,7 +65,7 @@ The backslash (<code>\\</code>) either indicates that the character that follows
 
 # Unsupported Features
 
-- Most unicode categories are not suppport, e.g.`\p{Sc}` (currency symbols) is not supported
+- Most unicode categories are not support, e.g.`\p{Sc}` (currency symbols) is not supported
 - Character class subtraction, e.g. `[a-z-[b-f]]`
 - Named blocks, e.g. `\p{IsGreek}`
 

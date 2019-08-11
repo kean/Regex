@@ -158,6 +158,94 @@ class CharacterGroupsTests: XCTestCase {
     }
 }
 
+class CharactersWithMultipleUnicodeScalarsTests: XCTestCase {
+
+    func testCharacterLiteral() throws {
+        let regex = try Regex("🇺🇸")
+
+        XCTAssertTrue(regex.isMatch("🇺🇸"))
+        XCTAssertFalse(regex.isMatch("🇸🇸"))
+        XCTAssertFalse(regex.isMatch("🇸"))
+        XCTAssertFalse(regex.isMatch("🇺"))
+        XCTAssertFalse(regex.isMatch("🇦🇺"))
+        XCTAssertFalse(regex.isMatch("🇦"))
+    }
+
+    func testCharacterLiteralWithQuantifier() throws {
+        let regex = try Regex("🇺🇸+")
+
+        XCTAssertTrue(regex.isMatch("🇺🇸"))
+        XCTAssertTrue(regex.isMatch("🇺🇸🇺🇸"))
+        XCTAssertFalse(regex.isMatch("🇸🇸"))
+        XCTAssertFalse(regex.isMatch("🇸"))
+        XCTAssertFalse(regex.isMatch("🇺"))
+        XCTAssertFalse(regex.isMatch("🇦🇺"))
+        XCTAssertFalse(regex.isMatch("🇦"))
+    }
+
+    func testCharacterInsideCharacterGroup() throws {
+        let regex = try Regex("[🇺🇸]")
+
+        XCTAssertTrue(regex.isMatch("🇺🇸"))
+        XCTAssertTrue(regex.isMatch("🇸🇸"))
+        XCTAssertTrue(regex.isMatch("🇸"))
+        XCTAssertTrue(regex.isMatch("🇺"))
+        XCTAssertFalse(regex.isMatch("🇦🇺"))
+        XCTAssertFalse(regex.isMatch("🇦"))
+    }
+
+    // MARK: NSRegularExpression (reference)
+
+    func testFoundationCharacterLiteral() throws {
+        let regex = try NSRegularExpression(pattern: "🇺🇸")
+
+        func isMatch(_ s: String) -> Bool {
+            let range = NSRange(s.startIndex..<s.endIndex, in: s)
+            return regex.firstMatch(in: s, options: [], range: range) != nil
+        }
+
+        XCTAssertTrue(isMatch("🇺🇸"))
+        XCTAssertFalse(isMatch("🇸🇸"))
+        XCTAssertFalse(isMatch("🇸"))
+        XCTAssertFalse(isMatch("🇺"))
+        XCTAssertFalse(isMatch("🇦🇺"))
+        XCTAssertFalse(isMatch("🇦"))
+    }
+
+    func testFoundationLiteralWithQuantifier() throws {
+        let regex = try NSRegularExpression(pattern: "🇺🇸+")
+
+        func isMatch(_ s: String) -> Bool {
+            let range = NSRange(s.startIndex..<s.endIndex, in: s)
+            return regex.firstMatch(in: s, options: [], range: range) != nil
+        }
+
+        XCTAssertTrue(isMatch("🇺🇸"))
+        XCTAssertTrue(isMatch("🇺🇸🇺🇸"))
+        XCTAssertFalse(isMatch("🇸🇸"))
+        XCTAssertFalse(isMatch("🇸"))
+        XCTAssertFalse(isMatch("🇺"))
+        XCTAssertFalse(isMatch("🇦🇺"))
+        XCTAssertFalse(isMatch("🇦"))
+    }
+
+    func testFoundationCharacterInsideCharacterGroup() throws {
+        let regex = try NSRegularExpression(pattern: "[🇺🇸]")
+
+        func isMatch(_ s: String) -> Bool {
+            let range = NSRange(s.startIndex..<s.endIndex, in: s)
+            return regex.firstMatch(in: s, options: [], range: range) != nil
+        }
+
+        XCTAssertTrue(isMatch("🇺🇸"))
+        XCTAssertTrue(isMatch("🇸🇸"))
+        XCTAssertTrue(isMatch("🇸"))
+        XCTAssertTrue(isMatch("🇺"))
+        XCTAssertTrue(isMatch("🇦🇺")) // Not sure why they match this
+        XCTAssertFalse(isMatch("🇦"))
+    }
+}
+
 class CharacterClassesRangesTests: XCTestCase {
 
     func testAlphabet() throws {
