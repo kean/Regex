@@ -6,7 +6,7 @@ import Foundation
 
 // MARK: - Expression
 
-/// Represents a regular expression compiled to a finite state machine.
+/// A convenience API for manipulating states.
 struct Expression {
     private let id: Int
     let start: State
@@ -266,6 +266,20 @@ private extension Cursor {
     }
 }
 
+// MARK: - Expression (Group)
+
+extension Expression {
+    static func group(_ expression: Expression, isCapturing: Bool) -> Expression {
+        let group = Expression(isCapturing ? "Capturing group" : "Non-capturing group")
+        if isCapturing {
+            group.start.info = .group(.init(capturingEndState: group.end))
+        }
+        group.start.transitions = [.epsilon(expression.start)]
+        expression.end.transitions = [.epsilon(group.end)]
+        return group
+    }
+}
+
 // MARK: - Expression (Operations)
 
 extension Expression {
@@ -299,5 +313,15 @@ extension Expression {
 
     static func alternate(_ lhs: Expression, _ rhs: Expression) -> Expression {
         return alternate([lhs, rhs])
+    }
+}
+
+// MARK: - ExpressionInfo
+
+enum ExpressionInfo {
+    case group(Group)
+
+    struct Group {
+        unowned var capturingEndState: State?
     }
 }

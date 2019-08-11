@@ -140,12 +140,7 @@ private extension Compiler {
             throw Regex.Error("Unmatched closing parentheses", i)
         }
 
-        let group = Expression(info.isCapturing ? "Capturing group" : "Non-capturing group")
-        if info.isCapturing {
-            group.start.capturingEndState = group.end // Mark the state as capturing
-        }
-        group.start.transitions = [.epsilon(expression.start)]
-        expression.end.transitions = [.epsilon(group.end)]
+        let group = Expression.group(expression, isCapturing: info.isCapturing)
 
         stack.append(.expression(group))
     }

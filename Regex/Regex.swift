@@ -56,7 +56,7 @@ public final class Regex {
             let compiler = Compiler(pattern, options)
             self.expression = try compiler.compile()
             self.numberOfCaptureGroups = expression.allStates()
-                .filter { $0.capturingEndState != nil }
+                .filter { if case .group? = $0.info { return true } else { return false } }
                 .count
             self.options = options
             os_log(.default, log: Regex.log, "Expression: \n\n%{PUBLIC}@", expression.description)
@@ -170,7 +170,9 @@ public final class Regex {
 
             if var match = match {
                 match.groupEndIndexes[state] = cursor.index
-                if let endState = state.capturingEndState, let endIndex = match.groupEndIndexes[endState] {
+                if case let .group(group)? = state.info,
+                    let endState = group.capturingEndState,
+                    let endIndex = match.groupEndIndexes[endState] {
                     match.groups.append(cursor.index..<endIndex)
                     // Make sure we don't override the captured groups in case the group has quantifiers
                     match.groupEndIndexes[endState] = nil
