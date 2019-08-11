@@ -22,22 +22,14 @@ import os.log
 //   Alternation Constructs
 //
 // | - match either left side or right side
-//
-// Implementation Details
-// ======================
-//
-// The key ideas behind the implementation are:
-//
-// - Every Regex can be transformed to State Machine
-// - State Machine cab be executed using backtracking
-//
-// See https://swtch.com/~rsc/regexp/regexp1.html for more info.
-//
 public final class Regex {
     private let options: Options
-    private let machine: Machine
+    private let expression: Expression
     private static let log: OSLog = .disabled
     private var iterations = 0
+
+    /// Returns the number of capture groups in the regular expression.
+    public let numberOfCaptureGroups: Int
 
     public struct Options: OptionSet {
         public let rawValue: Int
@@ -62,9 +54,12 @@ public final class Regex {
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
             let compiler = Compiler(pattern, options)
-            self.machine = try compiler.compile()
+            self.expression = try compiler.compile()
+            self.numberOfCaptureGroups = expression.allStates()
+                .filter { $0.capturingEndState != nil }
+                .count
             self.options = options
-            os_log(.default, log: Regex.log, "Machine: \n\n%{PUBLIC}@", machine.description)
+            os_log(.default, log: Regex.log, "Expression: \n\n%{PUBLIC}@", expression.description)
         } catch {
             var error = error as! Error
             error.pattern = pattern // Attach additional context
@@ -108,8 +103,8 @@ public final class Regex {
             let cache = Cache()
             var cursor = Cursor(string: string, substring: substring)
             while let match = firstMatch(cursor, cache), closure(match) {
-                cursor = cursor.startingAt(match.rangeInCharacters.upperBound)
-                cursor.previousMatchIndex = match.range.upperBound
+                cursor = cursor.startingAt(match.match.endIndex)
+                cursor.previousMatchIndex = match.fullMatch.endIndex
             }
         }
     }
@@ -127,20 +122,22 @@ public final class Regex {
         // If the input string is empty, we still need to run the regex once to verify
         // that the empty string matches, thus `isEmpty` check.
         for i in (cursor.characters.isEmpty ? 0..<1 : cursor.range) {
-            if let match = firstMatch(cursor.startingAt(i), [:], machine.start, cache) {
-                return match
+            if let match = firstMatch(cursor.startingAt(i), [:], expression.start, cache) {
+                return Match(match, cursor.substring, i)
             }
         }
         return nil
     }
 
     // A simple backtracking implementation with cache.
-    private func firstMatch(_ cursor: Cursor, _ context: Context, _ state: State, _ cache: Cache, _ level: Int = 0) -> Match? {
+    private func firstMatch(_ cursor: Cursor, _ context: Context, _ state: State, _ cache: Cache, _ level: Int = 0) -> IntemediateMatch? {
         iterations += 1
         os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(state)")
 
-        guard !state.isEnd else {
-            return Match(cursor) // Found a match!
+        guard !state.isEnd else { // Found a match
+            var match = IntemediateMatch(endIndex: cursor.index)
+            match.groupEndIndexes[state] = cursor.index
+            return match
         }
 
         let key = Cache.Key(index: cursor.index, state: state, context: context)
@@ -160,18 +157,24 @@ public final class Regex {
                 os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] ᛦ")
             }
 
-            let context = transition.perform(context)
-            var cursor = cursor
+            let context = transition.perform(cursor, context)
+            var newCursor = cursor
             if !transition.isEpsilon {
-                cursor.index += 1 // Consume a character
+                newCursor.index += 1 // Consume a character
             }
-            let match = firstMatch(cursor, context, transition.toState, cache, isBranching ? level + 1 : level)
+            let match = firstMatch(newCursor, context, transition.toState, cache, isBranching ? level + 1 : level)
 
             if isBranching {
-                os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")
+                os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(newCursor.index), \(newCursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")
             }
 
-            if let match = match {
+            if var match = match {
+                match.groupEndIndexes[state] = cursor.index
+                if let endState = state.capturingEndState, let endIndex = match.groupEndIndexes[endState] {
+                    match.groups.append(cursor.index..<endIndex)
+                    // Make sure we don't override the captured groups in case the group has quantifiers
+                    match.groupEndIndexes[endState] = nil
+                }
                 cache[key] = .match(match)
                 return match
             }
@@ -192,10 +195,10 @@ private final class Cache {
     enum Entry {
         // TODO: I don't actually see scenarios where storing matches in
         // cache is useful, should probably be simplified.
-        case match(Regex.Match)
+        case match(IntemediateMatch)
         case failed
 
-        func get() -> Regex.Match? {
+        func get() -> IntemediateMatch? {
             switch self {
             case let .match(match): return match
             case .failed: return nil
@@ -215,18 +218,39 @@ private final class Cache {
 
 public extension Regex {
     struct Match {
-        public let value: Substring
-        public let range: Range<String.Index>
-        let rangeInCharacters: Range<Int>
+        public let fullMatch: Substring
+        public let groups: [Substring]
 
-        init(_ cursor: Cursor) {
-            let string = cursor.substring
-            let lb = string.index(string.startIndex, offsetBy: cursor.range.lowerBound)
-            let ub = string.index(string.startIndex, offsetBy: cursor.index)
-            self.range = lb..<ub
-            self.value = string[range]
-            self.rangeInCharacters =  cursor.range.lowerBound..<cursor.index
+        fileprivate let match: IntemediateMatch
+
+        fileprivate init(_ match: IntemediateMatch, _ string: Substring, _ startIndex: Int) {
+            // Map matches from indexes in characters array to substring indexes.
+            func substring(_ range: Range<Int>) -> Substring {
+                let lb = string.index(string.startIndex, offsetBy: range.lowerBound)
+                let ub = string.index(string.startIndex, offsetBy: range.upperBound)
+                return string[lb..<ub]
+            }
+            self.fullMatch = substring(startIndex..<match.endIndex)
+            self.groups = Array(match.groups.map(substring).reversed())
+            self.match = match
         }
+    }
+}
+
+/// An intermediate match representation which operates with indexes within
+/// the characters array.
+private struct IntemediateMatch {
+    /// End index of the match.
+    let endIndex: Int
+
+    /// Captured groups.
+    var groups = [Range<Int>]()
+
+    /// Indexes where the group with the given start state was captured.
+    var groupEndIndexes = [State: Int]()
+
+    init(endIndex: Int) {
+        self.endIndex = endIndex
     }
 }
 

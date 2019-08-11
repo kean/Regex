@@ -35,7 +35,7 @@ class OptionsTests: XCTestCase {
         """
 
         let regex = try Regex(pattern, [.multiline])
-        let matches = regex.matches(in: string).map { $0.value }
+        let matches = regex.matches(in: string).map { $0.fullMatch }
 
         XCTAssertEqual(matches, ["1", "2"])
     }
@@ -50,7 +50,7 @@ class OptionsTests: XCTestCase {
         """
 
         let regex = try Regex(pattern, [.dotMatchesLineSeparators])
-        let matches = regex.matches(in: string).map { $0.value }
+        let matches = regex.matches(in: string).map { $0.fullMatch }
 
         XCTAssertEqual(matches, ["This is one line and\nthis is the second."])
     }
@@ -63,7 +63,7 @@ class OptionsTests: XCTestCase {
         """
 
         let regex = try Regex(pattern, [.dotMatchesLineSeparators, .multiline])
-        let matches = regex.matches(in: string).map { $0.value }
+        let matches = regex.matches(in: string).map { $0.fullMatch }
 
         XCTAssertEqual(matches, ["This is one line and", "this is the second."])
     }
@@ -76,7 +76,7 @@ class OptionsTests: XCTestCase {
         """
 
         let regex = try Regex(pattern)
-        let matches = regex.matches(in: string).map { $0.value }
+        let matches = regex.matches(in: string).map { $0.fullMatch }
 
         XCTAssertEqual(matches, ["This is one line and"])
     }

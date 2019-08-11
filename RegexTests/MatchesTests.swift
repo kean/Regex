@@ -20,16 +20,16 @@ class MatchesTests: XCTestCase {
 
         do {
             let match = matches[0]
-            XCTAssertEqual(match.value, "a")
-            XCTAssertEqual(match.range.lowerBound, string.index(offsetBy: 0))
-            XCTAssertEqual(match.range.upperBound, string.index(offsetBy: 1))
+            XCTAssertEqual(match.fullMatch, "a")
+            XCTAssertEqual(match.fullMatch.startIndex, string.index(offsetBy: 0))
+            XCTAssertEqual(match.fullMatch.endIndex, string.index(offsetBy: 1))
         }
 
         do {
             let match = matches[1]
-            XCTAssertEqual(match.value, "a")
-            XCTAssertEqual(match.range.lowerBound, string.index(offsetBy: 4))
-            XCTAssertEqual(match.range.upperBound, string.index(offsetBy: 5))
+            XCTAssertEqual(match.fullMatch, "a")
+            XCTAssertEqual(match.fullMatch.startIndex, string.index(offsetBy: 4))
+            XCTAssertEqual(match.fullMatch.endIndex, string.index(offsetBy: 5))
         }
     }
 
@@ -46,16 +46,16 @@ class MatchesTests: XCTestCase {
 
         do {
             let match = matches[0]
-            XCTAssertEqual(match.value, "a")
-            XCTAssertEqual(match.range.lowerBound, string.index(offsetBy: 0))
-            XCTAssertEqual(match.range.upperBound, string.index(offsetBy: 1))
+            XCTAssertEqual(match.fullMatch, "a")
+            XCTAssertEqual(match.fullMatch.startIndex, string.index(offsetBy: 0))
+            XCTAssertEqual(match.fullMatch.endIndex, string.index(offsetBy: 1))
         }
 
         do {
             let match = matches[1]
-            XCTAssertEqual(match.value, "a")
-            XCTAssertEqual(match.range.lowerBound, string.index(offsetBy: 4))
-            XCTAssertEqual(match.range.upperBound, string.index(offsetBy: 5))
+            XCTAssertEqual(match.fullMatch, "a")
+            XCTAssertEqual(match.fullMatch.startIndex, string.index(offsetBy: 4))
+            XCTAssertEqual(match.fullMatch.endIndex, string.index(offsetBy: 5))
         }
     }
 }

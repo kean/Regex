@@ -67,6 +67,12 @@ Anchors specify a position in the string where a match must occur.
 - <code><b>\G</b></code> – match must occur at the point where the previous match ended
 - <code><b>\b</b></code> – match must occur on a boundary between a word character and a non-word character (negation: `\B`)
 
+## Grouping Constructs
+
+Grouping constructs delineate the subexpressions of a regular expression and capture the substrings of an input string.
+
+<code><b>(</b>subexpression<b>)</b></code> – captures a subexpression in a group
+
 ## Options
 
 `Regex` can be initialized with a set of options (`Regex.Options`).

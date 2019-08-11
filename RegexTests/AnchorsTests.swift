@@ -241,7 +241,7 @@ class MatchWherePreviousMatchEndedTests: XCTestCase {
         let string = "capybara,squirrel,chipmunk,porcupine,gopher,beaver,groundhog,hamster"
 
         let regex = try Regex(pattern)
-        let matches = regex.matches(in: string).map { $0.value }
+        let matches = regex.matches(in: string).map { $0.fullMatch }
 
         // We can't currently capture groups so the match is a bit clunky.
         XCTAssertEqual(matches, ["capybara,", "squirrel,", "chipmunk,", "porcupine,", "gopher,", "beaver,", "groundhog,", "hamster"])

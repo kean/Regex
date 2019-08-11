@@ -9,7 +9,6 @@ final class Compiler {
     private let parser: Parser
     private let options: Regex.Options
 
-    /// A stack of machines, each machine represents a single expression.
     private var stack = [StackEntry]()
 
     init(_ pattern: String, _ options: Regex.Options) {
@@ -17,13 +16,13 @@ final class Compiler {
         self.options = options
     }
 
-    func compile() throws -> Machine {
-        Machine.nextId = 0 // Id are used for logging
+    func compile() throws -> Expression {
+        Expression.nextId = 0 // Id are used for logging
 
         let shouldMatchStart = parser.read("^")
 
         if shouldMatchStart {
-            stack.append(.machine(.startOfString))
+            stack.append(.expression(.startOfString))
         }
 
         while let c = parser.readCharacter() {
@@ -40,34 +39,34 @@ final class Compiler {
 
             // Quantifiers
             case "*": // Zero or more
-                try addQuantifierForLastMachine(Machine.zeroOrMore)
+                try addQuantifier(Expression.zeroOrMore)
             case "+": // One or more
-                try addQuantifierForLastMachine(Machine.oneOrMore)
+                try addQuantifier(Expression.oneOrMore)
             case "?": // Zero or one
-                try addQuantifierForLastMachine(Machine.noneOrOne)
+                try addQuantifier(Expression.noneOrOne)
             case "{": // Match N times
-                try addQuantifierForLastMachine {
-                    Machine.range(try parser.readRangeQuantifier(), $0)
+                try addQuantifier {
+                    Expression.range(try parser.readRangeQuantifier(), $0)
                 }
 
             // Character Classes
             case ".": // Any character
-                stack.append(.machine(.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))))
+                stack.append(.expression(.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))))
             case "[": // Start a character group
                 let set = try parser.readCharacterSet()
-                stack.append(.machine(.characterSet(set)))
+                stack.append(.expression(.characterSet(set)))
 
             // Anchors
             case "$":
-                stack.append(.machine(.endOfString))
+                stack.append(.expression(.endOfString))
 
             // Character Escapes
             case "\\":
-                let machine = try compilerCharacterAfterEscape()
-                stack.append(.machine(machine))
+                let expression = try compilerCharacterAfterEscape()
+                stack.append(.expression(expression))
 
             default: // Not a keyword, treat as a plain character
-                stack.append(.machine(.character(c)))
+                stack.append(.expression(.character(c)))
             }
         }
 
@@ -83,8 +82,11 @@ final class Compiler {
 
         return regex
     }
+}
 
-    func compilerCharacterAfterEscape() throws -> Machine {
+private extension Compiler {
+
+    func compilerCharacterAfterEscape() throws -> Expression {
         guard let c = parser.readCharacter() else {
             throw Regex.Error("Pattern may not end with a trailing backslash", i)
         }
@@ -109,50 +111,56 @@ final class Compiler {
         return parser.i - 1
     }
 
-    // MARK: Managing Machines
+    // MARK: Stack
 
-    func popMachine() throws -> Machine {
-        guard case let .machine(machine)? = stack.popLast() else {
+    func popExpression() throws -> Expression {
+        guard case let .expression(expression)? = stack.popLast() else {
             throw Regex.Error("Failed to find a matching group", i)
         }
-        return machine
+        return expression
     }
 
-    /// Map the last machine in the last group.
-    func addQuantifierForLastMachine(_ closure: (Machine) throws -> Machine) throws {
-        let last: Machine
+    /// Add quantifier to the top expression in the stack.
+    func addQuantifier(_ closure: (Expression) throws -> Expression) throws {
+        let last: Expression
         do {
-            last = try popMachine()
+            last = try popExpression()
         } catch {
             throw Regex.Error("The preceeding token is not quantifiable", i)
         }
-        stack.append(.machine(try closure(last)))
+        stack.append(.expression(try closure(last)))
     }
 
-    // MARK: Managing Machines (Grouping)
-
     func collapseLastGroup() throws {
-        let group = try collapse()
+        // Collapses the expression in the group.
+        let expression = try collapse()
+
         guard case .group? = stack.popLast() else {
             throw Regex.Error("Unmatched closing parentheses", i)
         }
-        stack.append(.machine(group))
+
+        let group = Expression("Capturing group")
+        group.start.capturingEndState = group.end // Mark the state as capturing
+        group.start.transitions = [.epsilon(expression.start)]
+        expression.end.transitions = [.epsilon(group.end)]
+
+        stack.append(.expression(group))
     }
 
     /// Collapses the items in the top group. Also collapses alternations in the
-    /// top group. Returns a single regex (machine).
-    func collapse() throws -> Machine {
-        var alternatives = [Machine]()
+    /// top group. Returns a single expression.
+    private func collapse() throws -> Expression {
+        var alternatives = [Expression]()
 
         var stop = false
         while !stop {
             stop = true
-            var machines = [Machine]()
-            while case let .machine(machine)? = stack.last {
+            var expressions = [Expression]()
+            while case let .expression(expression)? = stack.last {
                 stack.removeLast()
-                machines.append(machine)
+                expressions.append(expression)
             }
-            alternatives.append(.concatenate(machines.reversed()))
+            alternatives.append(.concatenate(expressions.reversed()))
 
             if case .alternate? = stack.last {
                 stack.removeLast()
@@ -164,14 +172,14 @@ final class Compiler {
             return alternatives[0] // Must have at least one
         }
 
-        return Machine.alternate(alternatives)
+        return Expression.alternate(alternatives)
     }
 }
 
 // MARK: - Stack
 
 private enum StackEntry {
-    case machine(Machine)
+    case expression(Expression)
     case group(index: Int) // (
     case alternate // |
 }
