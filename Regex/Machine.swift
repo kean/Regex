@@ -238,12 +238,21 @@ extension Machine {
 // MARK: - Machine (Anchors)
 
 extension Machine {
-    /// Matches the start of the string.
+    /// Matches the beginning of the string (or beginning of the line when
+    /// `.multiline` option is enabled).
     static var startOfString: Machine {
         return anchor("Start of string") { cursor, _ in cursor.index == 0 }
     }
 
-    /// Matches the end of the string.
+    /// Matches the beginnig of the string (ignores `.multiline` option).
+    static var startOfStringOnly: Machine {
+        return anchor("Start of string only") { cursor, _ in
+            cursor.index == 0 && cursor.substring.startIndex == cursor.string.startIndex
+        }
+    }
+
+    /// Matches the end of the string or `\n` at the end of the string
+    /// (end of the line in `.multiline` mode).
     static var endOfString: Machine {
         return anchor("End of string") { cursor, _ in
             cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")

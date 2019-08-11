@@ -7,8 +7,11 @@ import Foundation
 /// Cursor represents the slice in which we are performing the matching and the
 /// current index in this slice.
 struct Cursor { // Not sure this is the best word
-    /// The input string in which we are performing the search.
-    let string: Substring
+    /// The entire input string.
+    let string: String
+
+    /// The substring in which we are performing the search.
+    let substring: Substring
 
     /// The characters in the input string.
     let characters: [Character]
@@ -19,9 +22,10 @@ struct Cursor { // Not sure this is the best word
     /// The index of the current element being matched.
     var index: Int
 
-    init(string: Substring) {
+    init(string: String, substring: Substring) {
         self.string = string
-        self.characters = Array(string)
+        self.substring = substring
+        self.characters = Array(substring)
         self.range = characters.startIndex..<characters.endIndex
         self.index = characters.startIndex
     }

@@ -106,7 +106,7 @@ public final class Regex {
 
         for substring in preprocess(string) {
             let cache = Cache()
-            var cursor = Cursor(string: substring)
+            var cursor = Cursor(string: string, substring: substring)
             while let match = firstMatch(cursor, cache), closure(match) {
                 cursor = cursor.startingAt(match.rangeInCharacters.upperBound)
             }
@@ -219,7 +219,7 @@ public extension Regex {
         let rangeInCharacters: Range<Int>
 
         init(_ cursor: Cursor) {
-            let string = cursor.string
+            let string = cursor.substring
             let lb = string.index(string.startIndex, offsetBy: cursor.range.lowerBound)
             let ub = string.index(string.startIndex, offsetBy: cursor.index)
             self.range = lb..<ub

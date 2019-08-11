@@ -5,7 +5,7 @@
 import XCTest
 import Regex
 
-class AnchorMatchFromTheBeginningTests: XCTestCase {
+class AnchorMatchBeginningOfStringTests: XCTestCase {
     func testZeroOrMoreTimes() throws {
         let regex = try Regex("^a*")
 
@@ -56,6 +56,32 @@ class AnchorMatchFromTheBeginningTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("c"))
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertFalse(regex.isMatch("ca"))
+    }
+
+    // MARK: \A (Beginning of String Only)
+
+    func testBeginningOfStringOnly() throws {
+        let regex = try Regex(#"\Aa"#)
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertFalse(regex.isMatch("b\na"))
+    }
+
+    func testBeginningOfStringMultilineMode() throws {
+        let regex = try Regex(#"^a"#, [.multiline])
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertTrue(regex.isMatch("b\na"))
+    }
+
+    func testBeginningOfStringOnlyIgnoresMultilineMode() throws {
+        let regex = try Regex(#"\Aa"#, [.multiline])
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertFalse(regex.isMatch("b\na"))
     }
 }
 

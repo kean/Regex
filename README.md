@@ -60,7 +60,8 @@ The backslash (<code>\\</code>) either indicates that the character that follows
 Anchors specify a position in the string where a match must occur.
 
 - <code><b>^</b></code> – matches the beginning of the string (or beginning of the line when `.multiline` option is enabled)
-- <code><b>$</b></code> - matches the end of the string or `\n` at the end of the string (end of the line in `.multiline` mode)
+- <code><b>$</b></code> – matches the end of the string or `\n` at the end of the string (end of the line in `.multiline` mode)
+- <code><b>\A</b></code> – matches the beginnig of the string (ignores `.multiline` option)
 
 ## Options
 

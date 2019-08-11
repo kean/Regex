@@ -93,6 +93,7 @@ final class Compiler {
         switch c {
         case "b": return .wordBoundary
         case "B": return .nonWordBoundary
+        case "A": return .startOfStringOnly
         case "z": return .endOfString
         default:
             if let set = try parser.readCharacterClassSpecialCharacter(c) {
