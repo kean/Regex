@@ -81,7 +81,8 @@ final class Compiler {
             }
         }
 
-        return regex
+        // Wrap the expression into an implicit group.
+        return Expression.group(regex, isCapturing: false)
     }
 }
 

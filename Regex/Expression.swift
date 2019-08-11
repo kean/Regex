@@ -272,7 +272,8 @@ extension Expression {
     static func group(_ expression: Expression, isCapturing: Bool) -> Expression {
         let group = Expression(isCapturing ? "Capturing group" : "Non-capturing group")
         if isCapturing {
-            group.start.info = .group(.init(capturingEndState: group.end))
+            group.start.info = .groupStart
+            group.end.info = .groupEnd(.init(capturingStartState: group.start))
         }
         group.start.transitions = [.epsilon(expression.start)]
         expression.end.transitions = [.epsilon(group.end)]
@@ -319,9 +320,13 @@ extension Expression {
 // MARK: - ExpressionInfo
 
 enum ExpressionInfo {
-    case group(Group)
+    /// A capture group start.
+    case groupStart
+
+    /// A capture group end.
+    case groupEnd(Group)
 
     struct Group {
-        unowned var capturingEndState: State?
+        unowned var capturingStartState: State?
     }
 }

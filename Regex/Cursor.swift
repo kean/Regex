@@ -22,6 +22,12 @@ struct Cursor { // Not sure this is the best word
     /// The index of the current element being matched.
     var index: Int
 
+    /// Previously captured groups.
+    var groups: [Int: Range<Int>] = [:]
+
+    /// Indexes where the group with the given start state was captured.
+    var groupsStartIndexes: [State: Int] = [:]
+
     /// An index where the previous match occured.
     var previousMatchIndex: String.Index? = nil
 
