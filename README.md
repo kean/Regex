@@ -55,6 +55,13 @@ The backslash (<code>\\</code>) either indicates that the character that follows
 - <code><b>\\<i></b>special_character</i></code> – interprets the special character, e.g. `\b` matches word boundary (more info in "Anchors")
 - <code><b>\\u{</b><i>nnnn</i><b>}</b></code> – matches a UTF-16 code unit, e.g. `\u0020` matches escape (Swift-specific feature)
 
+## Anchors
+
+Anchors specify a position in the string where a match must occur.
+
+- <code><b>^</b></code> – matches the beginning of the string (or beginning of the line when `.multiline` option is enabled)
+- <code><b>$</b></code> - matches the end of the string or `\n` at the end of the string (end of the line in `.multiline` mode)
+
 ## Options
 
 `Regex` can be initialized with a set of options (`Regex.Options`).

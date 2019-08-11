@@ -245,7 +245,9 @@ extension Machine {
 
     /// Matches the end of the string.
     static var endOfString: Machine {
-        return anchor("End of string") { cursor, _ in cursor.isEmpty}
+        return anchor("End of string") { cursor, _ in
+            cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")
+        }
     }
 
     /// Matches not the end of the string.

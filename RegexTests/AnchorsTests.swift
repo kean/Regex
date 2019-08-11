@@ -8,6 +8,7 @@ import Regex
 class AnchorMatchFromTheBeginningTests: XCTestCase {
     func testZeroOrMoreTimes() throws {
         let regex = try Regex("^a*")
+
         XCTAssertTrue(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -17,6 +18,7 @@ class AnchorMatchFromTheBeginningTests: XCTestCase {
 
     func testZeroOrOneTimeZeroOrOne() throws {
         let regex = try Regex("^a?")
+
         XCTAssertTrue(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -25,6 +27,7 @@ class AnchorMatchFromTheBeginningTests: XCTestCase {
 
     func testRange() throws {
         let regex = try Regex("^a{2,4}")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -35,6 +38,7 @@ class AnchorMatchFromTheBeginningTests: XCTestCase {
 
     func testAlternation() throws {
         let regex = try Regex("^a|b")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("b"))
@@ -45,6 +49,7 @@ class AnchorMatchFromTheBeginningTests: XCTestCase {
 
     func testEither() throws {
         let regex = try Regex("^[ab]")
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("b"))
         XCTAssertTrue(regex.isMatch("ab"))
@@ -57,6 +62,7 @@ class AnchorMatchFromTheBeginningTests: XCTestCase {
 class AnchorMatchEndOfStringTests: XCTestCase {
     func testZeroOrMoreTimes() throws {
         let regex = try Regex("a*$")
+
         XCTAssertTrue(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -66,16 +72,32 @@ class AnchorMatchEndOfStringTests: XCTestCase {
 
     func testCharacters() throws {
         let regex = try Regex("ab$")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertFalse(regex.isMatch("aa"))
         XCTAssertTrue(regex.isMatch("ab"))
+    }
+
+    func testMatchesNewlineAtTheEndOfString() throws {
+        let regex = try Regex("a$")
+
+        XCTAssertTrue(regex.isMatch("a\n"))
+        XCTAssertFalse(regex.isMatch("a\nb"))
+    }
+
+    func testMatchesNewlineAtTheEndOfLine() throws {
+        let regex = try Regex("a$", [.multiline])
+
+        XCTAssertTrue(regex.isMatch("a\n"))
+        XCTAssertTrue(regex.isMatch("a\nb"))
     }
 }
 
 class MatchFromBothEndsTests: XCTestCase {
     func testZeroOrMoreTimes() throws {
         let regex = try Regex("^a*$")
+
         XCTAssertTrue(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -85,6 +107,7 @@ class MatchFromBothEndsTests: XCTestCase {
 
     func testZeroOrOneTimeZeroOrOne() throws {
         let regex = try Regex("^a?$")
+
         XCTAssertTrue(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertFalse(regex.isMatch("aa"))
@@ -93,6 +116,7 @@ class MatchFromBothEndsTests: XCTestCase {
 
     func testRange() throws {
         let regex = try Regex("^a{2,4}$")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -103,6 +127,7 @@ class MatchFromBothEndsTests: XCTestCase {
 
     func testBigRange() throws {
         let regex = try Regex("^a{12}$")
+
         XCTAssertFalse(regex.isMatch("aaaaaaaaaaa"))
         XCTAssertTrue(regex.isMatch("aaaaaaaaaaaa"))
         XCTAssertFalse(regex.isMatch("aaaaaaaaaaaaa"))
@@ -111,6 +136,7 @@ class MatchFromBothEndsTests: XCTestCase {
 
     func testCharacterSet() throws {
         let regex = try Regex("^[ab]$")
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("b"))
         XCTAssertFalse(regex.isMatch("ab"))
@@ -121,6 +147,7 @@ class MatchFromBothEndsTests: XCTestCase {
 
     func testGroupingAndZeroOrOneQuantifier() throws {
         let regex = try Regex("^a(bc)?$")
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("abc"))
         XCTAssertFalse(regex.isMatch("ab"))
@@ -133,6 +160,7 @@ class MatchAtWordBoundaryTests: XCTestCase {
 
     func testMatchAtWordBoundary() throws {
         let regex = try Regex(#"\bab\b"#)
+
         XCTAssertTrue(regex.isMatch("ab"))
         XCTAssertTrue(regex.isMatch("a ab"))
         XCTAssertTrue(regex.isMatch("ab b"))
@@ -142,6 +170,7 @@ class MatchAtWordBoundaryTests: XCTestCase {
 
     func testMatchAtWordBoundaryInverted() throws {
         let regex = try Regex(#"\Bab\B"#)
+
         XCTAssertFalse(regex.isMatch("ab"))
         XCTAssertFalse(regex.isMatch("a ab"))
         XCTAssertFalse(regex.isMatch("ab b"))

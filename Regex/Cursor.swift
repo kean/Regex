@@ -57,4 +57,9 @@ struct Cursor { // Not sure this is the best word
     var isEmpty: Bool {
         return index >= characters.endIndex
     }
+
+    /// Returns `true` if the current index is the index of the last character.
+    var isLastIndex: Bool {
+        return index == characters.endIndex - 1
+    }
 }

@@ -7,16 +7,8 @@ import os.log
 
 // MARK: - Regex
 
-// A simplified Regex implementation.
-//
 // Supported Features
 // ==================
-//
-//   Anchors
-//
-// ^ - matches the beginning of a string
-// $ - matches the end of a string
-// \b - the match must occur on a word boundary (non-word boundary: '\B')
 //
 //   Quantifiers
 //
