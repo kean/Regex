@@ -7,14 +7,6 @@ import os.log
 
 // MARK: - Regex
 
-// Supported Features
-// ==================
-//
-//   Quantifiers
-//
-//   Alternation Constructs
-//
-// | - match either left side or right side
 public final class Regex {
     private let options: Options
     private let expression: Expression

@@ -97,6 +97,10 @@ All quantifiers are **greedy** by default, they try to match as many occurrences
 
 > Warning: nesting quantifiers dramatically increases the number of comparisons that the engine performs.
 
+## Alternation
+
+- <code><b>|</b></code> – match either left side or right side
+
 ## Options
 
 `Regex` can be initialized with a set of options (`Regex.Options`).
