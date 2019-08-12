@@ -8,7 +8,7 @@ Open source regular expression implementation.
 
 Create a `Regex` object by providing a pattern and an optional set of options (`Regex.Options`):
 
-```swift
+```javascript
 let regex = try Regex(#"<\/?[\w\s]*>|<.+[\W]>"#)
 ```
 
