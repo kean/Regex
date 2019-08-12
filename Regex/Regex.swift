@@ -111,7 +111,7 @@ public final class Regex {
         // If the input string is empty, we still need to run the regex once to verify
         // that the empty string matches, thus `isEmpty` check.
         for i in (cursor.characters.isEmpty ? 0..<1 : cursor.range) {
-            if let match = firstMatch(cursor.startingAt(i), [:], regex.expression.start, cache) {
+            if let match = firstMatch(cursor.startingAt(i), regex.expression.start, cache) {
                 return match
             }
         }
@@ -119,7 +119,7 @@ public final class Regex {
     }
 
     // Find the match in the given string. Captures groups as it goes.
-    private func firstMatch(_ cursor: Cursor, _ context: Context, _ state: State, _ cache: Cache, _ level: Int = 0) -> Match? {
+    private func firstMatch(_ cursor: Cursor, _ state: State, _ cache: Cache, _ level: Int = 0) -> Match? {
         iterations += 1
         os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(state)")
 
@@ -127,7 +127,7 @@ public final class Regex {
             return Match(cursor)
         }
 
-        let key = Cache.Key(index: cursor.index, state: state, context: context)
+        let key = Cache.Key(index: cursor.index, state: state)
         if let match = cache[key] {
             return match.get()
         }
@@ -135,7 +135,7 @@ public final class Regex {
         let isBranching = state.transitions.count > 1
 
         for transition in state.transitions {
-            guard let consumed = transition.condition(cursor, context) else {
+            guard let consumed = transition.condition(cursor) else {
                 os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \("❌")")
                 continue
             }
@@ -144,7 +144,6 @@ public final class Regex {
                 os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] ᛦ")
             }
 
-            let context = transition.perform(cursor, context)
             var newCursor = cursor
 
             // Capture a group if needed
@@ -158,7 +157,7 @@ public final class Regex {
 
             newCursor.index += consumed // Consume as many characters as need (zero for epsilon transitions)
         
-            let match = firstMatch(newCursor, context, transition.toState, cache, isBranching ? level + 1 : level)
+            let match = firstMatch(newCursor, transition.toState, cache, isBranching ? level + 1 : level)
 
             if isBranching {
                 os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(newCursor.index), \(newCursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")
@@ -180,7 +179,6 @@ private extension Regex {
         struct Key: Hashable {
             let index: Int
             let state: State
-            let context: Context // TODO: verify whether this check is necessary
         }
 
         enum Entry {

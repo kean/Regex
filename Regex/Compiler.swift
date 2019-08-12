@@ -95,7 +95,7 @@ private extension Compiler {
             case .zeroOrOne:
                 return .zeroOrOne(expression)
             case let .range(range):
-                return .range(range, expression)
+                return try compile(node, range)
             }
 
         case (let match as Unit.Match):
@@ -112,6 +112,25 @@ private extension Compiler {
         default:
             fatalError("Unsupported unit")
         }
+    }
+
+    func compile(_ node: Node<UnitNode>, _ range: ClosedRange<Int>) throws -> Expression {
+        let prefix: Expression = try .concatenate((0..<range.lowerBound).map { _ in
+            try compile(node.children[0])
+        })
+        let suffix: Expression
+        if range.upperBound == Int.max {
+            suffix = .zeroOrOne(try compile(node.children[0]))
+        } else {
+            // Compile the optional matches into `x(x(x(x)?)?)?`. We use this
+            // specific form with grouping to make sure that matcher can cache
+            // the results during backtracking.
+            suffix = try range.dropLast().reduce(Expression.empty) { result, _ in
+                let expression = try compile(node.children[0])
+                return .zeroOrOne(.group(.concatenate(expression, result)))
+            }
+        }
+        return Expression.concatenate(prefix, suffix)
     }
 
     func validateBackreferences() throws {

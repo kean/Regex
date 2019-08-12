@@ -37,6 +37,13 @@ struct Expression {
         defer { nextId += 1 }
         return nextId
     }
+
+    /// Creates an empty expression.
+    static var empty: Expression {
+        let expression = Expression("Empty")
+        expression.start.transitions = [.epsilon(expression.end)]
+        return expression
+    }
 }
 
 extension Expression: CustomStringConvertible {
@@ -138,44 +145,6 @@ extension Expression {
         ]
         return quantifier
     }
-
-    /// Matches the given expression the given number of times. E.g. if you pass
-    /// the range {2,3} it will match the regex either 2 or 3 times.
-    static func range(_ range: ClosedRange<Int>, _ expression: Expression) -> Expression {
-        let quantifier = Expression("Range \(range)")
-
-        // The quantifier requires a bit of additional state which we implement
-        // using context.
-        let uuid = UUID()
-
-        quantifier.start.transitions = [
-            .epsilon(quantifier.end) { _, context in
-                let count = (context[uuid] as? Int) ?? 0
-                return range.lowerBound == 0 && count == 0
-            },
-            .epsilon(expression.start, perform: { _, context in
-                // Increment the number of times we passed throught this transition
-                // during the current execution of the state machine
-                var context = context
-                let count = (context[uuid] as? Int) ?? 0
-                context[uuid] = count + 1
-                return context
-            })
-        ]
-
-        expression.end.transitions = [
-            .epsilon(quantifier.end) { _, context in
-                let count = context[uuid] as! Int
-                return range.contains(count)
-            },
-            .epsilon(quantifier.start) { _, context in
-                let count = context[uuid] as! Int
-                return count + 1 <= range.upperBound
-            }
-        ]
-
-        return quantifier
-    }
 }
 
 // MARK: - Expression (Anchors)
@@ -184,12 +153,12 @@ extension Expression {
     /// Matches the beginning of the string (or beginning of the line when
     /// `.multiline` option is enabled).
     static var startOfString: Expression {
-        return anchor("Start of string (^)") { cursor, _ in cursor.index == 0 }
+        return anchor("Start of string (^)") { cursor in cursor.index == 0 }
     }
 
     /// Matches the beginning of the string (ignores `.multiline` option).
     static var startOfStringOnly: Expression {
-        return anchor("Start of string only (\\A)") { cursor, _ in
+        return anchor("Start of string only (\\A)") { cursor in
             cursor.index == 0 && cursor.substring.startIndex == cursor.string.startIndex
         }
     }
@@ -197,14 +166,14 @@ extension Expression {
     /// Matches the end of the string or `\n` at the end of the string
     /// (end of the line in `.multiline` mode).
     static var endOfString: Expression {
-        return anchor("End of string ($)") { cursor, _ in
+        return anchor("End of string ($)") { cursor in
             return cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnly: Expression {
-        return anchor("End of string only (\\Z)") { cursor, _ in
+        return anchor("End of string only (\\Z)") { cursor in
             guard cursor.substring.endIndex == cursor.string.endIndex ||
                 // In multiline mode `\n` are removed from the lines during preprocessing.
                 (cursor.substring.endIndex == cursor.string.index(before: cursor.string.endIndex) && cursor.string.last == "\n") else {
@@ -216,7 +185,7 @@ extension Expression {
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnlyNotNewline: Expression {
-        return anchor("End of string only (\\z)") { cursor, _ in
+        return anchor("End of string only (\\z)") { cursor in
             return cursor.substring.endIndex == cursor.string.endIndex && cursor.isEmpty
         }
     }
@@ -224,7 +193,7 @@ extension Expression {
     /// Match must occur at the point where the previous match ended. Ensures
     /// that all matches are contiguous.
     static var previousMatchEnd: Expression {
-        return anchor("Previous match end (\\G)") { cursor, _ in
+        return anchor("Previous match end (\\G)") { cursor in
             if cursor.substring.startIndex == cursor.string.startIndex {
                 return true // There couldn't be any matches before the start index
             }
@@ -237,15 +206,15 @@ extension Expression {
 
     /// The match must occur on a word boundary.
     static var wordBoundary: Expression {
-        return anchor("Word boundary (\\b)") { cursor, _ in cursor.isAtWordBoundary }
+        return anchor("Word boundary (\\b)") { cursor in cursor.isAtWordBoundary }
     }
 
     /// The match must occur on a non-word boundary.
     static var nonWordBoundary: Expression {
-        return anchor("Non word boundary (\\B)") { cursor, _ in !cursor.isAtWordBoundary }
+        return anchor("Non word boundary (\\B)") { cursor in !cursor.isAtWordBoundary }
     }
 
-    private static func anchor(_ description: String, _ condition: @escaping (Cursor, Context) -> Bool) -> Expression {
+    private static func anchor(_ description: String, _ condition: @escaping (Cursor) -> Bool) -> Expression {
         let expression = Expression(description)
         expression.start.transitions = [
             .epsilon(expression.end, condition)
@@ -287,7 +256,7 @@ extension Expression {
     static func backreference(_ groupIndex: Int) -> Expression {
         let expression = Expression("Backreference with index '\(groupIndex)")
         expression.start.transitions = [
-            Transition(toState: expression.end, condition: { (cursor, context) -> Int? in
+            Transition(toState: expression.end) { cursor -> Int? in
                 guard let groupRange = cursor.groups[groupIndex] else {
                     return nil
                 }
@@ -296,7 +265,7 @@ extension Expression {
                     return nil
                 }
                 return groupRange.count
-            }, perform: { _, context in context })
+            }
         ]
         return expression
     }
@@ -309,9 +278,7 @@ extension Expression {
     static func concatenate<S>(_ expressions: S) -> Expression
         where S: Collection, S.Element == Expression {
             guard let first = expressions.first else {
-                let expression = Expression("Empty")
-                expression.start.transitions = [.epsilon(expression.end)]
-                return expression
+                return .empty
             }
             return expressions.dropFirst().reduce(first, Expression.concatenate)
     }

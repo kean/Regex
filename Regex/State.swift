@@ -39,10 +39,7 @@ struct Transition: CustomStringConvertible {
 
     /// Determines whether the transition is possible in the given context.
     /// Returns `nil` if not possible, otherwise returns number of elements to consume.
-    let condition: (Cursor, Context) -> Int?
-
-    /// Adds a chance for transition to update update current state.
-    let perform: (Cursor, Context) -> (Context)
+    let condition: (Cursor) -> Int?
 
     // MARK: Factory
 
@@ -50,7 +47,7 @@ struct Transition: CustomStringConvertible {
     static func consuming(_ toState: State, _ match: @escaping (Character) -> Bool) -> Transition {
         return Transition(
             toState: toState,
-            condition: { cursor, _ in
+            condition: { cursor in
                 guard let character = cursor.character else {
                     return nil
                 }
@@ -58,20 +55,13 @@ struct Transition: CustomStringConvertible {
                     return nil
                 }
                 return 1 // Consume one character
-            }, perform: { _, context in context }
+            }
         )
     }
 
     /// Creates a transition which doesn't consume characters.
-    /// - parameter perform: A closure to be performed every time a
-    /// transition is performed. Allows you to map state (context). By default
-    /// returns context without modification.
-    static func epsilon(_ toState: State,
-                        perform: @escaping (Cursor, Context) -> Context = { _, context in context },
-                        _ condition: @escaping (Cursor, Context) -> Bool = { _, _ in true }) -> Transition {
-        return Transition(toState: toState, condition: { cursor, context in
-            return condition(cursor, context) ? 0 : nil
-        }, perform: perform)
+    static func epsilon(_ toState: State, _ condition: @escaping (Cursor) -> Bool = { _ in true }) -> Transition {
+        return Transition(toState: toState, condition: { condition($0) ? 0 : nil })
     }
 
     // MARK: CustomStringConvertible
@@ -80,9 +70,3 @@ struct Transition: CustomStringConvertible {
         return "Transition to \(toState)"
     }
 }
-
-/// Execution context which is passed from state to state when transitions are
-/// performed. The context is copied throughout the execution making the execution
-/// functional/stateless.
-/// - warning: Avoid using reference types in context!
-typealias Context = [AnyHashable: AnyHashable]
