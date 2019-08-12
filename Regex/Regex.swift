@@ -12,13 +12,6 @@ import os.log
 //
 //   Quantifiers
 //
-// * - match zero or more times
-// + - match one or more times
-// ? - match zero or one time
-// {n} - match exactly n times
-// {n,} - match at least n times
-// {n,m} - match from n to m times (closed range)
-//
 //   Alternation Constructs
 //
 // | - match either left side or right side

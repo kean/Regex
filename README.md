@@ -71,14 +71,31 @@ Anchors specify a position in the string where a match must occur.
 
 Grouping constructs delineate the subexpressions of a regular expression and capture the substrings of an input string.
 
-- <code><b>(</b><i>subexpression</i><b>)</b></code> – captures a subexpression in a group
+- <code><b>(</b><i>subexpression</i><b>)</b></code> – captures a *subexpression* in a group
 - <code><b>(?:</b><i>subexpression</i><b>)</b></code> – non-capturing group
 
 ## Backreferences
 
 Backreferences provide a convenient way to identify a repeated character or substring within a string.
 
-- <code><b>\</b><i>number</i></code> – matches the capture group at the given ordinal position e.g. `\4` matches the content of the fourth group
+- <code><b>\\</b><i>number</i></code> – matches the capture group at the given ordinal position e.g. `\4` matches the content of the fourth group
+
+> If the referenced group can't be found in the pattern, the error will be thrown.
+
+## Quantifiers
+
+Quantifiers specify how many instances of a character, group, or character class must be present in the input for a match to be found.
+
+- <code><b>\*</b></code> – match zero or more times
+- <code><b>+</b></code> – match one or more times
+- <code><b>?</b></code> – match zero or one time
+- <code><b>{</b><i>n</i><b>}</b></code> – match exactly *n* times
+- <code><b>{</b><i>n</i><b>,}</b></code> – match at least *n* times
+- <code><b>{</b><i>n</i><b>,</b><i>m</i><b>}</b></code> – match from *n* to *m* times, closed range, e.g. `a{3,4}`
+
+All quantifiers are **greedy** by default, they try to match as many occurrences of the pattern as possible.
+
+> Warning: nesting quantifiers dramatically increases the number of comparisons that the engine performs.
 
 ## Options
 
