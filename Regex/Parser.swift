@@ -3,6 +3,7 @@
 // Copyright (c) 2019 Alexander Grebenyuk (github.com/kean).
 
 import Foundation
+import os.log
 
 // MARK: - Parser
 
@@ -12,6 +13,7 @@ final class Parser {
     private var groupIndex = 1
     private let options: Regex.Options
     private var node: ASTNode
+    private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.parser", category: "default") : .disabled
 
     init(_ pattern: String, _ options: Regex.Options) {
         self.pattern = pattern
@@ -77,6 +79,8 @@ final class Parser {
         guard node.unit is ASTUnit.Root else {
             throw Regex.Error("Unmatched opening parentheses", i)
         }
+
+        os_log(.default, log: self.log, "AST: \n%{PUBLIC}@", Node.recursiveDescription(node))
 
         return node
     }

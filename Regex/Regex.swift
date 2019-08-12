@@ -10,7 +10,8 @@ import os.log
 public final class Regex {
     private let options: Options
     private let regex: CompiledRegex
-    private static let log: OSLog = .disabled
+    private let symbols: Symbols
+    private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.regex", category: "default") : .disabled
     private var iterations = 0
 
     /// Returns the number of capture groups in the regular expression.
@@ -22,6 +23,9 @@ public final class Regex {
     private var captureGroups: [CaptureGroup] {
         return regex.captureGroups
     }
+
+    /// Enable debug mode to enable logging.
+    public static var isDebugModeEnabled = true
 
     public struct Options: OptionSet {
         public let rawValue: Int
@@ -46,9 +50,9 @@ public final class Regex {
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
             let compiler = Compiler(pattern, options)
-            (self.regex, _) = try compiler.compile()
+            (self.regex, self.symbols) = try compiler.compile()
             self.options = options
-            os_log(.default, log: Regex.log, "Expression: \n\n%{PUBLIC}@", regex.expression.description)
+            os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.expression.description(symbols))
         } catch {
             var error = error as! Error
             error.pattern = pattern // Attach additional context
@@ -82,10 +86,10 @@ public final class Regex {
     private func forMatch(in string: String, _ closure: (Match) -> Bool) {
         // Print number of iterations performed, this is for debug purporses only but
         // it is effectively the only thing making Regex non-thread-safe which we ignore.
-        os_log(.default, log: Regex.log, "%{PUBLIC}@", "Started, input: \(string)")
+        os_log(.default, log: log, "%{PUBLIC}@", "Started, input: \(string)")
         iterations = 0
         defer {
-            os_log(.default, log: Regex.log, "%{PUBLIC}@", "Finished, iterations: \(iterations)")
+            os_log(.default, log: log, "%{PUBLIC}@", "Finished, iterations: \(iterations)")
         }
 
         for substring in preprocess(string) {
@@ -121,7 +125,7 @@ public final class Regex {
     // Find the match in the given string. Captures groups as it goes.
     private func firstMatch(_ cursor: Cursor, _ state: State, _ cache: Cache, _ level: Int = 0) -> Match? {
         iterations += 1
-        os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(state)")
+        os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(state)")
 
         guard !state.isEnd else { // Found a match
             return Match(cursor)
@@ -136,12 +140,12 @@ public final class Regex {
 
         for transition in state.transitions {
             guard let consumed = transition.condition(cursor) else {
-                os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \("❌")")
+                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \("❌")")
                 continue
             }
 
             if isBranching {
-                os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] ᛦ")
+                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] ᛦ")
             }
 
             var newCursor = cursor
@@ -160,7 +164,7 @@ public final class Regex {
             let match = firstMatch(newCursor, transition.toState, cache, isBranching ? level + 1 : level)
 
             if isBranching {
-                os_log(.default, log: Regex.log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(newCursor.index), \(newCursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")
+                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(newCursor.index), \(newCursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")
             }
 
             if let match = match {

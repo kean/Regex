@@ -6,82 +6,33 @@ import Foundation
 
 // MARK: - Expression
 
-/// A convenience API for manipulating states.
+/// A convenience API for creating expressions.
 struct Expression {
-    private let id: Int
     let start: State
     let end: State
 
-    init(_ description: String) {
-        self.id = Expression.makeNextId()
-        self.start = State("{ #\(id) Start – \(description) }")
-        self.end = State("{ #\(id) End }")
-    }
-
-    init(start: State, end: State) {
-        self.id = Expression.makeNextId()
+    init(start: State = State(), end: State = State()) {
         self.start = start
         self.end = end
     }
 
     /// Automatically sets up a single consuming transition from start to end
     /// with the given condition.
-    init(_ description: String, condition: @escaping (Character) -> Bool) {
-        self = Expression(description)
-        start.transitions = [.consuming(end, condition)]
-    }
-
-    static var nextId: Int = 0
-
-    static func makeNextId() -> Int {
-        defer { nextId += 1 }
-        return nextId
+    init(condition: @escaping (Character) -> Bool) {
+        self = Expression()
+        start.transitions = [.init(end, { cursor in
+            guard let character = cursor.character else {
+                return nil
+            }
+            return condition(character) ? 1 : nil
+        })]
     }
 
     /// Creates an empty expression.
     static var empty: Expression {
-        let expression = Expression("Empty")
+        let expression = Expression()
         expression.start.transitions = [.epsilon(expression.end)]
         return expression
-    }
-}
-
-extension Expression: CustomStringConvertible {
-    var description: String {
-        var states = [String]()
-
-        for state in allStates() {
-            let transitions = state.transitions
-                .map { "  – \($0)" }
-                .joined(separator: "\n")
-            states.append("\(state) \n\(transitions)\n")
-        }
-
-        return states.joined(separator: "\n")
-    }
-
-    /// Enumerates all the state in the expression using breadth-first search.
-    func allStates() -> [State] {
-        var states = [State]()
-
-        // Go throught the graph of states using breadh-first search.
-        var encountered = Set<State>()
-        var queue = [State]()
-        queue.append(start)
-        encountered.insert(start)
-
-        while !queue.isEmpty {
-            let state = queue.removeFirst() // This isn't fast
-            states.append(state)
-
-            for neighboor in state.transitions.map({ $0.toState })
-                where !encountered.contains(neighboor) {
-                    queue.append(neighboor)
-                    encountered.insert(neighboor)
-            }
-        }
-
-        return states
     }
 }
 
@@ -90,17 +41,17 @@ extension Expression: CustomStringConvertible {
 extension Expression {
     /// Matches the given character.
     static func character(_ c: Character) -> Expression {
-        return Expression("Match character '\(c)'") { $0 == c }
+        return Expression { $0 == c }
     }
 
     /// Matches the given character set.
     static func characterSet(_ set: CharacterSet) -> Expression {
-        return Expression("Match set \(set)") { set.contains($0) }
+        return Expression { set.contains($0) }
     }
 
     /// Matches any character.
     static func anyCharacter(includingNewline: Bool) -> Expression {
-        return Expression("Match any character") { includingNewline ? true : $0 != "\n" }
+        return Expression { includingNewline ? true : $0 != "\n" }
     }
 }
 
@@ -109,7 +60,7 @@ extension Expression {
 extension Expression {
     /// Matches the given expression zero or more times.
     static func zeroOrMore(_ expression: Expression) -> Expression {
-        let quantifier = Expression("Zero or more")
+        let quantifier = Expression()
         quantifier.start.transitions = [
             .epsilon(expression.start), // Loop (greedy by default)
             .epsilon(quantifier.end) // Skip
@@ -122,7 +73,7 @@ extension Expression {
 
     /// Matches the given expression one or more times.
     static func oneOrMore(_ expression: Expression) -> Expression {
-        let quantifier = Expression("One or more")
+        let quantifier = Expression()
         quantifier.start.transitions = [
             .epsilon(expression.start) // Execute at least once
         ]
@@ -135,7 +86,7 @@ extension Expression {
 
     /// Matches the given expression either none or one time.
     static func zeroOrOne(_ expression: Expression) -> Expression {
-        let quantifier = Expression("None or one")
+        let quantifier = Expression()
         quantifier.start.transitions = [
             .epsilon(expression.start), // Loop (greedy by default)
             .epsilon(quantifier.end) // Skip
@@ -153,12 +104,12 @@ extension Expression {
     /// Matches the beginning of the string (or beginning of the line when
     /// `.multiline` option is enabled).
     static var startOfString: Expression {
-        return anchor("Start of string (^)") { cursor in cursor.index == 0 }
+        return anchor { cursor in cursor.index == 0 }
     }
 
     /// Matches the beginning of the string (ignores `.multiline` option).
     static var startOfStringOnly: Expression {
-        return anchor("Start of string only (\\A)") { cursor in
+        return anchor { cursor in
             cursor.index == 0 && cursor.substring.startIndex == cursor.string.startIndex
         }
     }
@@ -166,14 +117,14 @@ extension Expression {
     /// Matches the end of the string or `\n` at the end of the string
     /// (end of the line in `.multiline` mode).
     static var endOfString: Expression {
-        return anchor("End of string ($)") { cursor in
+        return anchor { cursor in
             return cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnly: Expression {
-        return anchor("End of string only (\\Z)") { cursor in
+        return anchor { cursor in
             guard cursor.substring.endIndex == cursor.string.endIndex ||
                 // In multiline mode `\n` are removed from the lines during preprocessing.
                 (cursor.substring.endIndex == cursor.string.index(before: cursor.string.endIndex) && cursor.string.last == "\n") else {
@@ -185,7 +136,7 @@ extension Expression {
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnlyNotNewline: Expression {
-        return anchor("End of string only (\\z)") { cursor in
+        return anchor { cursor in
             return cursor.substring.endIndex == cursor.string.endIndex && cursor.isEmpty
         }
     }
@@ -193,7 +144,7 @@ extension Expression {
     /// Match must occur at the point where the previous match ended. Ensures
     /// that all matches are contiguous.
     static var previousMatchEnd: Expression {
-        return anchor("Previous match end (\\G)") { cursor in
+        return anchor { cursor in
             if cursor.substring.startIndex == cursor.string.startIndex {
                 return true // There couldn't be any matches before the start index
             }
@@ -206,16 +157,16 @@ extension Expression {
 
     /// The match must occur on a word boundary.
     static var wordBoundary: Expression {
-        return anchor("Word boundary (\\b)") { cursor in cursor.isAtWordBoundary }
+        return anchor { cursor in cursor.isAtWordBoundary }
     }
 
     /// The match must occur on a non-word boundary.
     static var nonWordBoundary: Expression {
-        return anchor("Non word boundary (\\B)") { cursor in !cursor.isAtWordBoundary }
+        return anchor { cursor in !cursor.isAtWordBoundary }
     }
 
-    private static func anchor(_ description: String, _ condition: @escaping (Cursor) -> Bool) -> Expression {
-        let expression = Expression(description)
+    private static func anchor(_ condition: @escaping (Cursor) -> Bool) -> Expression {
+        let expression = Expression()
         expression.start.transitions = [
             .epsilon(expression.end, condition)
         ]
@@ -243,7 +194,7 @@ private extension Cursor {
 
 extension Expression {
     static func group(_ expression: Expression) -> Expression {
-        let group = Expression("Group")
+        let group = Expression()
         group.start.transitions = [.epsilon(expression.start)]
         expression.end.transitions = [.epsilon(group.end)]
         return group
@@ -254,9 +205,9 @@ extension Expression {
 
 extension Expression {
     static func backreference(_ groupIndex: Int) -> Expression {
-        let expression = Expression("Backreference with index '\(groupIndex)")
+        let expression = Expression()
         expression.start.transitions = [
-            Transition(toState: expression.end) { cursor -> Int? in
+            .init(expression.end) { cursor -> Int? in
                 guard let groupRange = cursor.groups[groupIndex] else {
                     return nil
                 }
@@ -293,7 +244,7 @@ extension Expression {
 
     static func alternate<S>(_ expressions: S) -> Expression
         where S: Sequence, S.Element == Expression {
-            let alternation = Expression("Alternate")
+            let alternation = Expression()
 
             for expression in expressions {
                 precondition(expression.end.transitions.isEmpty, "Invalid state of \(expression)")
@@ -307,5 +258,53 @@ extension Expression {
 
     static func alternate(_ lhs: Expression, _ rhs: Expression) -> Expression {
         return alternate([lhs, rhs])
+    }
+}
+
+// MARK: - Expression (Symbols)
+
+extension Expression {
+    func description(_ symbols: Symbols) -> String {
+        var states = [String]()
+
+        visit { state, _ in
+            let details = symbols.map[state]
+            let transitions = state.transitions
+                .map { "  – Transition to \($0.toState)" }
+                .joined(separator: "\n")
+
+            let info = details.map { "\($0.isEnd ? "End" : "Start"), \($0.node.value)" }
+            let desc = "\(state), \(info ?? "<symbol missing>") \n\(transitions)"
+            states.append(desc)
+        }
+        return states.joined(separator: "\n")
+    }
+
+    /// Enumerates all the state in the expression using breadth-first search.
+    func allStates() -> [State] {
+        var states = [State]()
+        visit { state, _ in
+            states.append(state)
+        }
+        return states
+    }
+
+    func visit(_ closure: (State, Int) -> Void) {
+        // Go throught the graph of states using breadh-first search.
+        var encountered = Set<State>()
+        var queue = [(State, Int)]()
+        queue.append((start, 0))
+        encountered.insert(start)
+
+        while !queue.isEmpty {
+            let (state, level) = queue.removeFirst() // This isn't fast
+            closure(state, level)
+
+            for neighboor in state.transitions.map({ $0.toState })
+                where !encountered.contains(neighboor) {
+                    queue.append((neighboor, level+1))
+                    encountered.insert(neighboor)
+            }
+        }
     }
 }

@@ -42,8 +42,10 @@ final class Compiler {
 private extension Compiler {
     func compile(_ node: ASTNode) throws -> Expression {
         let expression = try _compile(node)
-        symbols.map[expression.start] = node
-        symbols.map[expression.end] = node
+        if Regex.isDebugModeEnabled {
+            symbols.map[expression.start] = Symbols.Details(node: node, isEnd: false)
+            symbols.map[expression.end] = Symbols.Details(node: node, isEnd: true)
+        }
         return expression
     }
 
@@ -157,5 +159,10 @@ struct CaptureGroup {
 /// Mapping between states of the finite state machine and the nodes for which
 /// they were produced.
 struct Symbols {
-    fileprivate(set) var map = [State: ASTNode]()
+    fileprivate(set) var map = [State: Details]()
+
+    struct Details {
+        let node: ASTNode
+        let isEnd: Bool
+    }
 }
