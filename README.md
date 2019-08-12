@@ -4,6 +4,8 @@ Open source regular expression implementation.
 
 > Created primarily for learning purposes, not meant for production.
 
+> **Warning**. This project is current WIP. It got to the stage where it supports the majority of regex features, but there is still a lot of work left to simplify it and then to make it fast. Parsing and compiling stages are going to be changed dramatically in the nearest future.
+
 # Usage
 
 Create a `Regex` object by providing a pattern and an optional set of options (`Regex.Options`):
