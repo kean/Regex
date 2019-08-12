@@ -17,7 +17,7 @@ final class Parser {
         self.pattern = pattern
         self.scanner = Scanner(pattern)
         self.options = options
-        self.node = Node(.init(ASTUnit.Root(), pattern[...]))
+        self.node = ASTNode(ASTUnit.Root(), pattern[...])
     }
 
     /// Scans and analyzes the pattern and creats an abstract syntax tree.
@@ -67,12 +67,10 @@ final class Parser {
             // A regular character
             default:
                 add(ASTUnit.Match.character(c), scanner.read())
-                break
             }
         }
 
         if let node = node.children.first, node.isAlternation {
-            // Alternation already started, close the existing group
             try closeAlternation()
         }
 
@@ -176,7 +174,7 @@ final class Parser {
         let group = makeGroup(node.children, node)
         node.children.removeAll()
 
-        let alternation = ASTNode(.init(ASTUnit.Alternation(), group.value.source.dropFirst()))
+        let alternation = ASTNode(ASTUnit.Alternation(), group.value.source.dropFirst())
         alternation.children = [group]
         self.node.add(alternation)
     }
@@ -196,11 +194,11 @@ final class Parser {
     /// Wraps nodes into an anonymous group.
     private func makeGroup(_ nodes: [ASTNode], _ parent: ASTNode) -> ASTNode {
         guard !nodes.isEmpty else {
-            return ASTNode(.init(ASTUnit.Expression(), parent.value.source.dropFirst()))
+            return ASTNode(ASTUnit.Expression(), parent.value.source.dropFirst())
         }
 
         let source = self.source(from: nodes.first!, to: nodes.last!)
-        let node = ASTNode(.init(ASTUnit.Expression(), source))
+        let node = ASTNode(ASTUnit.Expression(), source)
         node.children = nodes
         return node
     }
@@ -213,7 +211,7 @@ final class Parser {
         guard let last = node.children.popLast() else {
             throw Regex.Error("The preceeding token is not quantifiable", i+1)
         }
-        let quantifier = ASTNode(.init(quantifier, substring))
+        let quantifier = ASTNode(quantifier, substring)
         quantifier.children = [last] // Apply quantifier to the last expression
         self.node.children.append(quantifier)
     }
@@ -248,136 +246,5 @@ final class Parser {
     /// Returns the index of the character which is currently being processed.
     private var i: Int {
         return scanner.i - 1
-    }
-}
-
-// MARK: - Unit
-
-/// A value stored in AST nodes, wraps a unit.
-struct ASTValue: CustomStringConvertible {
-    let unit: ASTUnitProtocol
-
-    /// The part of the pattern which represents the given unit.
-    var source: Substring
-
-    init(_ unit: ASTUnitProtocol, _ source: Substring) {
-        self.unit = unit
-        self.source = source
-    }
-
-    var description: String {
-        return "\(unit), source: \"\(source)\" \(source.startIndex.encodedOffset):\(source.count)"
-    }
-}
-
-/// Marker protocol.
-protocol ASTUnitProtocol {}
-
-enum ASTUnit {
-    /// The root of the expression.
-    struct Root: ASTUnitProtocol {}
-
-    /// An anonymoys group.
-    struct Expression: ASTUnitProtocol {}
-
-    struct Group: ASTUnitProtocol {
-        let index: Int
-        let isCapturing: Bool
-    }
-
-    struct Backreference: ASTUnitProtocol {
-        let index: Int
-    }
-
-    struct Alternation: ASTUnitProtocol {}
-
-    enum Anchor: ASTUnitProtocol {
-        case startOfString
-        case endOfString
-        case wordBoundary
-        case nonWordBoundary
-        case startOfStringOnly
-        case endOfStringOnly
-        case endOfStringOnlyNotNewline
-        case previousMatchEnd
-    }
-
-    enum Match: ASTUnitProtocol {
-        case character(Character)
-        case anyCharacter(includingNewline: Bool)
-        case characterSet(CharacterSet)
-    }
-
-    enum Quantifier: ASTUnitProtocol {
-        case zeroOrMore
-        case oneOrMore
-        case zeroOrOne
-        case range(ClosedRange<Int>)
-    }
-}
-
-// MARK: - Node
-
-final class Node<T> {
-    var value: T
-    var parent: Node<T>?
-    var children: [Node<T>] = []
-
-    init(_ value: T) {
-        self.value = value
-    }
-
-    func add(_ child: Node<T>) {
-        children.append(child)
-    }
-
-    /// Adds a child node with the given value.
-    @discardableResult
-    func add(_ value: T) -> Node<T> {
-        let node = Node(value)
-        add(node)
-        return node
-    }
-}
-
-typealias ASTNode = Node<ASTValue>
-
-// MARK: - Node (Extensions)
-
-extension Node {
-    /// Recursively visits all nodes.
-    func visit(_ closure: (Node) -> Void) {
-        visit(0) { node, _ in closure(node) }
-    }
-
-    /// Recursively visits all nodes.
-    private func visit(_ level: Int = 0, _ closure: (Node, Int) -> Void) {
-        closure(self, level)
-        for child in children {
-            child.visit(level + 1, closure)
-        }
-    }
-
-    static func recursiveDescription(_ node: Node) -> String {
-        var description = ""
-        node.visit { node, level in
-            let s = String(repeating: " ", count: level * 2) + "– \(node.value)"
-            description.append(s)
-            description.append("\n")
-        }
-        return description
-    }
-}
-
-// MARK: - Node (UnitNode)
-
-extension Node where T == ASTValue {
-
-    var isAlternation: Bool {
-        return unit is ASTUnit.Alternation
-    }
-
-    var unit: ASTUnitProtocol {
-        return value.unit
     }
 }

@@ -277,7 +277,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
     // MARK: - IP Addresses
 
     // https://www.regexpal.com/?fam=104036
-    func _testIPv4Address() throws {
+    func testIPv4Address() throws {
         let regex = try Regex(#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#)
 
         XCTAssertTrue(regex.isMatch("0.0.0.0"))

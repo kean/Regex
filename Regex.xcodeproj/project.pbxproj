@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0CA617C12300139A009ED2C9 /* State.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C02300139A009ED2C9 /* State.swift */; };
 		0CA617C523009AF9009ED2C9 /* BackreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */; };
+		0CA617C72301E438009ED2C9 /* AST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C62301E438009ED2C9 /* AST.swift */; };
 		0CB3055122FED02D0083B406 /* libRegex.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CB3053E22FED01C0083B406 /* libRegex.a */; };
 		0CB3055E22FED05D0083B406 /* Expression.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3055822FED05D0083B406 /* Expression.swift */; };
 		0CB3055F22FED05D0083B406 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3055922FED05D0083B406 /* Extensions.swift */; };
@@ -57,6 +58,7 @@
 /* Begin PBXFileReference section */
 		0CA617C02300139A009ED2C9 /* State.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = State.swift; sourceTree = "<group>"; };
 		0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackreferencesTests.swift; sourceTree = "<group>"; };
+		0CA617C62301E438009ED2C9 /* AST.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AST.swift; sourceTree = "<group>"; };
 		0CB3053E22FED01C0083B406 /* libRegex.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRegex.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CB3054C22FED02D0083B406 /* RegexTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RegexTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CB3055022FED02D0083B406 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -127,6 +129,7 @@
 				0CB3055C22FED05D0083B406 /* Regex.swift */,
 				FF3C364C23018C6900BD9513 /* Compiler.swift */,
 				FF3C36482301877600BD9513 /* Parser.swift */,
+				0CA617C62301E438009ED2C9 /* AST.swift */,
 				FF3C364A23018A4500BD9513 /* Scanner.swift */,
 				0CB3055822FED05D0083B406 /* Expression.swift */,
 				0CA617C02300139A009ED2C9 /* State.swift */,
@@ -252,6 +255,7 @@
 				0CB3056022FED05D0083B406 /* Cursor.swift in Sources */,
 				FF3C364D23018C6900BD9513 /* Compiler.swift in Sources */,
 				0CB3055F22FED05D0083B406 /* Extensions.swift in Sources */,
+				0CA617C72301E438009ED2C9 /* AST.swift in Sources */,
 				FF3C364B23018A4500BD9513 /* Scanner.swift in Sources */,
 				FF3C36492301877600BD9513 /* Parser.swift in Sources */,
 				0CB3055E22FED05D0083B406 /* Expression.swift in Sources */,
