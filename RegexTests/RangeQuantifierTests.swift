@@ -69,7 +69,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier missing closing bracket")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -79,7 +78,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier must be more than zero")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -89,7 +87,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier must be more than zero")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -99,7 +96,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier missing lower bound")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -109,7 +105,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier lower bound must be non-negative")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -119,7 +114,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier upper bound must be greater than or equal than lower bound")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -129,7 +123,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier missing range")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -139,7 +132,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier has invalid bound")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -149,7 +141,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier has invalid lower bound")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -159,7 +150,6 @@ class RangeQuantifierTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Range quantifier has invalid upper bound")
-            XCTAssertEqual(error.index, 1)
         }
     }
 }

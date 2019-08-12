@@ -127,7 +127,7 @@ extension Expression {
     }
 
     /// Matches the given expression either none or one time.
-    static func noneOrOne(_ expression: Expression) -> Expression {
+    static func zeroOrOne(_ expression: Expression) -> Expression {
         let quantifier = Expression("None or one")
         quantifier.start.transitions = [
             .epsilon(expression.start), // Loop (greedy by default)
@@ -149,6 +149,10 @@ extension Expression {
         let uuid = UUID()
 
         quantifier.start.transitions = [
+            .epsilon(quantifier.end) { _, context in
+                let count = (context[uuid] as? Int) ?? 0
+                return range.lowerBound == 0 && count == 0
+            },
             .epsilon(expression.start, perform: { _, context in
                 // Increment the number of times we passed throught this transition
                 // during the current execution of the state machine
@@ -269,12 +273,8 @@ private extension Cursor {
 // MARK: - Expression (Group)
 
 extension Expression {
-    static func group(_ expression: Expression, isCapturing: Bool) -> Expression {
-        let group = Expression(isCapturing ? "Capturing group" : "Non-capturing group")
-        if isCapturing {
-            group.start.info = .groupStart
-            group.end.info = .groupEnd(.init(capturingStartState: group.start))
-        }
+    static func group(_ expression: Expression) -> Expression {
+        let group = Expression("Group")
         group.start.transitions = [.epsilon(expression.start)]
         expression.end.transitions = [.epsilon(group.end)]
         return group
@@ -286,10 +286,9 @@ extension Expression {
 extension Expression {
     static func backreference(_ groupIndex: Int) -> Expression {
         let expression = Expression("Backreference with index '\(groupIndex)")
-        expression.start.info = .backreference(groupIndex)
         expression.start.transitions = [
             Transition(toState: expression.end, condition: { (cursor, context) -> Int? in
-                guard let groupRange = cursor.groups[groupIndex-1] else {
+                guard let groupRange = cursor.groups[groupIndex] else {
                     return nil
                 }
                 let group = cursor.substring(groupRange)
@@ -309,7 +308,12 @@ extension Expression {
 
     static func concatenate<S>(_ expressions: S) -> Expression
         where S: Collection, S.Element == Expression {
-            return expressions.dropFirst().reduce(expressions.first!, Expression.concatenate)
+            guard let first = expressions.first else {
+                let expression = Expression("Empty")
+                expression.start.transitions = [.epsilon(expression.end)]
+                return expression
+            }
+            return expressions.dropFirst().reduce(first, Expression.concatenate)
     }
 
     static func concatenate(_ lhs: Expression, _ rhs: Expression) -> Expression {
@@ -338,22 +342,3 @@ extension Expression {
         return alternate([lhs, rhs])
     }
 }
-
-// MARK: - ExpressionInfo
-
-enum ExpressionInfo {
-    /// A capture group start.
-    case groupStart
-
-    /// A capture group end.
-    case groupEnd(Group)
-
-    /// A backreference to a group with a given Id.
-    case backreference(GroupId)
-
-    struct Group {
-        unowned var capturingStartState: State?
-    }
-}
-
-typealias GroupId = Int

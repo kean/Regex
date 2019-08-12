@@ -7,6 +7,42 @@ import Regex
 
 class CapturingGroupsTests: XCTestCase {
 
+    func testSimpleGroup() throws {
+        let pattern = "(a)"
+        let string = "a b"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string)
+
+        guard matches.count == 1 else {
+            return XCTFail("Invalid number of matches")
+        }
+
+        do {
+            let match = matches[0]
+            XCTAssertEqual(match.fullMatch, "a")
+            XCTAssertEqual(match.groups, ["a"])
+        }
+    }
+
+    func testNestedGroups() throws {
+        let pattern = "((a)(b)c)"
+        let string = "abc abd"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string)
+
+        guard matches.count == 1 else {
+            return XCTFail("Invalid number of matches")
+        }
+
+        do {
+            let match = matches[0]
+            XCTAssertEqual(match.fullMatch, "abc")
+            XCTAssertEqual(match.groups, ["abc", "a", "b"])
+        }
+    }
+
     func testReturnsNumberOfCapturingGroups() throws {
         let regex = try Regex(#"(\w+)\s+(car)"#)
 
@@ -116,6 +152,24 @@ class CapturingGroupsTests: XCTestCase {
     // MARK: Non-Capturing Groups
 
     func testNonCapturingGroup() throws {
+        let pattern = "(?:a)"
+        let string = "a b"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string)
+
+        guard matches.count == 1 else {
+            return XCTFail("Invalid number of matches")
+        }
+
+        do {
+            let match = matches[0]
+            XCTAssertEqual(match.fullMatch, "a")
+            XCTAssertEqual(match.groups, [])
+        }
+    }
+
+    func testNonCapturingGroupWithAlternations() throws {
         let pattern = #"the (?:(red|white) (king|queen))"#
         let string = "the red queen"
 
@@ -173,7 +227,6 @@ class GroupsWithQuantifiersTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Unmatched closing parentheses")
-            XCTAssertEqual(error.index, 1)
         }
     }
 
@@ -183,7 +236,6 @@ class GroupsWithQuantifiersTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Unmatched closing parentheses")
-            XCTAssertEqual(error.index, 5)
         }
     }
 
@@ -193,7 +245,6 @@ class GroupsWithQuantifiersTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Unmatched opening parentheses")
-            XCTAssertEqual(error.index, 0)
         }
     }
 
@@ -203,7 +254,6 @@ class GroupsWithQuantifiersTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "Unmatched opening parentheses")
-            XCTAssertEqual(error.index, 2)
         }
     }
 }

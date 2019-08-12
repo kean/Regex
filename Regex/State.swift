@@ -6,10 +6,6 @@
 
 /// Represents a state of the finite state machine.
 final class State: Hashable, CustomStringConvertible {
-    /// Additional information about the expression (or part of the expression)
-    /// represented by the current state.
-    var info: ExpressionInfo?
-
     var isEnd: Bool {
         return transitions.isEmpty
     }

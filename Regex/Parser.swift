@@ -4,260 +4,379 @@
 
 import Foundation
 
+// MARK: - Parser
+
 final class Parser {
-    // The index of the next character that wasn't read yet.
-    private(set) var i = 0
+    private let pattern: String
+    private let scanner: Scanner
+    private var groupIndex = 1
+    private let options: Regex.Options
+    private var node: Node<UnitNode>
 
-    private var pattern: [Character]
-
-    init(_ pattern: [Character]) {
+    init(_ pattern: String, _ options: Regex.Options) {
         self.pattern = pattern
+        self.scanner = Scanner(pattern)
+        self.options = options
+        self.node = Node(.init(Unit.Root(), pattern[...]))
     }
 
-    /// Returns the next character in the pattern without consuming it.
-    func peak() -> Character? {
-        guard i < pattern.endIndex else {
-            return nil
+    /// Scans and analyzes the pattern and creats an abstract syntax tree.
+    func parse() throws -> Node<UnitNode> {
+        if let substring = scanner.read("^") {
+            add(Unit.Anchor.startOfString, substring)
         }
-        return pattern[i]
-    }
 
-    /// Reads the next character in the pattern.
-    func readCharacter() -> Character? {
-        guard i < pattern.endIndex else {
-            return nil
-        }
-        defer { i += 1}
-        return pattern[i]
-    }
+        while let c = scanner.peak() {
+            switch c {
+            // Grouping
+            case "(":
+               openGroup()
+            case ")":
+                try closeGroup()
 
-    /// Reads the next character if it matches the given character. Returns
-    /// `true` if the character was read successfully.
-    func read(_ c: Character) -> Bool {
-        return read(String(c))
-    }
+            // Alternation
+            case "|":
+                try addAlternation()
 
-    func read(_ s: String) -> Bool {
-        let s = Array(s)
-        var j = i
-        var z = 0
-        while j < pattern.endIndex {
-            guard z < s.endIndex else {
-                i = j
-                return true
+            // Quantifiers
+            case "*": // Zero or more
+                try addQuantifier(.zeroOrMore, scanner.read())
+            case "+": // One or more
+                try addQuantifier(.oneOrMore, scanner.read())
+            case "?": // Zero or one
+                try addQuantifier(.zeroOrOne, scanner.read())
+            case "{": // Match N times
+                try addRangeQuantifier()
+
+            // Character classes
+            case ".": // Any character
+                let unit = Unit.Match.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))
+                add(unit, scanner.read())
+            case "[": // Start a character group
+                let (set, substring) = try scanner.readCharacterSet()
+                add(Unit.Match.characterSet(set), substring)
+
+            // Character Escapes
+            case "\\":
+                try parseEscapedCharacter()
+
+            // Anchors
+            case "$":
+                add(Unit.Anchor.endOfString, scanner.read())
+
+            // A regular character
+            default:
+                add(Unit.Match.character(c), scanner.read())
+                break
             }
-            guard pattern[j] == s[z] else {
-                return false
+        }
+
+        if let node = node.children.first, node.isAlternation {
+            // Alternation already started, close the existing group
+            try closeAlternation()
+        }
+
+        guard node.unit is Unit.Root else {
+            throw Regex.Error("Unmatched opening parentheses", i)
+        }
+
+        return node
+    }
+
+    // MARK: Character Escapes
+
+    private func parseEscapedCharacter() throws {
+        let backslash = scanner.read() // Consume escape
+
+        guard let c = scanner.peak() else {
+            throw Regex.Error("Pattern may not end with a trailing backslash", i)
+        }
+
+        if let (substring, index) = scanner.readInteger() {
+            add(Unit.Backreference(index: index), source(from: backslash, to: substring))
+            return
+        }
+
+        if parseSpecialCharacter(c) {
+            return
+        }
+
+        // TODO: pass proper substring and remove these workarounds
+        scanner.read()
+        if let set = try scanner.readCharacterClassSpecialCharacter(c) {
+            add(Unit.Match.characterSet(set), backslash)
+            return
+        }
+        scanner.undoRead()
+
+        add(Unit.Match.character(c), source(from: backslash, to: scanner.read()))
+    }
+
+    private func parseSpecialCharacter(_ c: Character) -> Bool {
+        func anchor(for c: Character) -> Unit.Anchor? {
+            switch c {
+            case "b": return .wordBoundary
+            case "B": return .nonWordBoundary
+            case "A": return .startOfStringOnly
+            case "Z": return .endOfStringOnly
+            case "z": return .endOfStringOnlyNotNewline
+            case "G": return .previousMatchEnd
+            default: return nil
             }
-            j += 1
-            z += 1
         }
-        return false
-    }
 
-    /// Reads the string until reaching the given character. If successfull,
-    /// consumes all the characters including the given character.
-    func read(until c: Character) -> String? {
-        var j = i
-        while j < pattern.endIndex {
-            if pattern[j] == c {
-                defer { i = j + 1 }
-                return String(pattern[i..<j])
-            }
-            j += 1
-        }
-        return nil
-    }
-
-    /// Reads characters while the closure returns true.
-    func read(while closure: (Character) -> Bool) -> String {
-        var string = ""
-        while i < pattern.endIndex, closure(pattern[i]) {
-            string.append(pattern[i])
-            i += 1
-        }
-        return string
-    }
-
-    /// Reads the character from the end of the pattern if it matches the given
-    /// character. Returns `true` if the character was read successfully.
-    func readFromEnd(_ c: Character) -> Bool {
-        guard pattern.last == c else {
+        guard let anchor = anchor(for: c) else {
             return false
         }
-        pattern.removeLast()
+
+        // TODO: pass proper substring
+        add(anchor, scanner.read())
         return true
     }
 
-    func readInteger() -> Int? {
-        let startIndex = i
-        let digits = CharacterSet.decimalDigits
-        let string = read(while: { digits.contains($0) })
-        guard !string.isEmpty else {
-            return nil
-        }
-        guard let int = Int(string) else {
-            i = startIndex
-            return nil
-        }
-        return int
+    // MARK: Groups
+
+    private func openGroup() {
+        let bracket = scanner.read()
+        let isCapturing = scanner.read("?:") == nil
+        let unit = Unit.Group(index: groupIndex, isCapturing: isCapturing)
+        groupIndex += 1
+        let node = add(unit, bracket)
+        node.parent = self.node
+        self.node = node
     }
 
-    /// We encountered `[`, read a character group, e.g. [abc], [^ab]
-    func readCharacterSet() throws -> CharacterSet {
-        let openingBracketIndex = i - 1
-
-        // Check if the pattern is negative.
-        let isNegative = read("^")
-
-        // Make sure that the group is not empty
-        guard peak() != "]" else {
-            throw Regex.Error("Character group is empty", openingBracketIndex)
+    private func closeGroup() throws {
+        guard node.value.unit is Unit.Group else {
+            throw Regex.Error("Unmatched closing parentheses", i)
         }
-
-        // Read the characters until the group is closed.
-        var set = CharacterSet()
-
-        while let c = readCharacter() {
-            switch c {
-            case "]":
-                if isNegative {
-                    set.invert()
-                }
-                return set
-            case "\\":
-                guard let c = readCharacter() else {
-                    throw Regex.Error("Pattern may not end with a trailing backslash", i-1)
-                }
-                if let specialSet = try readCharacterClassSpecialCharacter(c) {
-                    set.formUnion(specialSet)
-                } else {
-                    set.insert(c)
-                }
-            case "/":
-                throw Regex.Error("An unescaped delimiter must be escaped with a backslash", i-1)
-            default:
-                if let range = try readCharacterRange(startingWith: c) {
-                    set.insert(charactersIn: range)
-                } else {
-                    set.insert(c)
-                }
-            }
+        if let node = node.children.first, node.isAlternation {
+            try closeAlternation()
         }
-
-        throw Regex.Error("Character group missing closing bracket", openingBracketIndex)
+        let substring = scanner.read()
+        node.value.source = pattern[node.value.source.startIndex..<substring.endIndex]
+        assert(node.parent != nil, "Group node is missing parent")
+        self.node = node.parent!
     }
 
-    func readCharacterClassSpecialCharacter(_ c: Character) throws -> CharacterSet? {
-        switch c {
-        case "d": return CharacterSet.decimalDigits
-        case "D": return CharacterSet.decimalDigits.inverted
-        case "s": return CharacterSet.whitespaces
-        case "S": return CharacterSet.whitespaces.inverted
-        case "w": return CharacterSet.word
-        case "W": return CharacterSet.word.inverted
-        case "p": return try readUnicodeCategory()
-        case "P": return try readUnicodeCategory().inverted
-        default: return nil
+    // MARK: Alternations
+
+    private func addAlternation() throws {
+        scanner.read() // Consume `|`
+
+        if let node = node.children.first, node.isAlternation {
+            // Alternation already started, close the existing group
+            try closeAlternation()
+        } else {
+            try openAlternation()
         }
     }
 
-    /// Reads unicode category set, e.g. "P" stands for all punctuation characters.
-    func readUnicodeCategory() throws -> CharacterSet {
-        let pSymbolIndex = i-1
-        guard read("{") else {
-            throw Regex.Error("Missing unicode category name", pSymbolIndex)
+    private func openAlternation() throws {
+        let group = wrap(node.children)
+        node.children.removeAll()
+
+        let alternation = Node<UnitNode>(.init(Unit.Alternation(), group.value.source))
+        alternation.children = [group]
+        self.node.add(alternation)
+    }
+
+    private func closeAlternation() throws {
+        guard let alternation = node.children.first, alternation.isAlternation else {
+            throw Regex.Error("Unexpected error", i)
         }
-        guard let name = read(until: "}") else {
-            throw Regex.Error("Missing closing bracket for unicode category name", pSymbolIndex)
+
+        let group = wrap(Array(node.children.dropFirst()))
+        node.children.removeLast(node.children.count-1) // Removes everything except the existing alternation
+
+        alternation.children.append(group)
+        alternation.value.source = source(from: alternation, to: group)
+    }
+
+    /// Wraps nodes into an anonymous group.
+    private func wrap(_ nodes: [Node<UnitNode>]) -> Node<UnitNode> {
+        guard !nodes.isEmpty else {
+            // TODO: this might potentially crash some expression
+            return Node<UnitNode>(.init(Unit.Expression(), pattern.suffix(0)))
         }
-        guard !name.isEmpty else {
-            throw Regex.Error("Unicode category name is empty", pSymbolIndex)
+
+        let source = self.source(from: nodes.first!, to: nodes.last!)
+        let node = Node<UnitNode>(.init(Unit.Expression(), source))
+        node.children = nodes
+        return node
+    }
+
+    // MARK: Quantifiers
+
+    private func addQuantifier(_ quantifier: Unit.Quantifier, _ substring: Substring) throws {
+        // TODO: do we need to perform some validations?
+        // TODO: do we need to pass the entire entity that we apply quantifier to?
+        guard let last = node.children.popLast() else {
+            throw Regex.Error("The preceeding token is not quantifiable", i+1)
         }
-        switch name {
-        case "P": return .punctuationCharacters
-        case "Lt": return .capitalizedLetters
-        case "Ll": return .lowercaseLetters
-        case "N": return .nonBaseCharacters
-        case "S": return .symbols
-        default: throw Regex.Error("Unsupported unicode category '\(name)'", pSymbolIndex)
+        let quantifier = Node<UnitNode>(.init(quantifier, substring))
+        quantifier.children = [last] // Apply quantifier to the last expression
+        self.node.children.append(quantifier)
+    }
+
+    private func addRangeQuantifier() throws {
+        let range = try scanner.readRangeQuantifier()
+        // TODO: cleanup
+        scanner.undoRead()
+        let substring = scanner.read()
+        try addQuantifier(.range(range), substring)
+    }
+
+    // MARK: Helpers (Nodes)
+
+    /// Adds a unit to the current node.
+    @discardableResult
+    private func add(_ unit: UnitProtocol, _ substring: Substring) -> Node<UnitNode> {
+        return self.node.add(UnitNode(unit, substring))
+    }
+
+    // MARK: Helpers (Pattern)
+
+    private func source(from: Node<UnitNode>, to: Node<UnitNode>) -> Substring {
+        return source(from: from.value.source, to: to.value.source)
+    }
+
+    /// Combine everything between two substring.s
+    private func source(from: Substring, to: Substring) -> Substring {
+        return pattern[from.startIndex..<to.endIndex]
+    }
+
+    /// Returns the index of the character which is currently being processed.
+    private var i: Int {
+        return scanner.i - 1
+    }
+}
+
+// MARK: - Unit
+
+/// An AST unit.
+struct UnitNode: CustomStringConvertible {
+    let unit: UnitProtocol
+
+    /// The part of the pattern which represents the given unit.
+    var source: Substring
+
+    init(_ unit: UnitProtocol, _ source: Substring) {
+        self.unit = unit
+        self.source = source
+    }
+
+    var description: String {
+        return "\(unit), source: \"\(source)\" \(source.startIndex.encodedOffset):\(source.count)"
+    }
+}
+
+/// Marker protocol.
+protocol UnitProtocol {}
+
+enum Unit {
+    /// The root of the expression.
+    struct Root: UnitProtocol {}
+
+    /// An anonymoys group.
+    struct Expression: UnitProtocol {}
+
+    struct Group: UnitProtocol {
+        let index: Int
+        let isCapturing: Bool
+    }
+
+    struct Backreference: UnitProtocol {
+        let index: Int
+    }
+
+    struct Alternation: UnitProtocol {}
+
+    enum Anchor: UnitProtocol {
+        case startOfString
+        case endOfString
+        case wordBoundary
+        case nonWordBoundary
+        case startOfStringOnly
+        case endOfStringOnly
+        case endOfStringOnlyNotNewline
+        case previousMatchEnd
+    }
+
+    enum Match: UnitProtocol {
+        case character(Character)
+        case anyCharacter(includingNewline: Bool)
+        case characterSet(CharacterSet)
+    }
+
+    enum Quantifier: UnitProtocol {
+        case zeroOrMore
+        case oneOrMore
+        case zeroOrOne
+        case range(ClosedRange<Int>)
+    }
+}
+
+// MARK: - Node
+
+final class Node<T> {
+    var value: T
+    var parent: Node<T>?
+    var children: [Node<T>] = []
+
+    init(_ value: T) {
+        self.value = value
+    }
+
+    func add(_ child: Node<T>) {
+        children.append(child)
+    }
+
+    /// Adds a child node with the given value.
+    @discardableResult
+    func add(_ value: T) -> Node<T> {
+        let node = Node(value)
+        add(node)
+        return node
+    }
+}
+
+// MARK: - Node (Extensions)
+
+extension Node {
+    /// Recursively visits all nodes.
+    func visit(_ closure: (Node) -> Void) {
+        visit(0) { node, _ in closure(node) }
+    }
+
+    /// Recursively visits all nodes.
+    private func visit(_ level: Int = 0, _ closure: (Node, Int) -> Void) {
+        closure(self, level)
+        for child in children {
+            child.visit(level + 1, closure)
         }
     }
 
-    // We encounted '{', read a range for range quantifier, e.g. {3}, {3,}
-    func readRangeQuantifier() throws -> ClosedRange<Int> {
-        // Read until we find a closing bracket
-        let openingBracketIndex = i-1
-        guard let rangeSubstring = read(until: "}") else {
-            throw Regex.Error("Range quantifier missing closing bracket", openingBracketIndex)
+    static func recursiveDescription(_ node: Node) -> String {
+        var description = ""
+        node.visit { node, level in
+            let s = String(repeating: " ", count: level * 2) + "– \(node.value)"
+            description.append(s)
+            description.append("\n")
         }
+        return description
+    }
+}
 
-        guard !rangeSubstring.isEmpty else {
-            throw Regex.Error("Range quantifier missing range", openingBracketIndex)
-        }
+// MARK: - Node (UnitNode)
 
-        let components = rangeSubstring.split(separator: ",", omittingEmptySubsequences: false)
+extension Node where T == UnitNode {
 
-        switch components.count {
-        case 0:
-            throw Regex.Error("Range quantifier missing range", openingBracketIndex)
-        case 1:
-            guard let bound = Int(String(components[0])) else {
-                throw Regex.Error("Range quantifier has invalid bound", openingBracketIndex)
-            }
-            guard bound > 0 else {
-                throw Regex.Error("Range quantifier must be more than zero", openingBracketIndex)
-            }
-            return bound...bound
-        case 2:
-            guard !components[0].isEmpty else {
-                throw Regex.Error("Range quantifier missing lower bound", openingBracketIndex)
-            }
-            guard let lowerBound = Int(String(components[0])) else {
-                throw Regex.Error("Range quantifier has invalid lower bound", openingBracketIndex)
-            }
-            guard lowerBound >= 0 else {
-                throw Regex.Error("Range quantifier lower bound must be non-negative", openingBracketIndex)
-            }
-            if components[1].isEmpty {
-                return lowerBound...Int.max
-            }
-            guard let upperBound = Int(String(components[1])) else {
-                throw Regex.Error("Range quantifier has invalid upper bound", openingBracketIndex)
-            }
-            guard upperBound >= lowerBound else {
-                throw Regex.Error("Range quantifier upper bound must be greater than or equal than lower bound", openingBracketIndex)
-            }
-            return lowerBound...upperBound
-        default:
-            throw Regex.Error("Range quantifier has invalid bound", openingBracketIndex)
-        }
+    var isAlternation: Bool {
+        return unit is Unit.Alternation
     }
 
-    /// Reads a character range in a form "a-z", "A-Z", etc. Character range must be provided
-    /// in a valid order.
-    func readCharacterRange(startingWith lowerBound: Character) throws -> ClosedRange<Unicode.Scalar>? {
-        let dashIndex = i
-        guard read("-") else {
-            return nil // Not a range
-        }
-        if peak() == "]" {
-            i -= 1 // Undo reading '-'
-            return nil // Just treat as regular characters
-        }
-        guard let upperBound = readCharacter() else {
-            return nil // The character group seems incomplete, let the upper layer handle the issue
-        }
-        // TODO: this is probably not the best way to convert these
-        guard let lb = Unicode.Scalar(String(lowerBound)),
-            let ub = Unicode.Scalar(String(upperBound)) else {
-                throw Regex.Error("Unsupported characters in character range", dashIndex)
-        }
-
-        guard ub >= lb else {
-            throw Regex.Error("Character range is out of order", dashIndex)
-        }
-
-        return lb...ub
+    var unit: UnitProtocol {
+        return value.unit
     }
 }

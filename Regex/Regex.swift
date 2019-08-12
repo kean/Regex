@@ -9,15 +9,19 @@ import os.log
 
 public final class Regex {
     private let options: Options
-    private let expression: Expression
-    private static let log: OSLog = .default
+    private let regex: CompiledRegex
+    private static let log: OSLog = .disabled
     private var iterations = 0
 
     /// Returns the number of capture groups in the regular expression.
-    public let numberOfCaptureGroups: Int
+    public var numberOfCaptureGroups: Int {
+        return captureGroups.count
+    }
 
     /// An array of capture groups in an order in which they appear in the pattern.
-    private let captureGroups: [State]
+    private var captureGroups: [CaptureGroup] {
+        return regex.captureGroups
+    }
 
     public struct Options: OptionSet {
         public let rawValue: Int
@@ -42,12 +46,9 @@ public final class Regex {
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
             let compiler = Compiler(pattern, options)
-            self.expression = try compiler.compile()
-            self.captureGroups = expression.allStates()
-                .filter { if case .groupStart? = $0.info { return true }; return false }
-            self.numberOfCaptureGroups = captureGroups.count
+            (self.regex, _) = try compiler.compile()
             self.options = options
-            os_log(.default, log: Regex.log, "Expression: \n\n%{PUBLIC}@", expression.description)
+            os_log(.default, log: Regex.log, "Expression: \n\n%{PUBLIC}@", regex.expression.description)
         } catch {
             var error = error as! Error
             error.pattern = pattern // Attach additional context
@@ -110,7 +111,7 @@ public final class Regex {
         // If the input string is empty, we still need to run the regex once to verify
         // that the empty string matches, thus `isEmpty` check.
         for i in (cursor.characters.isEmpty ? 0..<1 : cursor.range) {
-            if let match = firstMatch(cursor.startingAt(i), [:], expression.start, cache) {
+            if let match = firstMatch(cursor.startingAt(i), [:], regex.expression.start, cache) {
                 return match
             }
         }
@@ -147,10 +148,9 @@ public final class Regex {
             var newCursor = cursor
 
             // Capture a group if needed
-            if case let .groupEnd(group)? = state.info,
-                let startState = group.capturingStartState,
-                let startIndex = cursor.groupsStartIndexes[startState],
-                let groupIndex = captureGroups.firstIndex(of: startState) {
+            if let captureGroup = captureGroups.first(where: { $0.end == state }),
+                let startIndex = cursor.groupsStartIndexes[captureGroup.start] {
+                let groupIndex = captureGroup.index
                 newCursor.groups[groupIndex] = startIndex..<cursor.index
             } else {
                 newCursor.groupsStartIndexes[state] = cursor.index

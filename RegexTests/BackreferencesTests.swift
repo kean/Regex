@@ -7,6 +7,17 @@ import Regex
 
 class BackreferencesTests: XCTestCase {
 
+    func testSimpleBackreference() throws {
+        let pattern = #"(a)\1"#
+        let string = "aa ab ba"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["aa"])
+    }
+
+
     func testReturnsNumberOfCapturingGroups() throws {
         let pattern = #"(\w)\1"#
         let string = "trellis seerlatter summer hoarse lesser aardvark stunned"

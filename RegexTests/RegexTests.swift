@@ -5,6 +5,17 @@
 import XCTest
 import Regex
 
+class RegexMiscTests: XCTestCase {
+    func testThrowsEmptyRegex() {
+        XCTAssertThrowsError(try Regex("")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Pattern must not be empty")
+        }
+    }
+}
+
 // Test some commonly used regular expressions.
 class RegexTests: XCTestCase {
     func testColorHexRegex() throws {
@@ -560,7 +571,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
     // MARK: Slug
 
     // https://www.regexpal.com/?fam=104056
-    func _testSlug() throws {
+    func testSlug() throws {
         let pattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$"
 
         let regex = try Regex(pattern, [.caseInsensitive])

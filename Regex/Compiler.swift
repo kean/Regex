@@ -4,218 +4,146 @@
 
 import Foundation
 
-/// Compiles a pattern into a finite state machine.
 final class Compiler {
     private let parser: Parser
     private let options: Regex.Options
-
-    private var stack = [StackEntry]()
+    private var symbols: Symbols
+    private var captureGroups: [CaptureGroup] = []
+    private var backreferences: [Unit.Backreference] = []
 
     init(_ pattern: String, _ options: Regex.Options) {
-        self.parser = Parser(Array(pattern))
+        self.parser = Parser(pattern, options)
         self.options = options
+        self.symbols = Symbols()
     }
 
-    func compile() throws -> Expression {
-        Expression.nextId = 0 // Id are used for logging
-
-        let shouldMatchStart = parser.read("^")
-
-        if shouldMatchStart {
-            stack.append(.expression(.startOfString))
+    func compile() throws -> (CompiledRegex, Symbols) {
+        let ast = try parser.parse()
+        guard ast.value.unit is Unit.Root else {
+            fatalError("Parser returned an invalid root node")
+        }
+        guard !ast.children.isEmpty else {
+            throw Regex.Error("Pattern must not be empty", 0)
         }
 
-        while let c = parser.readCharacter() {
-            switch c {
-            // Grouping
-            case "(":
-                let isCapturing = !parser.read("?:")
-                stack.append(.group(Group(openingBracketIndex: i, isCapturing: isCapturing)))
-            case ")":
-                try collapseLastGroup()
+        let expression = try compile(ast)
 
-            // Alternation
-            case "|":
-                stack.append(.alternate)
+        try validateBackreferences()
 
-            // Quantifiers
-            case "*": // Zero or more
-                try addQuantifier(Expression.zeroOrMore)
-            case "+": // One or more
-                try addQuantifier(Expression.oneOrMore)
-            case "?": // Zero or one
-                try addQuantifier(Expression.noneOrOne)
-            case "{": // Match N times
-                try addQuantifier {
-                    Expression.range(try parser.readRangeQuantifier(), $0)
-                }
+        // TODO: remove this workaround
+        // Wrap the expression into an implicit group. We do this as a workaround
+        // to make sure Matcher registers all matches.
+        let group = Expression.group(expression)
 
-            // Character Classes
-            case ".": // Any character
-                stack.append(.expression(.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))))
-            case "[": // Start a character group
-                let set = try parser.readCharacterSet()
-                stack.append(.expression(.characterSet(set)))
-
-            // Anchors
-            case "$":
-                stack.append(.expression(.endOfString))
-
-            // Character Escapes
-            case "\\":
-                let expression = try compilerCharacterAfterEscape()
-                stack.append(.expression(expression))
-
-            default: // Not a keyword, treat as a plain character
-                stack.append(.expression(.character(c)))
-            }
-        }
-
-        let expression = try collapse() // Collapse on regexes in an implicit top group
-
-        guard stack.isEmpty else {
-            if case let .group(group)? = stack.last {
-                throw Regex.Error("Unmatched opening parentheses", group.openingBracketIndex)
-            } else {
-                fatalError("Unsupported error")
-            }
-        }
-
-        try validate(expression)
-
-        // Wrap the expression into an implicit group.
-        return Expression.group(expression, isCapturing: false)
+        return (CompiledRegex(expression: group, captureGroups: captureGroups), symbols)
     }
 }
 
 private extension Compiler {
-
-    func compilerCharacterAfterEscape() throws -> Expression {
-        guard let c = parser.peak() else {
-            throw Regex.Error("Pattern may not end with a trailing backslash", i)
-        }
-
-        if let int = parser.readInteger() {
-            return .backreference(int)
-        }
-
-        _ = parser.readCharacter()
-
-        if let expression = compileSpecialCharacter(c) {
-            return expression
-        } else if let set = try parser.readCharacterClassSpecialCharacter(c) {
-            return .characterSet(set)
-        } else {
-            return .character(c)
-        }
-    }
-
-    func compileSpecialCharacter(_ c: Character) -> Expression? {
-        switch c {
-        case "b": return .wordBoundary
-        case "B": return .nonWordBoundary
-        case "A": return .startOfStringOnly
-        case "Z": return .endOfStringOnly
-        case "z": return .endOfStringOnlyNotNewline
-        case "G": return .previousMatchEnd
-        default: return nil
-        }
-    }
-
-    /// Returns the index of the character which is currently being processed.
-    var i: Int {
-        return parser.i - 1
-    }
-
-    // MARK: Stack
-
-    func popExpression() throws -> Expression {
-        guard case let .expression(expression)? = stack.popLast() else {
-            throw Regex.Error("Failed to find a matching group", i)
-        }
+    func compile(_ node: Node<UnitNode>) throws -> Expression {
+        let expression = try _compile(node)
+        symbols.map[expression.start] = node
+        symbols.map[expression.end] = node
         return expression
     }
 
-    /// Add quantifier to the top expression in the stack.
-    func addQuantifier(_ closure: (Expression) throws -> Expression) throws {
-        let last: Expression
-        do {
-            last = try popExpression()
-        } catch {
-            throw Regex.Error("The preceeding token is not quantifiable", i)
+    func _compile(_ node: Node<UnitNode>) throws -> Expression {
+        switch node.value.unit {
+        case is Unit.Root,
+             is Unit.Expression:
+            let expressions = try node.children.map(compile)
+            return .concatenate(expressions)
+
+        case (let group as Unit.Group):
+            let expressions = try node.children.map(compile)
+            let expression = Expression.group(.concatenate(expressions))
+            if group.isCapturing { // Remember the group that we just compiled.
+                captureGroups.append(CaptureGroup(index: group.index, start: expression.start, end: expression.end))
+            }
+            return expression
+
+        case (let backreference as Unit.Backreference):
+            assert(node.children.isEmpty, "Backreferences must not have children")
+            backreferences.append(backreference)
+            return .backreference(backreference.index)
+
+        case is Unit.Alternation:
+            let expressions = try node.children.map(compile)
+            return .alternate(expressions)
+
+        case (let anchor as Unit.Anchor):
+            assert(node.children.isEmpty, "Anchor must not have children")
+            switch anchor {
+            case .startOfString: return .startOfString
+            case .startOfStringOnly: return .startOfStringOnly
+            case .endOfString: return .endOfString
+            case .endOfStringOnly: return .endOfStringOnly
+            case .endOfStringOnlyNotNewline: return .endOfStringOnlyNotNewline
+            case .wordBoundary: return .wordBoundary
+            case .nonWordBoundary: return .nonWordBoundary
+            case .previousMatchEnd: return .previousMatchEnd
+            }
+
+        case (let quantifier as Unit.Quantifier):
+            assert(node.children.count == 1, "Quantifier can only be applied to a single child")
+            let expression = try compile(node.children[0])
+            switch quantifier {
+            case .zeroOrMore:
+                return .zeroOrMore(expression)
+            case .oneOrMore:
+                return .oneOrMore(expression)
+            case .zeroOrOne:
+                return .zeroOrOne(expression)
+            case let .range(range):
+                return .range(range, expression)
+            }
+
+        case (let match as Unit.Match):
+            assert(node.children.isEmpty, "Match must not have children")
+            switch match {
+            case let .character(c):
+                return .character(c)
+            case let .anyCharacter(includingNewline):
+                return .anyCharacter(includingNewline: includingNewline)
+            case let .characterSet(set):
+                return .characterSet(set)
+            }
+
+        default:
+            fatalError("Unsupported unit")
         }
-        stack.append(.expression(try closure(last)))
     }
 
-    func collapseLastGroup() throws {
-        // Collapses the expression in the group.
-        let expression = try collapse()
-
-        guard case let .group(info)? = stack.popLast() else {
-            throw Regex.Error("Unmatched closing parentheses", i)
-        }
-
-        let group = Expression.group(expression, isCapturing: info.isCapturing)
-
-        stack.append(.expression(group))
-    }
-
-    /// Collapses the items in the top group. Also collapses alternations in the
-    /// top group. Returns a single expression.
-    func collapse() throws -> Expression {
-        var alternatives = [Expression]()
-
-        var stop = false
-        while !stop {
-            stop = true
-            var expressions = [Expression]()
-            while case let .expression(expression)? = stack.last {
-                stack.removeLast()
-                expressions.append(expression)
-            }
-            alternatives.append(.concatenate(expressions.reversed()))
-
-            if case .alternate? = stack.last {
-                stack.removeLast()
-                stop = false
+    func validateBackreferences() throws {
+        for backreference in backreferences {
+            // TODO: move validation to parser?
+            guard captureGroups.contains(where: { $0.index == backreference.index }) else {
+                throw Regex.Error("The token '\\\(backreference.index)' references a non-existent or invalid subpattern", 0)
             }
         }
-
-        guard alternatives.count > 1 else {
-            return alternatives[0] // Must have at least one
-        }
-
-        return Expression.alternate(alternatives)
     }
 }
 
-// MARK: - Validations
+// MARK: - CompiledRegex
 
-private extension Compiler {
-    func validate(_ expression: Expression) throws {
-        let states = expression.allStates()
-        let captureGroups = states.filter { if case .groupStart? = $0.info { return true }; return false }
+struct CompiledRegex {
+    /// The starting index in the compiled regular expression.
+    let expression: Expression
 
-        for state in states {
-            guard case let .backreference(groupId)? = state.info else {
-                continue
-            }
-            if groupId > captureGroups.count {
-                throw Regex.Error("The token '\\\(groupId)' references a non-existent or invalid subpattern", 0)
-            }
-        }
-    }
+    /// All the capture groups with their indexes.
+    let captureGroups: [CaptureGroup]
 }
 
-// MARK: - Intermeidate Representations
-
-private enum StackEntry {
-    case expression(Expression)
-    case group(Group) // (
-    case alternate // |
+struct CaptureGroup {
+    let index: Int
+    let start: State
+    let end: State
 }
 
-private struct Group {
-    let openingBracketIndex: Int
-    let isCapturing: Bool
+// MARK: - Symbols
+
+/// Mapping between states of the finite state machine and the nodes for which
+/// they were produced.
+struct Symbols {
+    fileprivate(set) var map = [State: Node<UnitNode>]()
 }

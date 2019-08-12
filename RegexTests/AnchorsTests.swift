@@ -191,6 +191,17 @@ class MatchFromBothEndsTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("ab"))
     }
 
+    func testRangeIncludingZero() throws {
+        let regex = try Regex("^a{0,4}$")
+
+        XCTAssertTrue(regex.isMatch(""))
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch("aa"))
+        XCTAssertTrue(regex.isMatch("aaa"))
+        XCTAssertTrue(regex.isMatch("aaaa"))
+        XCTAssertFalse(regex.isMatch("aaaaa"))
+    }
+
     func testRange() throws {
         let regex = try Regex("^a{2,4}$")
 

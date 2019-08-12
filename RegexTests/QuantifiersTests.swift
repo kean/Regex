@@ -13,7 +13,6 @@ class QuantifiersTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "The preceeding token is not quantifiable")
-            XCTAssertEqual(error.index, 0)
         }
     }
 
