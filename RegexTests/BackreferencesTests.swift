@@ -46,7 +46,6 @@ class BackreferencesTests: XCTestCase {
                 return XCTFail("Unexpected error")
             }
             XCTAssertEqual(error.message, "The token '\\1' references a non-existent or invalid subpattern")
-            XCTAssertEqual(error.index, 0) // TODO: pass index to expression info
         }
     }
 }

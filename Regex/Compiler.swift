@@ -9,7 +9,7 @@ final class Compiler {
     private let options: Regex.Options
     private var symbols: Symbols
     private var captureGroups: [CaptureGroup] = []
-    private var backreferences: [Unit.Backreference] = []
+    private var backreferences: [ASTUnit.Backreference] = []
 
     init(_ pattern: String, _ options: Regex.Options) {
         self.parser = Parser(pattern, options)
@@ -19,7 +19,7 @@ final class Compiler {
 
     func compile() throws -> (CompiledRegex, Symbols) {
         let ast = try parser.parse()
-        guard ast.value.unit is Unit.Root else {
+        guard ast.value.unit is ASTUnit.Root else {
             fatalError("Parser returned an invalid root node")
         }
         guard !ast.children.isEmpty else {
@@ -40,21 +40,21 @@ final class Compiler {
 }
 
 private extension Compiler {
-    func compile(_ node: Node<UnitNode>) throws -> Expression {
+    func compile(_ node: ASTNode) throws -> Expression {
         let expression = try _compile(node)
         symbols.map[expression.start] = node
         symbols.map[expression.end] = node
         return expression
     }
 
-    func _compile(_ node: Node<UnitNode>) throws -> Expression {
+    func _compile(_ node: ASTNode) throws -> Expression {
         switch node.value.unit {
-        case is Unit.Root,
-             is Unit.Expression:
+        case is ASTUnit.Root,
+             is ASTUnit.Expression:
             let expressions = try node.children.map(compile)
             return .concatenate(expressions)
 
-        case (let group as Unit.Group):
+        case (let group as ASTUnit.Group):
             let expressions = try node.children.map(compile)
             let expression = Expression.group(.concatenate(expressions))
             if group.isCapturing { // Remember the group that we just compiled.
@@ -62,16 +62,16 @@ private extension Compiler {
             }
             return expression
 
-        case (let backreference as Unit.Backreference):
+        case (let backreference as ASTUnit.Backreference):
             assert(node.children.isEmpty, "Backreferences must not have children")
             backreferences.append(backreference)
             return .backreference(backreference.index)
 
-        case is Unit.Alternation:
+        case is ASTUnit.Alternation:
             let expressions = try node.children.map(compile)
             return .alternate(expressions)
 
-        case (let anchor as Unit.Anchor):
+        case (let anchor as ASTUnit.Anchor):
             assert(node.children.isEmpty, "Anchor must not have children")
             switch anchor {
             case .startOfString: return .startOfString
@@ -84,37 +84,30 @@ private extension Compiler {
             case .previousMatchEnd: return .previousMatchEnd
             }
 
-        case (let quantifier as Unit.Quantifier):
+        case (let quantifier as ASTUnit.Quantifier):
             assert(node.children.count == 1, "Quantifier can only be applied to a single child")
             let expression = try compile(node.children[0])
             switch quantifier {
-            case .zeroOrMore:
-                return .zeroOrMore(expression)
-            case .oneOrMore:
-                return .oneOrMore(expression)
-            case .zeroOrOne:
-                return .zeroOrOne(expression)
-            case let .range(range):
-                return try compile(node, range)
+            case .zeroOrMore: return .zeroOrMore(expression)
+            case .oneOrMore: return .oneOrMore(expression)
+            case .zeroOrOne: return .zeroOrOne(expression)
+            case let .range(range): return try compile(node, range)
             }
 
-        case (let match as Unit.Match):
+        case (let match as ASTUnit.Match):
             assert(node.children.isEmpty, "Match must not have children")
             switch match {
-            case let .character(c):
-                return .character(c)
-            case let .anyCharacter(includingNewline):
-                return .anyCharacter(includingNewline: includingNewline)
-            case let .characterSet(set):
-                return .characterSet(set)
+            case let .character(c): return .character(c)
+            case let .anyCharacter(includingNewline): return .anyCharacter(includingNewline: includingNewline)
+            case let .characterSet(set): return .characterSet(set)
             }
 
         default:
-            fatalError("Unsupported unit")
+            fatalError("Unsupported unit \(node.value)")
         }
     }
 
-    func compile(_ node: Node<UnitNode>, _ range: ClosedRange<Int>) throws -> Expression {
+    func compile(_ node: ASTNode, _ range: ClosedRange<Int>) throws -> Expression {
         let prefix: Expression = try .concatenate((0..<range.lowerBound).map { _ in
             try compile(node.children[0])
         })
@@ -164,5 +157,5 @@ struct CaptureGroup {
 /// Mapping between states of the finite state machine and the nodes for which
 /// they were produced.
 struct Symbols {
-    fileprivate(set) var map = [State: Node<UnitNode>]()
+    fileprivate(set) var map = [State: ASTNode]()
 }

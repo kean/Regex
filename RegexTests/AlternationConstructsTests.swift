@@ -9,6 +9,7 @@ class AlternationConstructsTests: XCTestCase {
 
     func testAlternation() throws {
         let regex = try Regex("a|b")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("b"))
@@ -19,6 +20,7 @@ class AlternationConstructsTests: XCTestCase {
 
     func testAlternationMultipleOptions() throws {
         let regex = try Regex("a|b|cd")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("b"))
@@ -31,6 +33,7 @@ class AlternationConstructsTests: XCTestCase {
 
     func testAlternationsWithGroup() throws {
         let regex = try Regex("a(b|c)")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("ab"))
         XCTAssertTrue(regex.isMatch("ac"))
@@ -41,6 +44,7 @@ class AlternationConstructsTests: XCTestCase {
 
     func testNestedAlternations() throws {
         let regex = try Regex("(a|b(c|d))")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("bc"))
@@ -66,14 +70,11 @@ class AlternationConstructsTests: XCTestCase {
         }
     }
 
-    // TODO: this crashes right now
-    func _testAlternationInitEmptyFirstGroup() {
-        XCTAssertThrowsError(try Regex("(|b)")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
-            XCTAssertEqual(error.message, "Left side of | is empty")
-            XCTAssertEqual(error.index, 1)
-        }
+    func testAlternationInitEmptyFirstGroup() throws {
+        let regex = try Regex("(|b)")
+
+        let matches = regex.matches(in: "b")
+
+        XCTAssertTrue(!matches.isEmpty)
     }
 }

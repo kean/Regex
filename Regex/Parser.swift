@@ -11,19 +11,19 @@ final class Parser {
     private let scanner: Scanner
     private var groupIndex = 1
     private let options: Regex.Options
-    private var node: Node<UnitNode>
+    private var node: ASTNode
 
     init(_ pattern: String, _ options: Regex.Options) {
         self.pattern = pattern
         self.scanner = Scanner(pattern)
         self.options = options
-        self.node = Node(.init(Unit.Root(), pattern[...]))
+        self.node = Node(.init(ASTUnit.Root(), pattern[...]))
     }
 
     /// Scans and analyzes the pattern and creats an abstract syntax tree.
-    func parse() throws -> Node<UnitNode> {
+    func parse() throws -> ASTNode {
         if let substring = scanner.read("^") {
-            add(Unit.Anchor.startOfString, substring)
+            add(ASTUnit.Anchor.startOfString, substring)
         }
 
         while let c = scanner.peak() {
@@ -50,11 +50,11 @@ final class Parser {
 
             // Character classes
             case ".": // Any character
-                let unit = Unit.Match.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))
+                let unit = ASTUnit.Match.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))
                 add(unit, scanner.read())
             case "[": // Start a character group
                 let (set, substring) = try scanner.readCharacterSet()
-                add(Unit.Match.characterSet(set), substring)
+                add(ASTUnit.Match.characterSet(set), substring)
 
             // Character Escapes
             case "\\":
@@ -62,11 +62,11 @@ final class Parser {
 
             // Anchors
             case "$":
-                add(Unit.Anchor.endOfString, scanner.read())
+                add(ASTUnit.Anchor.endOfString, scanner.read())
 
             // A regular character
             default:
-                add(Unit.Match.character(c), scanner.read())
+                add(ASTUnit.Match.character(c), scanner.read())
                 break
             }
         }
@@ -76,7 +76,7 @@ final class Parser {
             try closeAlternation()
         }
 
-        guard node.unit is Unit.Root else {
+        guard node.unit is ASTUnit.Root else {
             throw Regex.Error("Unmatched opening parentheses", i)
         }
 
@@ -93,7 +93,7 @@ final class Parser {
         }
 
         if let (substring, index) = scanner.readInteger() {
-            add(Unit.Backreference(index: index), source(from: backslash, to: substring))
+            add(ASTUnit.Backreference(index: index), source(from: backslash, to: substring))
             return
         }
 
@@ -104,16 +104,16 @@ final class Parser {
         // TODO: pass proper substring and remove these workarounds
         scanner.read()
         if let set = try scanner.readCharacterClassSpecialCharacter(c) {
-            add(Unit.Match.characterSet(set), backslash)
+            add(ASTUnit.Match.characterSet(set), backslash)
             return
         }
         scanner.undoRead()
 
-        add(Unit.Match.character(c), source(from: backslash, to: scanner.read()))
+        add(ASTUnit.Match.character(c), source(from: backslash, to: scanner.read()))
     }
 
     private func parseSpecialCharacter(_ c: Character) -> Bool {
-        func anchor(for c: Character) -> Unit.Anchor? {
+        func anchor(for c: Character) -> ASTUnit.Anchor? {
             switch c {
             case "b": return .wordBoundary
             case "B": return .nonWordBoundary
@@ -139,7 +139,7 @@ final class Parser {
     private func openGroup() {
         let bracket = scanner.read()
         let isCapturing = scanner.read("?:") == nil
-        let unit = Unit.Group(index: groupIndex, isCapturing: isCapturing)
+        let unit = ASTUnit.Group(index: groupIndex, isCapturing: isCapturing)
         groupIndex += 1
         let node = add(unit, bracket)
         node.parent = self.node
@@ -147,7 +147,7 @@ final class Parser {
     }
 
     private func closeGroup() throws {
-        guard node.value.unit is Unit.Group else {
+        guard node.value.unit is ASTUnit.Group else {
             throw Regex.Error("Unmatched closing parentheses", i)
         }
         if let node = node.children.first, node.isAlternation {
@@ -173,10 +173,10 @@ final class Parser {
     }
 
     private func openAlternation() throws {
-        let group = wrap(node.children)
+        let group = makeGroup(node.children, node)
         node.children.removeAll()
 
-        let alternation = Node<UnitNode>(.init(Unit.Alternation(), group.value.source))
+        let alternation = ASTNode(.init(ASTUnit.Alternation(), group.value.source.dropFirst()))
         alternation.children = [group]
         self.node.add(alternation)
     }
@@ -186,7 +186,7 @@ final class Parser {
             throw Regex.Error("Unexpected error", i)
         }
 
-        let group = wrap(Array(node.children.dropFirst()))
+        let group = makeGroup(Array(node.children.dropFirst()), node)
         node.children.removeLast(node.children.count-1) // Removes everything except the existing alternation
 
         alternation.children.append(group)
@@ -194,27 +194,26 @@ final class Parser {
     }
 
     /// Wraps nodes into an anonymous group.
-    private func wrap(_ nodes: [Node<UnitNode>]) -> Node<UnitNode> {
+    private func makeGroup(_ nodes: [ASTNode], _ parent: ASTNode) -> ASTNode {
         guard !nodes.isEmpty else {
-            // TODO: this might potentially crash some expression
-            return Node<UnitNode>(.init(Unit.Expression(), pattern.suffix(0)))
+            return ASTNode(.init(ASTUnit.Expression(), parent.value.source.dropFirst()))
         }
 
         let source = self.source(from: nodes.first!, to: nodes.last!)
-        let node = Node<UnitNode>(.init(Unit.Expression(), source))
+        let node = ASTNode(.init(ASTUnit.Expression(), source))
         node.children = nodes
         return node
     }
 
     // MARK: Quantifiers
 
-    private func addQuantifier(_ quantifier: Unit.Quantifier, _ substring: Substring) throws {
+    private func addQuantifier(_ quantifier: ASTUnit.Quantifier, _ substring: Substring) throws {
         // TODO: do we need to perform some validations?
         // TODO: do we need to pass the entire entity that we apply quantifier to?
         guard let last = node.children.popLast() else {
             throw Regex.Error("The preceeding token is not quantifiable", i+1)
         }
-        let quantifier = Node<UnitNode>(.init(quantifier, substring))
+        let quantifier = ASTNode(.init(quantifier, substring))
         quantifier.children = [last] // Apply quantifier to the last expression
         self.node.children.append(quantifier)
     }
@@ -231,13 +230,13 @@ final class Parser {
 
     /// Adds a unit to the current node.
     @discardableResult
-    private func add(_ unit: UnitProtocol, _ substring: Substring) -> Node<UnitNode> {
-        return self.node.add(UnitNode(unit, substring))
+    private func add(_ unit: ASTUnitProtocol, _ substring: Substring) -> ASTNode {
+        return self.node.add(ASTValue(unit, substring))
     }
 
     // MARK: Helpers (Pattern)
 
-    private func source(from: Node<UnitNode>, to: Node<UnitNode>) -> Substring {
+    private func source(from: ASTNode, to: ASTNode) -> Substring {
         return source(from: from.value.source, to: to.value.source)
     }
 
@@ -254,14 +253,14 @@ final class Parser {
 
 // MARK: - Unit
 
-/// An AST unit.
-struct UnitNode: CustomStringConvertible {
-    let unit: UnitProtocol
+/// A value stored in AST nodes, wraps a unit.
+struct ASTValue: CustomStringConvertible {
+    let unit: ASTUnitProtocol
 
     /// The part of the pattern which represents the given unit.
     var source: Substring
 
-    init(_ unit: UnitProtocol, _ source: Substring) {
+    init(_ unit: ASTUnitProtocol, _ source: Substring) {
         self.unit = unit
         self.source = source
     }
@@ -272,27 +271,27 @@ struct UnitNode: CustomStringConvertible {
 }
 
 /// Marker protocol.
-protocol UnitProtocol {}
+protocol ASTUnitProtocol {}
 
-enum Unit {
+enum ASTUnit {
     /// The root of the expression.
-    struct Root: UnitProtocol {}
+    struct Root: ASTUnitProtocol {}
 
     /// An anonymoys group.
-    struct Expression: UnitProtocol {}
+    struct Expression: ASTUnitProtocol {}
 
-    struct Group: UnitProtocol {
+    struct Group: ASTUnitProtocol {
         let index: Int
         let isCapturing: Bool
     }
 
-    struct Backreference: UnitProtocol {
+    struct Backreference: ASTUnitProtocol {
         let index: Int
     }
 
-    struct Alternation: UnitProtocol {}
+    struct Alternation: ASTUnitProtocol {}
 
-    enum Anchor: UnitProtocol {
+    enum Anchor: ASTUnitProtocol {
         case startOfString
         case endOfString
         case wordBoundary
@@ -303,13 +302,13 @@ enum Unit {
         case previousMatchEnd
     }
 
-    enum Match: UnitProtocol {
+    enum Match: ASTUnitProtocol {
         case character(Character)
         case anyCharacter(includingNewline: Bool)
         case characterSet(CharacterSet)
     }
 
-    enum Quantifier: UnitProtocol {
+    enum Quantifier: ASTUnitProtocol {
         case zeroOrMore
         case oneOrMore
         case zeroOrOne
@@ -341,6 +340,8 @@ final class Node<T> {
     }
 }
 
+typealias ASTNode = Node<ASTValue>
+
 // MARK: - Node (Extensions)
 
 extension Node {
@@ -370,13 +371,13 @@ extension Node {
 
 // MARK: - Node (UnitNode)
 
-extension Node where T == UnitNode {
+extension Node where T == ASTValue {
 
     var isAlternation: Bool {
-        return unit is Unit.Alternation
+        return unit is ASTUnit.Alternation
     }
 
-    var unit: UnitProtocol {
+    var unit: ASTUnitProtocol {
         return value.unit
     }
 }

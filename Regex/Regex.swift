@@ -92,7 +92,7 @@ public final class Regex {
             let cache = Cache()
             var cursor = Cursor(string: string, substring: substring)
             while let match = firstMatch(cursor, cache), closure(match) {
-                cursor = cursor.startingAt(match.endIndex)
+                cursor = cursor.startingAt(match.fullMatch.isEmpty ? match.endIndex + 1 : match.endIndex)
                 cursor.previousMatchIndex = match.fullMatch.endIndex
             }
         }
