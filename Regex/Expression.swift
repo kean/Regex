@@ -286,9 +286,10 @@ extension Expression {
 extension Expression {
     static func backreference(_ groupIndex: Int) -> Expression {
         let expression = Expression("Backreference with index '\(groupIndex)")
+        expression.start.info = .backreference(groupIndex)
         expression.start.transitions = [
             Transition(toState: expression.end, condition: { (cursor, context) -> Int? in
-                guard let groupRange = cursor.groups[groupIndex] else {
+                guard let groupRange = cursor.groups[groupIndex-1] else {
                     return nil
                 }
                 let group = cursor.substring(groupRange)
@@ -347,7 +348,12 @@ enum ExpressionInfo {
     /// A capture group end.
     case groupEnd(Group)
 
+    /// A backreference to a group with a given Id.
+    case backreference(GroupId)
+
     struct Group {
         unowned var capturingStartState: State?
     }
 }
+
+typealias GroupId = Int

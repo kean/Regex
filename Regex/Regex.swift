@@ -59,7 +59,7 @@ public final class Regex {
             let compiler = Compiler(pattern, options)
             self.expression = try compiler.compile()
             self.captureGroups = expression.allStates()
-                .filter { if case .groupStart? = $0.info { return true } else { return false } }
+                .filter { if case .groupStart? = $0.info { return true }; return false }
             self.numberOfCaptureGroups = captureGroups.count
             self.options = options
             os_log(.default, log: Regex.log, "Expression: \n\n%{PUBLIC}@", expression.description)

@@ -71,7 +71,7 @@ final class Compiler {
             }
         }
 
-        let regex = try collapse() // Collapse on regexes in an implicit top group
+        let expression = try collapse() // Collapse on regexes in an implicit top group
 
         guard stack.isEmpty else {
             if case let .group(group)? = stack.last {
@@ -81,8 +81,10 @@ final class Compiler {
             }
         }
 
+        try validate(expression)
+
         // Wrap the expression into an implicit group.
-        return Expression.group(regex, isCapturing: false)
+        return Expression.group(expression, isCapturing: false)
     }
 }
 
@@ -94,7 +96,7 @@ private extension Compiler {
         }
 
         if let int = parser.readInteger() {
-            return .backreference(int-1)
+            return .backreference(int)
         }
 
         _ = parser.readCharacter()
@@ -160,7 +162,7 @@ private extension Compiler {
 
     /// Collapses the items in the top group. Also collapses alternations in the
     /// top group. Returns a single expression.
-    private func collapse() throws -> Expression {
+    func collapse() throws -> Expression {
         var alternatives = [Expression]()
 
         var stop = false
@@ -184,6 +186,24 @@ private extension Compiler {
         }
 
         return Expression.alternate(alternatives)
+    }
+}
+
+// MARK: - Validations
+
+private extension Compiler {
+    func validate(_ expression: Expression) throws {
+        let states = expression.allStates()
+        let captureGroups = states.filter { if case .groupStart? = $0.info { return true }; return false }
+
+        for state in states {
+            guard case let .backreference(groupId)? = state.info else {
+                continue
+            }
+            if groupId > captureGroups.count {
+                throw Regex.Error("The token '\\\(groupId)' references a non-existent or invalid subpattern", 0)
+            }
+        }
     }
 }
 

@@ -16,4 +16,26 @@ class BackreferencesTests: XCTestCase {
 
         XCTAssertEqual(matches, ["ll", "ee", "tt", "mm", "ss", "aa", "nn"])
     }
+
+    // MARK: Error Reporting
+
+    func testThrowsNonExistentSubpattern() throws {
+        XCTAssertThrowsError(try Regex("(a)\\2")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "The token '\\2' references a non-existent or invalid subpattern")
+            XCTAssertEqual(error.index, 0)
+        }
+    }
+
+    func testThrowsNonExistentSubpatternSubpatterns() throws {
+        XCTAssertThrowsError(try Regex("ab\\1")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "The token '\\1' references a non-existent or invalid subpattern")
+            XCTAssertEqual(error.index, 0) // TODO: pass index to expression info
+        }
+    }
 }
