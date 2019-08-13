@@ -63,7 +63,7 @@ public final class Regex {
     /// Determine whether the regular expression pattern occurs in the input text.
     public func isMatch(_ string: String) -> Bool {
         var isMatchFound = false
-        forMatch(in: string) { match in
+        makeMatcher(for: string).forMatch(in: string) { match in
             isMatchFound = true
             return false // It's enough to find one match
         }
@@ -73,140 +73,15 @@ public final class Regex {
     /// Returns an array containing all the matches in the string.
     public func matches(in string: String) -> [Match] {
         var matches = [Match]()
-        forMatch(in: string) { match in
+        makeMatcher(for: string).forMatch(in: string) { match in
             matches.append(match)
             return true // Continue finding matches
         }
         return matches
     }
 
-    // MARK: Match (Private)
-
-    /// - parameter closure: Return `false` to stop.
-    private func forMatch(in string: String, _ closure: (Match) -> Bool) {
-        // Print number of iterations performed, this is for debug purporses only but
-        // it is effectively the only thing making Regex non-thread-safe which we ignore.
-        os_log(.default, log: log, "%{PUBLIC}@", "Started, input: \(string)")
-        iterations = 0
-        defer {
-            os_log(.default, log: log, "%{PUBLIC}@", "Finished, iterations: \(iterations)")
-        }
-
-        for substring in preprocess(string) {
-            let cache = Cache()
-            var cursor = Cursor(string: string, substring: substring)
-            while let match = firstMatch(cursor, cache), closure(match), match.endIndex < cursor.range.upperBound {
-                // Make sure we increment the position even if the found match is empty
-                let index = match.fullMatch.isEmpty ? match.endIndex + 1 : match.endIndex
-                cursor = cursor.startingAt(index)
-                cursor.previousMatchIndex = match.fullMatch.endIndex
-            }
-        }
-    }
-
-    private func preprocess(_ string: String) -> [Substring] {
-        if options.contains(.multiline) {
-            return string.split(separator: "\n")
-        } else {
-            return [string[...]]
-        }
-    }
-
-    private func firstMatch(_ cursor: Cursor, _ cache: Cache) -> Match? {
-        // Include end index in the search to make sure matches runs for empty
-        // strings, and also that it find all possible matches.
-        let range = cursor.range.lowerBound...cursor.range.upperBound
-        for i in range {
-            if let match = firstMatch(cursor.startingAt(i), regex.expression.start, cache) {
-                return match
-            }
-        }
-        return nil
-    }
-
-    // Find the match in the given string. Captures groups as it goes.
-    private func firstMatch(_ cursor: Cursor, _ state: State, _ cache: Cache, _ level: Int = 0) -> Match? {
-        iterations += 1
-        os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(state)")
-
-        guard !state.isEnd else { // Found a match
-            return Match(cursor)
-        }
-
-        let key = Cache.Key(index: cursor.index, state: state)
-        if let match = cache[key] {
-            return match.get()
-        }
-
-        let isBranching = state.transitions.count > 1
-
-        for transition in state.transitions {
-            guard let consumed = transition.condition(cursor) else {
-                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \("❌")")
-                continue
-            }
-
-            if isBranching {
-                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] ᛦ")
-            }
-
-            var newCursor = cursor
-
-            // Capture a group if needed
-            if let captureGroup = captureGroups.first(where: { $0.end == state }),
-                let startIndex = cursor.groupsStartIndexes[captureGroup.start] {
-                let groupIndex = captureGroup.index
-                newCursor.groups[groupIndex] = startIndex..<cursor.index
-            } else {
-                newCursor.groupsStartIndexes[state] = cursor.index
-            }
-
-            newCursor.index += consumed // Consume as many characters as need (zero for epsilon transitions)
-        
-            let match = firstMatch(newCursor, transition.toState, cache, isBranching ? level + 1 : level)
-
-            if isBranching {
-                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(newCursor.index), \(newCursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")
-            }
-
-            if let match = match {
-                cache[key] = .match(match)
-                return match
-            }
-        }
-
-        cache[key] = .failed
-        return nil
-    }
-}
-
-private extension Regex {
-    private final class Cache {
-        struct Key: Hashable {
-            let index: Int
-            let state: State
-        }
-
-        enum Entry {
-            // TODO: I don't actually see scenarios where storing matches in
-            // cache is useful, should probably be simplified.
-            case match(Match)
-            case failed
-
-            func get() -> Match? {
-                switch self {
-                case let .match(match): return match
-                case .failed: return nil
-                }
-            }
-        }
-
-        private var cache = [Key: Entry]()
-
-        subscript(key: Key) -> Entry? {
-            get { return cache[key] }
-            set { cache[key] = newValue }
-        }
+    private func makeMatcher(for string: String) -> Matcher {
+        return Matcher(regex: regex, options: options, symbols: symbols)
     }
 }
 
@@ -230,6 +105,8 @@ public extension Regex {
         }
     }
 }
+
+typealias Match = Regex.Match
 
 // MARK: - Regex.Error
 

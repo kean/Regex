@@ -30,12 +30,7 @@ final class Compiler {
 
         try validateBackreferences()
 
-        // TODO: remove this workaround
-        // Wrap the expression into an implicit group. We do this as a workaround
-        // to make sure Matcher registers all matches.
-        let group = Expression.group(expression)
-
-        return (CompiledRegex(expression: group, captureGroups: captureGroups), symbols)
+        return (CompiledRegex(expression: expression, captureGroups: captureGroups), symbols)
     }
 }
 

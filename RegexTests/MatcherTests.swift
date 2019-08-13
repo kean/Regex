@@ -5,7 +5,7 @@
 import XCTest
 import Regex
 
-class MatchesTests: XCTestCase {
+class MatcherTests: XCTestCase {
 
     func testReturnsAllFoundMatches() throws {
         let pattern = "a"
@@ -57,5 +57,15 @@ class MatchesTests: XCTestCase {
             XCTAssertEqual(match.fullMatch.startIndex, string.index(offsetBy: 4))
             XCTAssertEqual(match.fullMatch.endIndex, string.index(offsetBy: 5))
         }
+    }
+
+    func testGreedyFindsAllMatches() throws {
+        let pattern = #"\b(\w+)?\b"#
+        let string = "Aa Bb Cc Dd Ee Ff"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["Aa", "", "Bb", "", "Cc", "", "Dd", "", "Ee", "", "Ff", ""])
     }
 }

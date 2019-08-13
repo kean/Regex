@@ -43,7 +43,7 @@ struct Cursor { // Not sure this is the best word
     func startingAt(_ index: Int) -> Cursor {
         var cursor = self
         cursor.index = index
-        cursor.range = index..<characters.endIndex
+        cursor.range = min(index, characters.endIndex)..<characters.endIndex
         return cursor
     }
 
