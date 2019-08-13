@@ -150,12 +150,12 @@
 				0CB3056A22FED0740083B406 /* CharacterEscapesTests.swift */,
 				0CB3056722FED0740083B406 /* CapturingGroupsTests.swift */,
 				0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */,
-				0CB3056322FED0740083B406 /* IntegrationTests.swift */,
-				0CB3056C22FED0740083B406 /* OptionsTests.swift */,
 				0CB3056522FED0740083B406 /* QuantifiersTests.swift */,
+				0CB3056C22FED0740083B406 /* OptionsTests.swift */,
 				0CB3056822FED0740083B406 /* RangeQuantifierTests.swift */,
 				0CB3057922FEE9970083B406 /* MatchesTests.swift */,
 				0CB3057D22FF19920083B406 /* RegexSpecTests.swift */,
+				0CB3056322FED0740083B406 /* IntegrationTests.swift */,
 				0CB3057B22FF08ED0083B406 /* Extensions.swift */,
 			);
 			path = RegexTests;

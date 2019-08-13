@@ -25,7 +25,7 @@ public final class Regex {
     }
 
     /// Enable debug mode to enable logging.
-    public static var isDebugModeEnabled = true
+    public static var isDebugModeEnabled = false
 
     public struct Options: OptionSet {
         public let rawValue: Int
@@ -95,8 +95,10 @@ public final class Regex {
         for substring in preprocess(string) {
             let cache = Cache()
             var cursor = Cursor(string: string, substring: substring)
-            while let match = firstMatch(cursor, cache), closure(match) {
-                cursor = cursor.startingAt(match.fullMatch.isEmpty ? match.endIndex + 1 : match.endIndex)
+            while let match = firstMatch(cursor, cache), closure(match), match.endIndex < cursor.range.upperBound {
+                // Make sure we increment the position even if the found match is empty
+                let index = match.fullMatch.isEmpty ? match.endIndex + 1 : match.endIndex
+                cursor = cursor.startingAt(index)
                 cursor.previousMatchIndex = match.fullMatch.endIndex
             }
         }
@@ -112,9 +114,10 @@ public final class Regex {
     }
 
     private func firstMatch(_ cursor: Cursor, _ cache: Cache) -> Match? {
-        // If the input string is empty, we still need to run the regex once to verify
-        // that the empty string matches, thus `isEmpty` check.
-        for i in (cursor.characters.isEmpty ? 0..<1 : cursor.range) {
+        // Include end index in the search to make sure matches runs for empty
+        // strings, and also that it find all possible matches.
+        let range = cursor.range.lowerBound...cursor.range.upperBound
+        for i in range {
             if let match = firstMatch(cursor.startingAt(i), regex.expression.start, cache) {
                 return match
             }

@@ -595,8 +595,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
 
 class RegexCommonRegex101Tests: XCTestCase {
 
-    // TODO: add support for ?:
-    func _testMACAddressRegex() throws {
+    func testMACAddressRegex() throws {
         let regex = try Regex("((?:[a-zA-Z0-9]{2}[:-]){5}[a-zA-Z0-9]{2})")
 
         XCTAssertTrue(regex.isMatch("00:0a:95:9d:68:16"))

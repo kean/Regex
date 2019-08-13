@@ -5,7 +5,7 @@
 import XCTest
 import Regex
 
-class QuantifiersTests: XCTestCase {
+class QuantifierZeroOrMoreTests: XCTestCase {
 
     func testThrowsThePrecedingTokenIsNotQuantifiableErrorWhenRootEmpty() {
         XCTAssertThrowsError(try Regex("*")) { error in
@@ -20,8 +20,9 @@ class QuantifiersTests: XCTestCase {
         XCTAssertNoThrow(try Regex("a**"))
     }
 
-    func testZeroOrMoreTimes() throws {
+    func testAppliedToLiteralCharacter() throws {
         let regex = try Regex("a*")
+
         XCTAssertTrue(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -29,8 +30,9 @@ class QuantifiersTests: XCTestCase {
         // It will always match, see Anchors for more tests
     }
 
-    func testZeroOrMoreTimesWithAnotherGroupBeforeIt() throws {
+    func testAppliedToTheLatestLiteralCharacter() throws {
         let regex = try Regex("ab*")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -40,16 +42,63 @@ class QuantifiersTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("b"))
     }
 
-    func testZeroOrMoreTimesWithAnyCharacter() throws {
+    func testTimesAppliedToTheLatestGroup() throws {
+        let regex = try Regex("^(ab)*$")
+
+        XCTAssertTrue(regex.isMatch(""))
+        XCTAssertFalse(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("aa"))
+        XCTAssertTrue(regex.isMatch("ab"))
+        XCTAssertFalse(regex.isMatch("ba"))
+        XCTAssertFalse(regex.isMatch("abb"))
+        XCTAssertFalse(regex.isMatch("b"))
+        XCTAssertTrue(regex.isMatch("abab"))
+    }
+
+    func testReturnsEmptyMatches() throws {
+        let regex = try Regex("(ab)*")
+        let s = "a"
+
+        let matches = regex.matches(in: s)
+
+        // Expect to match two empty strings
+        guard matches.count == 2 else {
+              return XCTFail("Invalid number of matches")
+        }
+
+        do {
+            let match = matches[0]
+            XCTAssertEqual(match.fullMatch, "")
+            XCTAssertEqual(match.fullMatch.startIndex, s.startIndex)
+            XCTAssertEqual(match.fullMatch.endIndex, s.startIndex)
+            XCTAssertTrue(match.groups.isEmpty)
+        }
+
+        do {
+            let match = matches[1]
+            XCTAssertEqual(match.fullMatch, "")
+            XCTAssertEqual(match.fullMatch.startIndex, s.index(after: s.startIndex))
+            XCTAssertEqual(match.fullMatch.endIndex, s.index(after: s.startIndex))
+            XCTAssertTrue(match.groups.isEmpty)
+        }
+    }
+
+    func testWithAnyCharacter() throws {
         let regex = try Regex(".*")
+
         XCTAssertTrue(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
         XCTAssertTrue(regex.isMatch("ab"))
     }
+}
+
+// Remaining quantifiers.
+class QuantifiersTests: XCTestCase {
 
     func testOneOrMoreTimes() throws {
         let regex = try Regex("a+")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -59,6 +108,7 @@ class QuantifiersTests: XCTestCase {
 
     func testZeroOrOneTime() throws {
         let regex = try Regex("a?")
+
         XCTAssertTrue(regex.isMatch(""))
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))

@@ -94,7 +94,7 @@ class AnchorMatchEndOfStringTests: XCTestCase {
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
         XCTAssertTrue(regex.isMatch("ba"))
-        XCTAssertFalse(regex.isMatch("ab"))
+        XCTAssertTrue(regex.isMatch("ab")) // Matches the emty pattern at the end
     }
 
     func testCharacters() throws {
