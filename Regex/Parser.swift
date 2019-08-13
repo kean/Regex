@@ -11,83 +11,156 @@ final class Parser {
     private let pattern: String
     private let scanner: Scanner
     private var groupIndex = 1
+    private var nextGroupIndex: Int {
+        defer { groupIndex += 1 }
+        return groupIndex
+    }
     private let options: Regex.Options
-    private var node: ASTNode
     private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.parser", category: "default") : .disabled
 
     init(_ pattern: String, _ options: Regex.Options) {
         self.pattern = pattern
         self.scanner = Scanner(pattern)
         self.options = options
-        self.node = ASTNode(ASTUnit.Root(), pattern[...])
     }
 
     /// Scans and analyzes the pattern and creats an abstract syntax tree.
     func parse() throws -> ASTNode {
-        if let substring = scanner.read("^") {
-            add(ASTUnit.Anchor.startOfString, substring)
+        guard !pattern.isEmpty else {
+            throw Regex.Error("Pattern must not be empty", 0)
         }
 
-        while let c = scanner.peak() {
-            switch c {
-            // Grouping
-            case "(":
-               openGroup()
-            case ")":
-                try closeGroup()
-
-            // Alternation
-            case "|":
-                try addAlternation()
-
-            // Quantifiers
-            case "*": // Zero or more
-                try addQuantifier(.zeroOrMore, scanner.read())
-            case "+": // One or more
-                try addQuantifier(.oneOrMore, scanner.read())
-            case "?": // Zero or one
-                try addQuantifier(.zeroOrOne, scanner.read())
-            case "{": // Match N times
-                try addRangeQuantifier()
-
-            // Character classes
-            case ".": // Any character
-                let unit = ASTUnit.Match.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))
-                add(unit, scanner.read())
-            case "[": // Start a character group
-                let (set, substring) = try scanner.readCharacterSet()
-                add(ASTUnit.Match.characterSet(set), substring)
-
-            // Character Escapes
-            case "\\":
-                try parseEscapedCharacter()
-
-            // Anchors
-            case "$":
-                add(ASTUnit.Anchor.endOfString, scanner.read())
-
-            // A regular character
-            default:
-                add(ASTUnit.Match.character(c), scanner.read())
-            }
+        let node = ASTNode(ASTUnit.Root(), pattern[...])
+        if let startOfString = try parseStartOfStringAnchor() {
+            node.add(startOfString)
         }
+        node.add(try parseExpression())
 
-        if let node = node.children.first, node.isAlternation {
-            try closeAlternation()
-        }
-
-        guard node.unit is ASTUnit.Root else {
-            throw Regex.Error("Unmatched opening parentheses", i)
+        guard scanner.peak() == nil else {
+            throw Regex.Error("Unmatched closing parentheses", i)
         }
 
         os_log(.default, log: self.log, "AST: \n%{PUBLIC}@", Node.recursiveDescription(node))
 
         return node
     }
+}
+
+private extension Parser {
+
+    // MARK: Options
+
+    func parseStartOfStringAnchor() throws -> ASTNode? {
+        guard let substring = scanner.read("^") else { return nil }
+        return ASTNode(ASTUnit.Anchor.startOfString, substring)
+    }
+
+    // MARK: Expressions
+
+    func parseExpression() throws -> ASTNode {
+        let start = scanner.read()
+        scanner.undoRead() // TODO: fix this
+
+        var children: [[ASTNode]] = [[]] // Each array represents an alternation
+
+        func add(_ node: ASTNode) {
+            children[children.endIndex-1].append(node)
+        }
+
+        // Appplies quantifier to the last expression.
+        func apply(_ quantifier: ASTNode) throws {
+            guard let last = children[children.endIndex-1].popLast() else {
+                throw Regex.Error("The preceeding token is not quantifiable", i)
+            }
+            quantifier.children = [last] // Apply quantifier to the last expression
+            add(quantifier)
+        }
+
+        while let c = scanner.peak(), c != ")" {
+            switch c {
+            case "(": add(try parseGroup())
+            case "|":
+                scanner.read() // Consume '|'
+                children.append([]) // Start a new expression
+            case "*", "+", "?", "{":
+                try apply(try parseQuantifier())
+            case ".":
+                let unit = ASTUnit.Match.anyCharacter(includingNewline: options.contains(.dotMatchesLineSeparators))
+                add(ASTNode(unit, scanner.read()))
+            case "\\": add(try parseEscapedCharacter())
+            case "[": // Start a character group
+                let (set, substring) = try scanner.readCharacterSet()
+                add(ASTNode(ASTUnit.Match.characterSet(set), substring))
+            case "$":
+                add(ASTNode(ASTUnit.Anchor.endOfString, scanner.read()))
+
+            default:
+                let character = ASTUnit.Match.character(c)
+                add(ASTNode(character, scanner.read()))
+            }
+        }
+
+        // TODO: fix
+        scanner.undoRead()
+        let end = scanner.read()
+
+        let expressions = try children.map(expression)
+        if expressions.count > 1 {
+            return ASTNode(ASTUnit.Alternation(), source(start, end), expressions)
+        } else {
+            // TODO: handle situation where there are no expression property
+            return expressions[0]
+        }
+    }
+
+    /// Creates an node which represents an expression. If there is only one
+    /// child, returns a child itself to avoid additional overhead.
+    func expression(_ children: [ASTNode]) throws -> ASTNode {
+        switch children.count {
+        case 0: throw Regex.Error("A side of an alternation is empty", i)
+        case 1: return children[0]
+        default: return ASTNode(ASTUnit.Expression(), source(children.first!, children.last!), children)
+        }
+    }
+
+    // MARK: Groups
+
+    func parseGroup() throws -> ASTNode {
+        let start = try scanner.read("(", orThrow: "Unmatched closing parantheses")
+        let isCapturing = scanner.read("?:") == nil
+        let group = ASTUnit.Group(index: nextGroupIndex, isCapturing: isCapturing)
+        let expression = try parseExpression()
+        let end = try scanner.read(")", orThrow: "Unmatched opening parentheses")
+        return ASTNode(group, source(start, end), [expression])
+    }
+
+    // MARK: Quantifiers
+
+    func parseQuantifier() throws -> ASTNode {
+        switch scanner.peak()! {
+        case "*": return ASTNode(ASTUnit.Quantifier.zeroOrMore, scanner.read())
+        case "+": return ASTNode(ASTUnit.Quantifier.oneOrMore, scanner.read())
+        case "?": return ASTNode(ASTUnit.Quantifier.zeroOrOne, scanner.read())
+        case "{": return try parseRangeQuantifier()
+        default: fatalError("Invalid token")
+        }
+    }
+
+    func parseRangeQuantifier() throws -> ASTNode {
+        // TODO: cleanup
+        let start = scanner.read()
+        scanner.undoRead()
+
+        let range = try scanner.readRangeQuantifier()
+        scanner.undoRead()
+        let end = scanner.read()
+
+        return ASTNode(ASTUnit.Quantifier.range(range), source(start, end))
+    }
 
     // MARK: Character Escapes
 
-    private func parseEscapedCharacter() throws {
+    func parseEscapedCharacter() throws -> ASTNode {
         let backslash = scanner.read() // Consume escape
 
         guard let c = scanner.peak() else {
@@ -95,26 +168,24 @@ final class Parser {
         }
 
         if let (substring, index) = scanner.readInteger() {
-            add(ASTUnit.Backreference(index: index), source(from: backslash, to: substring))
-            return
+            return ASTNode(ASTUnit.Backreference(index: index), source(backslash, substring))
         }
 
-        if parseSpecialCharacter(c) {
-            return
+        if let node = parseSpecialCharacter(c) {
+            return node
         }
 
         // TODO: pass proper substring and remove these workarounds
         scanner.read()
         if let set = try scanner.readCharacterClassSpecialCharacter(c) {
-            add(ASTUnit.Match.characterSet(set), backslash)
-            return
+            return ASTNode(ASTUnit.Match.characterSet(set), backslash)
         }
         scanner.undoRead()
 
-        add(ASTUnit.Match.character(c), source(from: backslash, to: scanner.read()))
+        return ASTNode(ASTUnit.Match.character(c), source(backslash, scanner.read()))
     }
 
-    private func parseSpecialCharacter(_ c: Character) -> Bool {
+    func parseSpecialCharacter(_ c: Character) -> ASTNode? {
         func anchor(for c: Character) -> ASTUnit.Anchor? {
             switch c {
             case "b": return .wordBoundary
@@ -128,127 +199,26 @@ final class Parser {
         }
 
         guard let anchor = anchor(for: c) else {
-            return false
+            return nil
         }
 
         // TODO: pass proper substring
-        add(anchor, scanner.read())
-        return true
-    }
-
-    // MARK: Groups
-
-    private func openGroup() {
-        let bracket = scanner.read()
-        let isCapturing = scanner.read("?:") == nil
-        let unit = ASTUnit.Group(index: groupIndex, isCapturing: isCapturing)
-        groupIndex += 1
-        let node = add(unit, bracket)
-        node.parent = self.node
-        self.node = node
-    }
-
-    private func closeGroup() throws {
-        guard node.value.unit is ASTUnit.Group else {
-            throw Regex.Error("Unmatched closing parentheses", i)
-        }
-        if let node = node.children.first, node.isAlternation {
-            try closeAlternation()
-        }
-        let substring = scanner.read()
-        node.value.source = pattern[node.value.source.startIndex..<substring.endIndex]
-        assert(node.parent != nil, "Group node is missing parent")
-        self.node = node.parent!
-    }
-
-    // MARK: Alternations
-
-    private func addAlternation() throws {
-        scanner.read() // Consume `|`
-
-        if let node = node.children.first, node.isAlternation {
-            // Alternation already started, close the existing group
-            try closeAlternation()
-        } else {
-            try openAlternation()
-        }
-    }
-
-    private func openAlternation() throws {
-        let group = makeGroup(node.children, node)
-        node.children.removeAll()
-
-        let alternation = ASTNode(ASTUnit.Alternation(), group.value.source.dropFirst())
-        alternation.children = [group]
-        self.node.add(alternation)
-    }
-
-    private func closeAlternation() throws {
-        guard let alternation = node.children.first, alternation.isAlternation else {
-            throw Regex.Error("Unexpected error", i)
-        }
-
-        let group = makeGroup(Array(node.children.dropFirst()), node)
-        node.children.removeLast(node.children.count-1) // Removes everything except the existing alternation
-
-        alternation.children.append(group)
-        alternation.value.source = source(from: alternation, to: group)
-    }
-
-    /// Wraps nodes into an anonymous group.
-    private func makeGroup(_ nodes: [ASTNode], _ parent: ASTNode) -> ASTNode {
-        guard !nodes.isEmpty else {
-            return ASTNode(ASTUnit.Expression(), parent.value.source.dropFirst())
-        }
-
-        let source = self.source(from: nodes.first!, to: nodes.last!)
-        let node = ASTNode(ASTUnit.Expression(), source)
-        node.children = nodes
-        return node
-    }
-
-    // MARK: Quantifiers
-
-    private func addQuantifier(_ quantifier: ASTUnit.Quantifier, _ substring: Substring) throws {
-        // TODO: do we need to perform some validations?
-        // TODO: do we need to pass the entire entity that we apply quantifier to?
-        guard let last = node.children.popLast() else {
-            throw Regex.Error("The preceeding token is not quantifiable", i+1)
-        }
-        let quantifier = ASTNode(quantifier, substring)
-        quantifier.children = [last] // Apply quantifier to the last expression
-        self.node.children.append(quantifier)
-    }
-
-    private func addRangeQuantifier() throws {
-        let range = try scanner.readRangeQuantifier()
-        // TODO: cleanup
-        scanner.undoRead()
-        let substring = scanner.read()
-        try addQuantifier(.range(range), substring)
-    }
-
-    // MARK: Helpers (Nodes)
-
-    /// Adds a unit to the current node.
-    @discardableResult
-    private func add(_ unit: ASTUnitProtocol, _ substring: Substring) -> ASTNode {
-        return self.node.add(ASTValue(unit, substring))
+        return ASTNode(anchor, scanner.read())
     }
 
     // MARK: Helpers (Pattern)
 
-    private func source(from: ASTNode, to: ASTNode) -> Substring {
-        return source(from: from.value.source, to: to.value.source)
+    func source(_ from: ASTNode, _ to: ASTNode) -> Substring {
+        return source(from.value.source, to.value.source)
     }
 
     /// Combine everything between two substring.s
-    private func source(from: Substring, to: Substring) -> Substring {
+    func source(_ from: Substring, _ to: Substring) -> Substring {
         return pattern[from.startIndex..<to.endIndex]
     }
 
     /// Returns the index of the character which is currently being processed.
-    private var i: Int {
+    var i: Int {
         return scanner.i - 1
     }
 }

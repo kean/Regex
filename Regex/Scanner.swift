@@ -45,6 +45,15 @@ final class Scanner {
         return substring(range: i..<i+1)
     }
 
+    /// Reads the given string from the pattern and throws the given error if
+    /// the string is not found.
+    func read(_ s: String, orThrow error: String) throws -> Substring {
+        guard let substring = read(s) else {
+            throw Regex.Error(error, i)
+        }
+        return substring
+    }
+
     /// Reads the next character if it matches the given character. Returns
     /// `true` if the character was read successfully.
     func read(_ c: Character) -> Substring? {
@@ -55,10 +64,9 @@ final class Scanner {
         let s = Array(s)
         var j = i
         var z = 0
-        while j < pattern.endIndex {
-            guard z < s.endIndex else {
-                defer { i = j }
-                return substring(range: i..<j)
+        while z < s.endIndex {
+            guard j < pattern.endIndex else {
+                return nil
             }
             guard pattern[j] == s[z] else {
                 return nil
@@ -66,7 +74,9 @@ final class Scanner {
             j += 1
             z += 1
         }
-        return nil
+
+        defer { i = j }
+        return substring(range: i..<j)
     }
 
     private func substring(range: Range<Int>) -> Substring {

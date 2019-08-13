@@ -116,3 +116,26 @@ class QuantifiersTests: XCTestCase {
         // It will always match, see Anchors for more tests
     }
 }
+
+class QuantifiersLazyModifierTests: XCTestCase {
+
+    func testGreedyZeroOrMore() throws {
+        let regex = try Regex("a*")
+        let string = "aaaa"
+
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        // Expect it to match the entire string in one go.
+        XCTAssertEqual(matches, ["aaaa", ""])
+    }
+
+    func _testLazyZeroOrMore() throws {
+        let regex = try Regex("a*?")
+        let string = "aaaa"
+
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        // Expect it to match as little of the input as possible in each go.
+        XCTAssertEqual(matches, ["", "a", "", "a", "", "a", "", "a"])
+    }
+}

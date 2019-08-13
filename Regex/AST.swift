@@ -77,11 +77,11 @@ struct ASTValue: CustomStringConvertible {
 /// A simple generic Tree implemenation.
 final class Node<T> {
     var value: T
-    var parent: Node<T>?
-    var children: [Node<T>] = []
+    var children: [Node<T>]
 
-    init(_ value: T) {
+    init(_ value: T, _ children: [Node<T>] = []) {
         self.value = value
+        self.children = children
     }
 
     func add(_ child: Node<T>) {
@@ -138,7 +138,7 @@ extension Node where T == ASTValue {
         return value.unit
     }
 
-    convenience init(_ unit: ASTUnitProtocol, _ source: Substring) {
-        self.init(ASTValue(unit, source))
+    convenience init(_ unit: ASTUnitProtocol, _ source: Substring, _ children: [ASTNode] = []) {
+        self.init(ASTValue(unit, source), children)
     }
 }

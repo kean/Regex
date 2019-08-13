@@ -59,22 +59,21 @@ class AlternationConstructsTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("db"))
     }
 
-    // TODO:
-    func _testAlternationInitEmptyFirstImplititGroup() {
+    func testAlternationInitEmptyFirstImplititGroup() {
         XCTAssertThrowsError(try Regex("|b")) { error in
             guard let error = (error as? Regex.Error) else {
                 return XCTFail("Unexpected error")
             }
-            XCTAssertEqual(error.message, "Left side of | is empty")
-            XCTAssertEqual(error.index, 0)
+            XCTAssertEqual(error.message, "A side of an alternation is empty")
         }
     }
 
-    func testAlternationInitEmptyFirstGroup() throws {
-        let regex = try Regex("(|b)")
-
-        let matches = regex.matches(in: "b")
-
-        XCTAssertTrue(!matches.isEmpty)
+    func testAlternationInitThrows() throws {
+        XCTAssertThrowsError(try Regex("(|b)")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "A side of an alternation is empty")
+        }
     }
 }

@@ -22,10 +22,6 @@ final class Compiler {
         guard ast.value.unit is ASTUnit.Root else {
             fatalError("Parser returned an invalid root node")
         }
-        guard !ast.children.isEmpty else {
-            throw Regex.Error("Pattern must not be empty", 0)
-        }
-
         let expression = try compile(ast)
 
         try validateBackreferences()
