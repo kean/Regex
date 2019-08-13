@@ -98,10 +98,11 @@ private extension Compiler {
 
         case (let match as ASTUnit.Match):
             assert(node.children.isEmpty, "Match must not have children")
+            let isCaseInsensitive = options.contains(.caseInsensitive)
             switch match {
-            case let .character(c): return .character(c)
+            case let .character(c): return .character(c, isCaseInsensitive: isCaseInsensitive)
             case let .anyCharacter(includingNewline): return .anyCharacter(includingNewline: includingNewline)
-            case let .characterSet(set): return .characterSet(set)
+            case let .characterSet(set): return .characterSet(set, isCaseInsensitive: isCaseInsensitive)
             }
 
         default:

@@ -5,7 +5,7 @@
 import XCTest
 import Regex
 
-/// Regex examples from https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expressions
+/// Example of regular expression from https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expressions
 class RegexSpecTests: XCTestCase {
 
     // MARK: Character Classes
@@ -110,5 +110,38 @@ class RegexSpecTests: XCTestCase {
             XCTAssertEqual(match.fullMatch, "415-222-3333")
             XCTAssertEqual(match.groups, ["415", "222-3333"])
         }
+    }
+
+    // MARK: Quantifiers
+    // https://docs.microsoft.com/en-us/dotnet/standard/base-types/quantifiers-in-regular-expressions
+
+    func testQuantifiers1() throws {
+        let pattern = #"\b91*9*\b"#
+        let string = "99 95 919 929 9119 9219 999 9919 91119"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["99", "919", "9119", "999", "91119"])
+    }
+
+    func testQuantifiers2() throws {
+        let pattern = #"\ban+\w*?\b"#
+        let string = "Autumn is a great time for an annual announcement to all antique collectors."
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["an", "annual", "announcement", "antique"])
+    }
+
+    func testQuantifiers3() throws {
+        let pattern = #"\ban?\b"#
+        let string = "An amiable animal with a large snount and an animated nose."
+
+        let regex = try Regex(pattern, [.caseInsensitive])
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["An", "a", "an"])
     }
 }

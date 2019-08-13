@@ -40,13 +40,25 @@ struct Expression {
 
 extension Expression {
     /// Matches the given character.
-    static func character(_ c: Character) -> Expression {
-        return Expression { $0 == c }
+    static func character(_ c: Character, isCaseInsensitive: Bool) -> Expression {
+        return Expression {
+            if isCaseInsensitive {
+                return String(c).caseInsensitiveCompare(String($0)) == ComparisonResult.orderedSame
+            } else {
+                return $0 == c
+            }
+        }
     }
 
     /// Matches the given character set.
-    static func characterSet(_ set: CharacterSet) -> Expression {
-        return Expression { set.contains($0) }
+    static func characterSet(_ set: CharacterSet, isCaseInsensitive: Bool) -> Expression {
+        return Expression {
+            if isCaseInsensitive, $0.isCased {
+                return set.contains(Character($0.lowercased())) || set.contains(Character($0.uppercased()))
+            } else {
+                return set.contains($0)
+            }
+        }
     }
 
     /// Matches any character.

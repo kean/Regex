@@ -20,7 +20,7 @@
 		0CB3056F22FED0740083B406 /* QuantifiersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056522FED0740083B406 /* QuantifiersTests.swift */; };
 		0CB3057022FED0740083B406 /* AnchorsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056622FED0740083B406 /* AnchorsTests.swift */; };
 		0CB3057122FED0740083B406 /* CapturingGroupsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056722FED0740083B406 /* CapturingGroupsTests.swift */; };
-		0CB3057222FED0740083B406 /* RangeQuantifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056822FED0740083B406 /* RangeQuantifierTests.swift */; };
+		0CB3057222FED0740083B406 /* QuantifierWIthRangeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056822FED0740083B406 /* QuantifierWIthRangeTests.swift */; };
 		0CB3057322FED0740083B406 /* RegexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056922FED0740083B406 /* RegexTests.swift */; };
 		0CB3057422FED0740083B406 /* CharacterEscapesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056A22FED0740083B406 /* CharacterEscapesTests.swift */; };
 		0CB3057522FED0740083B406 /* CharacterClassesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3056B22FED0740083B406 /* CharacterClassesTests.swift */; };
@@ -71,7 +71,7 @@
 		0CB3056522FED0740083B406 /* QuantifiersTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QuantifiersTests.swift; sourceTree = "<group>"; };
 		0CB3056622FED0740083B406 /* AnchorsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnchorsTests.swift; sourceTree = "<group>"; };
 		0CB3056722FED0740083B406 /* CapturingGroupsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CapturingGroupsTests.swift; sourceTree = "<group>"; };
-		0CB3056822FED0740083B406 /* RangeQuantifierTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RangeQuantifierTests.swift; sourceTree = "<group>"; };
+		0CB3056822FED0740083B406 /* QuantifierWIthRangeTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QuantifierWIthRangeTests.swift; sourceTree = "<group>"; };
 		0CB3056922FED0740083B406 /* RegexTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RegexTests.swift; sourceTree = "<group>"; };
 		0CB3056A22FED0740083B406 /* CharacterEscapesTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CharacterEscapesTests.swift; sourceTree = "<group>"; };
 		0CB3056B22FED0740083B406 /* CharacterClassesTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CharacterClassesTests.swift; sourceTree = "<group>"; };
@@ -151,8 +151,8 @@
 				0CB3056722FED0740083B406 /* CapturingGroupsTests.swift */,
 				0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */,
 				0CB3056522FED0740083B406 /* QuantifiersTests.swift */,
+				0CB3056822FED0740083B406 /* QuantifierWIthRangeTests.swift */,
 				0CB3056C22FED0740083B406 /* OptionsTests.swift */,
-				0CB3056822FED0740083B406 /* RangeQuantifierTests.swift */,
 				0CB3057922FEE9970083B406 /* MatchesTests.swift */,
 				0CB3057D22FF19920083B406 /* RegexSpecTests.swift */,
 				0CB3056322FED0740083B406 /* IntegrationTests.swift */,
@@ -278,7 +278,7 @@
 				0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */,
 				0CB3057A22FEE9970083B406 /* MatchesTests.swift in Sources */,
 				0CB3057C22FF08ED0083B406 /* Extensions.swift in Sources */,
-				0CB3057222FED0740083B406 /* RangeQuantifierTests.swift in Sources */,
+				0CB3057222FED0740083B406 /* QuantifierWIthRangeTests.swift in Sources */,
 				0CB3057022FED0740083B406 /* AnchorsTests.swift in Sources */,
 				0CB3057322FED0740083B406 /* RegexTests.swift in Sources */,
 				0CB3056F22FED0740083B406 /* QuantifiersTests.swift in Sources */,

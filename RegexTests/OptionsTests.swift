@@ -11,6 +11,15 @@ class OptionsTests: XCTestCase {
 
     func testCaseInsensitive() throws {
         let regex = try Regex("a", [.caseInsensitive])
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch("A"))
+        XCTAssertFalse(regex.isMatch("b"))
+    }
+
+    func testCaseInsensitiveWorkBothWays() throws {
+        let regex = try Regex("A", [.caseInsensitive])
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("A"))
         XCTAssertFalse(regex.isMatch("b"))
@@ -18,10 +27,27 @@ class OptionsTests: XCTestCase {
 
     func testCaseInsensitiveWithCharacterGroups() throws {
         let regex = try Regex("[a-z]", [.caseInsensitive])
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("A"))
         XCTAssertTrue(regex.isMatch("b"))
         XCTAssertFalse(regex.isMatch("_"))
+    }
+
+    func testCaseInsensitiveWithCharacterGroupsWorksBothWays() throws {
+        let regex = try Regex("[A-Z]", [.caseInsensitive])
+
+        XCTAssertTrue(regex.isMatch("a"))
+        XCTAssertTrue(regex.isMatch("A"))
+        XCTAssertTrue(regex.isMatch("b"))
+        XCTAssertFalse(regex.isMatch("_"))
+    }
+
+    func testCaseInsensitiveReportedMatchesAreInOriginalCase() throws {
+        let regex = try Regex("a", [.caseInsensitive])
+        let matches = regex.matches(in: "A b a")
+
+        XCTAssertEqual(matches.map { $0.fullMatch }, ["A", "a"])
     }
 
     // MARK: .multiline

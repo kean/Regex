@@ -105,7 +105,6 @@ public final class Regex {
     }
 
     private func preprocess(_ string: String) -> [Substring] {
-        let string = (options.contains(.caseInsensitive) ? string.lowercased() : string)
         if options.contains(.multiline) {
             return string.split(separator: "\n")
         } else {

@@ -5,10 +5,11 @@
 import XCTest
 import Regex
 
-class RangeQuantifierTests: XCTestCase {
+class QuantifierWithRangeTests: XCTestCase {
 
     func testExactMatch() throws {
         let regex = try Regex("a{2}")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -19,6 +20,7 @@ class RangeQuantifierTests: XCTestCase {
 
     func testExactMatchAlternativeNotation() throws {
         let regex = try Regex("a{2,2}")
+
         XCTAssertTrue(regex.isMatch("aa"))
         XCTAssertTrue(regex.isMatch("baa"))
         XCTAssertTrue(regex.isMatch("aaa"))
@@ -30,6 +32,7 @@ class RangeQuantifierTests: XCTestCase {
 
     func testGreaterThanOrEqual() throws {
         let regex = try Regex("a{2,}")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -38,6 +41,7 @@ class RangeQuantifierTests: XCTestCase {
 
     func testRange() throws {
         let regex = try Regex("a{2,4}")
+
         XCTAssertFalse(regex.isMatch(""))
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
@@ -49,12 +53,14 @@ class RangeQuantifierTests: XCTestCase {
 
     func testRangeWithWordAnchor() throws {
         let regex = try Regex(#"\.[a-z]{2,6}\\b"#)
+
         XCTAssertFalse(regex.isMatch(".invalid"))
 
     }
 
     func testBigRange() throws {
         let regex = try Regex("a{12}")
+
         XCTAssertFalse(regex.isMatch("aaaaaaaaaaa"))
         XCTAssertTrue(regex.isMatch("aaaaaaaaaaaa"))
         XCTAssertFalse(regex.isMatch("bbaaaaaaaaaaa"))
