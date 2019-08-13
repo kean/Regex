@@ -30,7 +30,7 @@ final class Parser {
             throw Regex.Error("Pattern must not be empty", 0)
         }
 
-        let node = ASTNode(ASTUnit.Root(), pattern[...])
+        let node = ASTNode(ASTUnit.Expression(), pattern[...])
         if let startOfString = try parseStartOfStringAnchor() {
             node.add(startOfString)
         }

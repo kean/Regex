@@ -19,13 +19,8 @@ final class Compiler {
 
     func compile() throws -> (CompiledRegex, Symbols) {
         let ast = try parser.parse()
-        guard ast.value.unit is ASTUnit.Root else {
-            fatalError("Parser returned an invalid root node")
-        }
         let expression = try compile(ast)
-
         try validateBackreferences()
-
         return (CompiledRegex(expression: expression, captureGroups: captureGroups), symbols)
     }
 }
@@ -42,8 +37,7 @@ private extension Compiler {
 
     func _compile(_ node: ASTNode) throws -> Expression {
         switch node.value.unit {
-        case is ASTUnit.Root,
-             is ASTUnit.Expression:
+        case is ASTUnit.Expression:
             let expressions = try node.children.map(compile)
             return .concatenate(expressions)
 

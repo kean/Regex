@@ -11,10 +11,6 @@ protocol ASTUnitProtocol {}
 
 /// Represents all possible regular expression language constructs.
 enum ASTUnit {
-    /// The root of the expression.
-    struct Root: ASTUnitProtocol {}
-
-    /// Anonymous group.
     struct Expression: ASTUnitProtocol {}
 
     struct Group: ASTUnitProtocol {
