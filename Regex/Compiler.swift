@@ -9,7 +9,7 @@ final class Compiler {
     private let options: Regex.Options
     private var symbols: Symbols
     private var captureGroups: [CaptureGroup] = []
-    private var backreferences: [ASTUnit.Backreference] = []
+    private var backreferences: [AST.Backreference] = []
 
     init(_ pattern: String, _ options: Regex.Options) {
         self.parser = Parser(pattern, options)
@@ -19,48 +19,45 @@ final class Compiler {
 
     func compile() throws -> (CompiledRegex, Symbols) {
         let ast = try parser.parse()
-        let expression = try compile(ast)
+        symbols.ast = ast
+        let expression = try compile(ast.expression)
         try validateBackreferences()
         return (CompiledRegex(expression: expression, captureGroups: captureGroups), symbols)
     }
 }
 
 private extension Compiler {
-    func compile(_ node: ASTNode) throws -> Expression {
-        let expression = try _compile(node)
+    func compile(_ unit: Unit) throws -> Expression {
+        let expression = try _compile(unit)
         if Regex.isDebugModeEnabled {
-            symbols.map[expression.start] = Symbols.Details(node: node, isEnd: false)
-            symbols.map[expression.end] = Symbols.Details(node: node, isEnd: true)
+            symbols.map[expression.start] = Symbols.Details(unit: unit, isEnd: false)
+            symbols.map[expression.end] = Symbols.Details(unit: unit, isEnd: true)
         }
         return expression
     }
 
-    func _compile(_ node: ASTNode) throws -> Expression {
-        switch node.value.unit {
-        case is ASTUnit.Expression:
-            let expressions = try node.children.map(compile)
-            return .concatenate(expressions)
+    func _compile(_ unit: Unit) throws -> Expression {
+        switch unit {
+        case let expression as AST.Expression:
+            return .concatenate(try expression.children.map(compile))
 
-        case (let group as ASTUnit.Group):
-            let expressions = try node.children.map(compile)
+        case let group as AST.Group:
+            let expressions = try group.children.map(compile)
             let expression = Expression.group(.concatenate(expressions))
             if group.isCapturing { // Remember the group that we just compiled.
                 captureGroups.append(CaptureGroup(index: group.index, start: expression.start, end: expression.end))
             }
             return expression
 
-        case (let backreference as ASTUnit.Backreference):
-            assert(node.children.isEmpty, "Backreferences must not have children")
+        case let backreference as AST.Backreference:
             backreferences.append(backreference)
             return .backreference(backreference.index)
 
-        case is ASTUnit.Alternation:
-            let expressions = try node.children.map(compile)
-            return .alternate(expressions)
+        case let alternation as AST.Alternation:
+            return .alternate(try alternation.children.map(compile))
 
-        case (let anchor as ASTUnit.Anchor):
-            assert(node.children.isEmpty, "Anchor must not have children")
-            switch anchor {
+        case let anchor as AST.Anchor:
+            switch anchor.type {
             case .startOfString: return .startOfString
             case .startOfStringOnly: return .startOfStringOnly
             case .endOfString: return .endOfString
@@ -71,43 +68,41 @@ private extension Compiler {
             case .previousMatchEnd: return .previousMatchEnd
             }
 
-        case (let quantifier as ASTUnit.Quantifier):
-            assert(node.children.count == 1, "Quantifier can only be applied to a single child")
-            let expression = try compile(node.children[0])
-            switch quantifier {
-            case .zeroOrMore: return .zeroOrMore(expression)
-            case .oneOrMore: return .oneOrMore(expression)
-            case .zeroOrOne: return .zeroOrOne(expression)
-            case let .range(range): return try compile(node, range)
+        case let quantifier as AST.QuantifiedExpression:
+            let expression = quantifier.expression
+            switch quantifier.type {
+            case .zeroOrMore: return .zeroOrMore(try compile(expression))
+            case .oneOrMore: return .oneOrMore(try compile(expression))
+            case .zeroOrOne: return .zeroOrOne(try compile(expression))
+            case let .range(range): return try compile(expression, range)
             }
 
-        case (let match as ASTUnit.Match):
-            assert(node.children.isEmpty, "Match must not have children")
+        case let match as AST.Match:
             let isCaseInsensitive = options.contains(.caseInsensitive)
-            switch match {
+            switch match.type {
             case let .character(c): return .character(c, isCaseInsensitive: isCaseInsensitive)
             case let .anyCharacter(includingNewline): return .anyCharacter(includingNewline: includingNewline)
             case let .characterSet(set): return .characterSet(set, isCaseInsensitive: isCaseInsensitive)
             }
 
         default:
-            fatalError("Unsupported unit \(node.value)")
+            fatalError("Unsupported unit \(unit)")
         }
     }
 
-    func compile(_ node: ASTNode, _ range: ClosedRange<Int>) throws -> Expression {
+    func compile(_ expression: Unit, _ range: ClosedRange<Int>) throws -> Expression {
         let prefix: Expression = try .concatenate((0..<range.lowerBound).map { _ in
-            try compile(node.children[0])
+            try compile(expression)
         })
         let suffix: Expression
         if range.upperBound == Int.max {
-            suffix = .zeroOrOne(try compile(node.children[0]))
+            suffix = .zeroOrOne(try compile(expression))
         } else {
             // Compile the optional matches into `x(x(x(x)?)?)?`. We use this
             // specific form with grouping to make sure that matcher can cache
             // the results during backtracking.
             suffix = try range.dropLast().reduce(Expression.empty) { result, _ in
-                let expression = try compile(node.children[0])
+                let expression = try compile(expression)
                 return .zeroOrOne(.group(.concatenate(expression, result)))
             }
         }
@@ -145,10 +140,12 @@ struct CaptureGroup {
 /// Mapping between states of the finite state machine and the nodes for which
 /// they were produced.
 struct Symbols {
+    // TODO: tidy up
+    fileprivate(set) var ast: AST?
     fileprivate(set) var map = [State: Details]()
 
     struct Details {
-        let node: ASTNode
+        let unit: Unit
         let isEnd: Bool
     }
 }

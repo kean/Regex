@@ -66,6 +66,11 @@ struct Cursor { // Not sure this is the best word
         return character(at: index + offset)
     }
 
+    // Map matches from indexes in characters array to substring indexes.
+    func substring(_ range: Range<Int>) -> Substring {
+        return substring.substring(range)
+    }
+
     /// Returns the substring with the remaining characters.
     var remainingSubstring: Substring {
         return substring[substring.index(substring.startIndex, offsetBy: index)...]
@@ -79,15 +84,5 @@ struct Cursor { // Not sure this is the best word
     /// Returns `true` if the current index is the index of the last character.
     var isLastIndex: Bool {
         return index == characters.endIndex - 1
-    }
-
-    // MARK: Map Indexes
-
-    // Map matches from indexes in characters array to substring indexes.
-    func substring(_ range: Range<Int>) -> Substring {
-        let s = substring
-        let lb = s.index(s.startIndex, offsetBy: range.lowerBound)
-        let ub = s.index(s.startIndex, offsetBy: range.upperBound)
-        return s[lb..<ub]
     }
 }

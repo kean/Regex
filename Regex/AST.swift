@@ -4,27 +4,55 @@
 
 import Foundation
 
-// MARK: ASTUnit
+// MARK: - AST (Protocols)
 
-/// Marker protocol.
-protocol ASTUnitProtocol {}
+/// An AST unit, marker protocol.
+protocol Unit: Traceable {}
 
-/// Represents all possible regular expression language constructs.
-enum ASTUnit {
-    struct Expression: ASTUnitProtocol {}
+/// Can be traced backed to the source in the pattern.
+protocol Traceable {
+    var source: Range<Int> { get }
+}
 
-    struct Group: ASTUnitProtocol {
+/// An AST unit consisting of multiple units.
+protocol CompoundUnit: Unit {
+    var children: [Unit] { get }
+}
+
+// MARK: - AST (Components)
+
+struct AST {
+    let expression: Unit
+    let pattern: String
+
+    struct Expression: CompoundUnit {
+        let children: [Unit]
+        let source: Range<Int>
+    }
+
+    struct Group: CompoundUnit {
         let index: Int
         let isCapturing: Bool
+        let children: [Unit]
+        let source: Range<Int>
     }
 
-    struct Backreference: ASTUnitProtocol {
+    struct Backreference: Unit {
         let index: Int
+        let source: Range<Int>
     }
 
-    struct Alternation: ASTUnitProtocol {}
+    struct Alternation: CompoundUnit {
+        let children: [Unit]
+        let source: Range<Int>
+    }
 
-    enum Anchor: ASTUnitProtocol {
+    struct Anchor: Unit {
+        let type: AnchorType
+        let source: Range<Int>
+    }
+
+    enum AnchorType {
         case startOfString
         case endOfString
         case wordBoundary
@@ -35,13 +63,26 @@ enum ASTUnit {
         case previousMatchEnd
     }
 
-    enum Match: ASTUnitProtocol {
+    struct Match: Unit {
+        let type: MatchType
+        let source: Range<Int>
+    }
+
+    enum MatchType {
         case character(Character)
         case anyCharacter(includingNewline: Bool)
         case characterSet(CharacterSet)
     }
 
-    enum Quantifier: ASTUnitProtocol {
+    struct QuantifiedExpression: Unit, CompoundUnit {
+        let type: Quantifier
+        let expression: Unit
+        let source: Range<Int>
+
+        var children: [Unit] { return [expression] }
+    }
+
+    enum Quantifier {
         case zeroOrMore
         case oneOrMore
         case zeroOrOne
@@ -49,92 +90,94 @@ enum ASTUnit {
     }
 }
 
-// MARK: - ASTValue
+// MARK: - AST (Description)
 
-/// A value stored in AST nodes, wraps a unit.
-struct ASTValue: CustomStringConvertible {
-    let unit: ASTUnitProtocol
-
-    /// The part of the pattern which represents the given unit.
-    var source: Substring
-
-    init(_ unit: ASTUnitProtocol, _ source: Substring) {
-        self.unit = unit
-        self.source = source
-    }
-
+extension AST.Expression: CustomStringConvertible {
     var description: String {
-        return "\(unit), source: \"\(source)\" \(source.startIndex.encodedOffset):\(source.count)"
+        return "Expression"
     }
 }
 
-// MARK: - Node (Tree)
-
-/// A simple generic Tree implemenation.
-final class Node<T> {
-    var value: T
-    var children: [Node<T>]
-
-    init(_ value: T, _ children: [Node<T>] = []) {
-        self.value = value
-        self.children = children
-    }
-
-    func add(_ child: Node<T>) {
-        children.append(child)
-    }
-
-    /// Adds a child node with the given value.
-    @discardableResult
-    func add(_ value: T) -> Node<T> {
-        let node = Node(value)
-        add(node)
-        return node
-    }
-}
-
-// MARK: - Node (Extensions)
-
-extension Node {
-    /// Recursively visits all nodes.
-    func visit(_ closure: (Node) -> Void) {
-        visit(0) { node, _ in closure(node) }
-    }
-
-    /// Recursively visits all nodes.
-    private func visit(_ level: Int = 0, _ closure: (Node, Int) -> Void) {
-        closure(self, level)
-        for child in children {
-            child.visit(level + 1, closure)
+extension AST.Match: CustomStringConvertible {
+    var description: String {
+        switch type {
+        case let .character(character): return "Character(\"\(character)\")"
+        case let .characterSet(set): return "CharacterSet(\"\(set)\")"
+        case let .anyCharacter(includingNewline): return includingNewline ?  "AnyCharacter(includingNewline: true)" : "AnyCharacter"
         }
     }
+}
 
-    static func recursiveDescription(_ node: Node) -> String {
-        var description = ""
-        node.visit { node, level in
-            let s = String(repeating: " ", count: level * 2) + "– \(node.value)"
-            description.append(s)
-            description.append("\n")
+extension AST.Group: CustomStringConvertible {
+    var description: String {
+        if isCapturing {
+            return "Group(index: \(index))"
+        } else {
+            return "Group(index: \(index), isCapturing: false)"
         }
-        return description
     }
 }
 
-// MARK: - ASTNode
+extension AST.Alternation: CustomStringConvertible {
+    var description: String {
+        return "Alternation"
+    }
+}
 
-typealias ASTNode = Node<ASTValue>
+extension AST.Anchor: CustomStringConvertible {
+    var description: String {
+        return "Anchor.\(type)"
+    }
+}
 
-extension Node where T == ASTValue {
+extension AST.Backreference: CustomStringConvertible {
+    var description: String {
+        return "Backreference(index: \(index))"
+    }
+}
 
-    var isAlternation: Bool {
-        return unit is ASTUnit.Alternation
+extension AST.QuantifiedExpression: CustomStringConvertible {
+    var description: String {
+        return "Quantifier.\(type)"
+    }
+}
+
+extension AST: CustomStringConvertible {
+    /// Returns a nicely formatted description of the unit.
+    var description: String {
+        var output = ""
+        visit(expression, 0) { unit, level in
+            let s = String(repeating: " ", count: level * 2) + "– " + description(for: unit)
+            output.append(s)
+            output.append("\n")
+        }
+        return output
     }
 
-    var unit: ASTUnitProtocol {
-        return value.unit
+    func description(for unit: Unit) -> String {
+        return "\(unit)" + " [\"\(pattern.substring(unit.source))\", \(unit.source)]"
     }
 
-    convenience init(_ unit: ASTUnitProtocol, _ source: Substring, _ children: [ASTNode] = []) {
-        self.init(ASTValue(unit, source), children)
+    func printRecursiveDescription() {
+        print(description)
+    }
+}
+
+// MARK: - AST (Visitor)
+
+extension AST {
+    /// Recursively visits all nodes.
+    func visit(_ closure: (Unit) -> Void) {
+        visit(expression, 0) { unit, _ in closure(unit) }
+    }
+
+    /// Recursively visits all nodes.
+    private func visit(_ unit: Unit, _ level: Int, _ closure: (Unit, Int) -> Void) {
+        closure(unit, level)
+        if let children = (unit as? CompoundUnit)?.children {
+            for child in children {
+                visit(child, level + 1, closure)
+            }
+        }
     }
 }

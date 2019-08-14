@@ -9,7 +9,7 @@ final class Scanner {
     private(set) var i = 0
 
     private var patternString: String
-    private var pattern: [Character]
+    private(set) var pattern: [Character]
 
     init(_ pattern: String) {
         self.patternString = pattern
@@ -24,13 +24,13 @@ final class Scanner {
         return pattern[i]
     }
 
-    // TODO: remove this temp workardoun
+    // TODO: remove this temp workaround
     func undoRead() {
         i -= 1
     }
 
     /// Reads the next character in the pattern.
-    func deprecatedReadCharacter() -> Character? {
+    func readCharacter() -> Character? {
         guard i < pattern.endIndex else {
             return nil
         }
@@ -38,29 +38,26 @@ final class Scanner {
         return pattern[i]
     }
 
-    /// Reads a single character (unconditionally) from the input string.
+    /// Reads `n` characters from the string and returns a range
+    /// of the these characters.
     @discardableResult
-    func read() -> Substring {
-        defer { i += 1 }
-        return substring(range: i..<i+1)
+    func read(_ count: Int = 1) -> Range<Int> {
+        defer { i += 1}
+        return i..<i+1
     }
 
     /// Reads the given string from the pattern and throws the given error if
     /// the string is not found.
-    func read(_ s: String, orThrow error: String) throws -> Substring {
-        guard let substring = read(s) else {
+    func read(_ s: String, orThrow error: String) throws -> Range<Int> {
+        guard let range = read(s) else {
             throw Regex.Error(error, i)
         }
-        return substring
+        return range
     }
 
-    /// Reads the next character if it matches the given character. Returns
-    /// `true` if the character was read successfully.
-    func read(_ c: Character) -> Substring? {
-        return read(String(c))
-    }
-
-    func read(_ s: String) -> Substring? {
+    /// Reads the string if the prefix of the remainder of the pattern fully
+    /// matches it. Returns the range if the operation was successfull.
+    func read(_ s: String) -> Range<Int>? {
         let s = Array(s)
         var j = i
         var z = 0
@@ -76,14 +73,7 @@ final class Scanner {
         }
 
         defer { i = j }
-        return substring(range: i..<j)
-    }
-
-    private func substring(range: Range<Int>) -> Substring {
-        let s = patternString
-        let lb = s.index(s.startIndex, offsetBy: range.lowerBound)
-        let ub = s.index(s.startIndex, offsetBy: range.upperBound)
-        return s[lb..<ub]
+        return i..<j
     }
 
     /// Reads the string until reaching the given character. If successfull,
@@ -120,7 +110,9 @@ final class Scanner {
         return true
     }
 
-    func readInteger() -> (Substring, Int)? {
+    /// Reads an integer from the pattern and returns an integer along with its
+    /// range in the pattern.
+    func readInt() -> (Int, Range<Int>)? {
         let startIndex = i
         let digits = CharacterSet.decimalDigits
         let string = read(while: { digits.contains($0) })
@@ -131,11 +123,11 @@ final class Scanner {
             i = startIndex
             return nil
         }
-        return (substring(range: startIndex..<i), int)
+        return (int, startIndex..<i)
     }
 
     /// We encountered `[`, read a character group, e.g. [abc], [^ab]
-    func readCharacterSet() throws -> (CharacterSet, Substring) {
+    func readCharacterSet() throws -> (CharacterSet, Range<Int>) {
         let openingBracketIndex = i
         i += 1
 
@@ -150,15 +142,15 @@ final class Scanner {
         // Read the characters until the group is closed.
         var set = CharacterSet()
 
-        while let c = deprecatedReadCharacter() {
+        while let c = readCharacter() {
             switch c {
             case "]":
                 if isNegative {
                     set.invert()
                 }
-                return (set, substring(range: openingBracketIndex..<i))
+                return (set, openingBracketIndex..<i)
             case "\\":
-                guard let c = deprecatedReadCharacter() else {
+                guard let c = readCharacter() else {
                     throw Regex.Error("Pattern may not end with a trailing backslash", i-1)
                 }
                 if let specialSet = try readCharacterClassSpecialCharacter(c) {
@@ -220,7 +212,6 @@ final class Scanner {
     func readRangeQuantifier() throws -> ClosedRange<Int> {
         // Read until we find a closing bracket
         let openingBracketIndex = i-1
-        i += 1
 
         guard let rangeSubstring = read(until: "}") else {
             throw Regex.Error("Range quantifier missing closing bracket", openingBracketIndex)
@@ -279,7 +270,7 @@ final class Scanner {
             i -= 1 // Undo reading '-'
             return nil // Just treat as regular characters
         }
-        guard let upperBound = deprecatedReadCharacter() else {
+        guard let upperBound = readCharacter() else {
             return nil // The character group seems incomplete, let the upper layer handle the issue
         }
         // TODO: this is probably not the best way to convert these

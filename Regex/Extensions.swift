@@ -34,3 +34,31 @@ extension Character {
         return CharacterSet.word.contains(self)
     }
 }
+
+// MARK: - Range
+
+extension Range where Bound == Int {
+    /// Returns the range which contains the indexes from both ranges and
+    /// everything in between.
+    static func merge(_ lhs: Range, _ rhs: Range) -> Range {
+        return (Swift.min(lhs.lowerBound, rhs.lowerBound))..<(Swift.max(lhs.upperBound, rhs.upperBound))
+    }
+}
+
+// MARK: - String
+
+extension String {
+    /// Returns a substring with the given range. The indexes are automatically
+    /// calculated by offsetting the existing indexes.
+    func substring(_ range: Range<Int>) -> Substring {
+        return self[index(startIndex, offsetBy: range.lowerBound)..<index(startIndex, offsetBy: range.upperBound)]
+    }
+}
+
+extension Substring {
+    /// Returns a substring with the given range. The indexes are automatically
+     /// calculated by offsetting the existing indexes.
+     func substring(_ range: Range<Int>) -> Substring {
+         return self[index(startIndex, offsetBy: range.lowerBound)..<index(startIndex, offsetBy: range.upperBound)]
+     }
+}
