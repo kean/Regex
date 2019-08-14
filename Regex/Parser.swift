@@ -14,13 +14,11 @@ final class Parser {
         defer { groupIndex += 1 }
         return groupIndex
     }
-    private let options: Regex.Options
     private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.parser", category: "default") : .disabled
 
-    init(_ pattern: String, _ options: Regex.Options) {
+    init(_ pattern: String) {
         self.pattern = pattern
         self.scanner = Scanner(pattern)
-        self.options = options
     }
 
     /// Parses the pattern with which the parser was initialized with and
@@ -90,8 +88,7 @@ private extension Parser {
         let c = try scanner.peak(orThrow: "Pattern must not be empty")
         switch c {
         case ".":
-            let newline = options.contains(.dotMatchesLineSeparators)
-            return Match(type: .anyCharacter(includingNewline: newline), source: scanner.read())
+            return Match(type: .anyCharacter, source: scanner.read())
         case "\\":
             return try parseEscapedCharacter()
         case "[":

@@ -78,7 +78,7 @@ struct Match: Terminal {
 
 enum MatchType {
     case character(Character)
-    case anyCharacter(includingNewline: Bool)
+    case anyCharacter
     case characterSet(CharacterSet)
 }
 
@@ -111,7 +111,7 @@ extension Match: CustomStringConvertible {
         switch type {
         case let .character(character): return "Character(\"\(character)\")"
         case let .characterSet(set): return "CharacterSet(\"\(set)\")"
-        case let .anyCharacter(includingNewline): return includingNewline ?  "AnyCharacter(includingNewline: true)" : "AnyCharacter"
+        case .anyCharacter: return  "AnyCharacter"
         }
     }
 }

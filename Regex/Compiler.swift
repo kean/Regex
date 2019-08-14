@@ -12,7 +12,7 @@ final class Compiler {
     private var backreferences: [Backreference] = []
 
     init(_ pattern: String, _ options: Regex.Options) {
-        self.parser = Parser(pattern, options)
+        self.parser = Parser(pattern)
         self.options = options
         self.symbols = Symbols()
     }
@@ -79,9 +79,10 @@ private extension Compiler {
 
         case let match as Match:
             let isCaseInsensitive = options.contains(.caseInsensitive)
+            let dotMatchesLineSeparators = options.contains(.dotMatchesLineSeparators)
             switch match.type {
             case let .character(c): return .character(c, isCaseInsensitive: isCaseInsensitive)
-            case let .anyCharacter(includingNewline): return .anyCharacter(includingNewline: includingNewline)
+            case .anyCharacter: return .anyCharacter(includingNewline: dotMatchesLineSeparators)
             case let .characterSet(set): return .characterSet(set, isCaseInsensitive: isCaseInsensitive)
             }
 
