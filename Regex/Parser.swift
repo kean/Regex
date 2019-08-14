@@ -5,6 +5,7 @@
 import Foundation
 import os.log
 
+/// A bottom-up parser for regular expressions.
 final class Parser {
     private let pattern: String
     private let scanner: Scanner
@@ -22,14 +23,11 @@ final class Parser {
         self.options = options
     }
 
-    /// Scans and analyzes the pattern and creats an abstract syntax tree.
+    /// Parses the pattern with which the parser was initialized with and
+    /// constrats an AST (abstract syntax tree).
     func parse() throws -> AST {
-        guard !pattern.isEmpty else {
-            throw Regex.Error("Pattern must not be empty", 0)
-        }
-
         var units = [Unit]()
-        if let startOfString = try parseStartOfStringAnchor() {
+        if let startOfString = parseStartOfStringAnchor() {
             units.append(startOfString)
         }
         units.append(try parseExpression())
@@ -48,15 +46,9 @@ final class Parser {
 
 private extension Parser {
 
-    // MARK: Options
-
-    func parseStartOfStringAnchor() throws -> AST.Anchor? {
-        guard let source = scanner.read("^") else { return nil }
-        return AST.Anchor(type: .startOfString, source: source)
-    }
-
     // MARK: Expressions
 
+    /// The entry point for parsing an expression, can be called recursively.
     func parseExpression() throws -> Unit {
         var children: [[Unit]] = [[]] // Each sub-array represents an alternation
 
@@ -69,57 +61,52 @@ private extension Parser {
             guard let last = children[children.endIndex-1].popLast() else {
                 throw Regex.Error("The preceeding token is not quantifiable", 0)
             }
-            // Apply quantifier to the last expression
-            add(AST.QuantifiedExpression(type: quantifier, expression: last, source: .merge(last.source, scanner.i..<scanner.i)))
+            let source = last.source.lowerBound..<scanner.i
+            add(AST.QuantifiedExpression(type: quantifier, expression: last, source: source))
         }
 
         while let c = scanner.peak(), c != ")" {
             switch c {
             case "(": add(try parseGroup())
-            case "|":
-                scanner.read() // Consume '|'
-                children.append([]) // Start a new expression
-            case "*", "+", "?", "{":
-                try apply(try parseQuantifier(c))
-            case ".":
-                let newline = options.contains(.dotMatchesLineSeparators)
-                add(AST.Match(type: .anyCharacter(includingNewline: newline), source: scanner.read()))
-            case "\\": add(try parseEscapedCharacter())
-            case "[": // Start a character group
-                let (set, range) = try scanner.readCharacterSet()
-                add(AST.Match(type: .characterSet(set), source: range))
-            case "$":
-                add(AST.Anchor(type: .endOfString, source: scanner.read()))
-            default:
-                add(AST.Match(type: .character(c), source: scanner.read()))
+            case "|": scanner.read(); children.append([]) // Start a new path in alternation
+            case "*", "+", "?", "{": try apply(try parseQuantifier(c))
+            default: add(try parseTerminal())
             }
         }
 
-        // TODO: tidy up
-        let expressions = try children.map(expression)
-        if expressions.count > 1 {
+        let expressions = try children.map(expression) // Flatten the children
+        switch expressions.count {
+        case 0: throw Regex.Error("Pattern must not be empty", 0)
+        case 1: return expressions[0] // No alternation
+        default:
             let source = Range.merge(expressions.first!.source, expressions.last!.source)
             return AST.Alternation(children: expressions, source: source)
-        } else {
-            // TODO: handle situation where there are no expression property
-            return expressions[0]
         }
     }
 
-    /// Creates an node which represents an expression. If there is only one
-    /// child, returns a child itself to avoid additional overhead.
-    func expression(_ children: [Unit]) throws -> Unit {
-        switch children.count {
-        case 0: throw Regex.Error("A side of an alternation is empty", 0)
-        case 1: return children[0]
+    /// Parses a terminal part of the expression, e.g. a simple character match,
+    /// or an anchor, anything that doesn't contain subexpressions.
+    func parseTerminal() throws -> Terminal {
+        let c = try scanner.peak(orThrow: "Pattern must not be empty")
+        switch c {
+        case ".":
+            let newline = options.contains(.dotMatchesLineSeparators)
+            return AST.Match(type: .anyCharacter(includingNewline: newline), source: scanner.read())
+        case "\\":
+            return try parseEscapedCharacter()
+        case "[":
+            let (set, range) = try scanner.readCharacterSet()
+            return AST.Match(type: .characterSet(set), source: range)
+        case "$":
+            return AST.Anchor(type: .endOfString, source: scanner.read())
         default:
-            let source = Range.merge(children.first!.source, children.last!.source)
-            return AST.Expression(children: children, source: source)
+            return AST.Match(type: .character(c), source: scanner.read())
         }
     }
 
     // MARK: Groups
 
+    /// Parses a group, can be called recursively.
     func parseGroup() throws -> AST.Group {
         let groupIndex = nextGroupIndex
         let start = try scanner.read("(", orThrow: "Unmatched closing parantheses")
@@ -149,7 +136,7 @@ private extension Parser {
 
     // MARK: Character Escapes
 
-    func parseEscapedCharacter() throws -> Unit {
+    func parseEscapedCharacter() throws -> Terminal {
         let start = scanner.read() // Consume escape
 
         guard let c = scanner.peak() else {
@@ -183,6 +170,27 @@ private extension Parser {
         case "z": return .endOfStringOnlyNotNewline
         case "G": return .previousMatchEnd
         default: return nil
+        }
+    }
+
+    // MARK: Options
+
+    func parseStartOfStringAnchor() -> AST.Anchor? {
+        guard let source = scanner.read("^") else { return nil }
+        return AST.Anchor(type: .startOfString, source: source)
+    }
+
+    // MARK: Helpers
+
+    /// Creates an node which represents an expression. If there is only one
+    /// child, returns a child itself to avoid additional overhead.
+    func expression(_ children: [Unit]) throws -> Unit {
+        switch children.count {
+        case 0: throw Regex.Error("Pattern must not be empty", 0)
+        case 1: return children[0]
+        default:
+            let source = Range.merge(children.first!.source, children.last!.source)
+            return AST.Expression(children: children, source: source)
         }
     }
 }

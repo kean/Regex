@@ -22,6 +22,13 @@ final class Scanner {
         return pattern[i]
     }
 
+    func peak(orThrow error: String) throws -> Character {
+        guard let character = peak() else {
+            throw Regex.Error(error, 0)
+        }
+        return character
+    }
+
     // TODO: remove this temp workaround
     func undoRead() {
         i -= 1

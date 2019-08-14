@@ -14,6 +14,15 @@ class RegexMiscTests: XCTestCase {
             XCTAssertEqual(error.message, "Pattern must not be empty")
         }
     }
+
+    func testThrowsEmptyRegexOnlyAnchor() {
+        XCTAssertThrowsError(try Regex("^")) { error in
+            guard let error = (error as? Regex.Error) else {
+                return XCTFail("Unexpected error")
+            }
+            XCTAssertEqual(error.message, "Pattern must not be empty")
+        }
+    }
 }
 
 // Test some commonly used regular expressions.

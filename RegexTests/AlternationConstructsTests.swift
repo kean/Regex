@@ -64,7 +64,7 @@ class AlternationConstructsTests: XCTestCase {
             guard let error = (error as? Regex.Error) else {
                 return XCTFail("Unexpected error")
             }
-            XCTAssertEqual(error.message, "A side of an alternation is empty")
+            XCTAssertEqual(error.message, "Pattern must not be empty")
         }
     }
 
@@ -73,7 +73,7 @@ class AlternationConstructsTests: XCTestCase {
             guard let error = (error as? Regex.Error) else {
                 return XCTFail("Unexpected error")
             }
-            XCTAssertEqual(error.message, "A side of an alternation is empty")
+            XCTAssertEqual(error.message, "Pattern must not be empty")
         }
     }
 }

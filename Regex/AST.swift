@@ -9,14 +9,17 @@ import Foundation
 /// An AST unit, marker protocol.
 protocol Unit: Traceable {}
 
-/// Can be traced backed to the source in the pattern.
-protocol Traceable {
-    var source: Range<Int> { get }
-}
+/// A terminal unit, can't contain other units (subexpressions).
+protocol Terminal: Unit {}
 
 /// An AST unit consisting of multiple units.
 protocol CompoundUnit: Unit {
     var children: [Unit] { get }
+}
+
+/// Can be traced backed to the source in the pattern.
+protocol Traceable {
+    var source: Range<Int> { get }
 }
 
 // MARK: - AST (Components)
@@ -30,6 +33,7 @@ struct AST {
         let source: Range<Int>
     }
 
+    // "(ab)"
     struct Group: CompoundUnit {
         let index: Int
         let isCapturing: Bool
@@ -37,17 +41,20 @@ struct AST {
         let source: Range<Int>
     }
 
-    struct Backreference: Unit {
-        let index: Int
-        let source: Range<Int>
-    }
-
+    // "a|bc"
     struct Alternation: CompoundUnit {
         let children: [Unit]
         let source: Range<Int>
     }
 
-    struct Anchor: Unit {
+    // "(a)\1"
+    struct Backreference: Terminal {
+        let index: Int
+        let source: Range<Int>
+    }
+
+    // "$", "\b", etc
+    struct Anchor: Terminal {
         let type: AnchorType
         let source: Range<Int>
     }
@@ -63,7 +70,7 @@ struct AST {
         case previousMatchEnd
     }
 
-    struct Match: Unit {
+    struct Match: Terminal {
         let type: MatchType
         let source: Range<Int>
     }
@@ -74,7 +81,7 @@ struct AST {
         case characterSet(CharacterSet)
     }
 
-    struct QuantifiedExpression: Unit, CompoundUnit {
+    struct QuantifiedExpression: CompoundUnit {
         let type: Quantifier
         let expression: Unit
         let source: Range<Int>
@@ -82,6 +89,7 @@ struct AST {
         var children: [Unit] { return [expression] }
     }
 
+    // "a*", "a?", etc
     enum Quantifier {
         case zeroOrMore
         case oneOrMore
