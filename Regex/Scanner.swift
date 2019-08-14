@@ -8,11 +8,9 @@ final class Scanner {
     // The index of the next character that wasn't read yet.
     private(set) var i = 0
 
-    private var patternString: String
     private(set) var pattern: [Character]
 
     init(_ pattern: String) {
-        self.patternString = pattern
         self.pattern = Array(pattern)
     }
 
