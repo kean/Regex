@@ -20,34 +20,34 @@ final class Compiler {
     func compile() throws -> (CompiledRegex, Symbols) {
         let ast = try parser.parse()
         symbols.ast = ast
-        let expression = try compile(ast.expression)
+        let fsm = try compile(ast.expression)
         try validateBackreferences()
-        return (CompiledRegex(expression: expression, captureGroups: captureGroups), symbols)
+        return (CompiledRegex(fsm: fsm, captureGroups: captureGroups), symbols)
     }
 }
 
 private extension Compiler {
-    func compile(_ unit: Unit) throws -> Expression {
-        let expression = try _compile(unit)
+    func compile(_ unit: Unit) throws -> FSM {
+        let fsm = try _compile(unit)
         if Regex.isDebugModeEnabled {
-            symbols.map[expression.start] = Symbols.Details(unit: unit, isEnd: false)
-            symbols.map[expression.end] = Symbols.Details(unit: unit, isEnd: true)
+            symbols.map[fsm.start] = Symbols.Details(unit: unit, isEnd: false)
+            symbols.map[fsm.end] = Symbols.Details(unit: unit, isEnd: true)
         }
-        return expression
+        return fsm
     }
 
-    func _compile(_ unit: Unit) throws -> Expression {
+    func _compile(_ unit: Unit) throws -> FSM {
         switch unit {
         case let expression as AST.Expression:
             return .concatenate(try expression.children.map(compile))
 
         case let group as AST.Group:
-            let expressions = try group.children.map(compile)
-            let expression = Expression.group(.concatenate(expressions))
+            let fsms = try group.children.map(compile)
+            let fms = FSM.group(.concatenate(fsms))
             if group.isCapturing { // Remember the group that we just compiled.
-                captureGroups.append(CaptureGroup(index: group.index, start: expression.start, end: expression.end))
+                captureGroups.append(CaptureGroup(index: group.index, start: fms.start, end: fms.end))
             }
-            return expression
+            return fms
 
         case let backreference as AST.Backreference:
             backreferences.append(backreference)
@@ -90,23 +90,23 @@ private extension Compiler {
         }
     }
 
-    func compile(_ expression: Unit, _ range: ClosedRange<Int>) throws -> Expression {
-        let prefix: Expression = try .concatenate((0..<range.lowerBound).map { _ in
-            try compile(expression)
+    func compile(_ unit: Unit, _ range: ClosedRange<Int>) throws -> FSM {
+        let prefix: FSM = try .concatenate((0..<range.lowerBound).map { _ in
+            try compile(unit)
         })
-        let suffix: Expression
+        let suffix: FSM
         if range.upperBound == Int.max {
-            suffix = .zeroOrOne(try compile(expression))
+            suffix = .zeroOrOne(try compile(unit))
         } else {
             // Compile the optional matches into `x(x(x(x)?)?)?`. We use this
             // specific form with grouping to make sure that matcher can cache
             // the results during backtracking.
-            suffix = try range.dropLast().reduce(Expression.empty) { result, _ in
-                let expression = try compile(expression)
+            suffix = try range.dropLast().reduce(FSM.empty) { result, _ in
+                let expression = try compile(unit)
                 return .zeroOrOne(.group(.concatenate(expression, result)))
             }
         }
-        return Expression.concatenate(prefix, suffix)
+        return FSM.concatenate(prefix, suffix)
     }
 
     func validateBackreferences() throws {
@@ -123,7 +123,7 @@ private extension Compiler {
 
 struct CompiledRegex {
     /// The starting index in the compiled regular expression.
-    let expression: Expression
+    let fsm: FSM
 
     /// All the capture groups with their indexes.
     let captureGroups: [CaptureGroup]

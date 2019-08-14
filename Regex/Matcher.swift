@@ -58,7 +58,7 @@ private extension Matcher {
         // strings, and also that it find all possible matches.
         var cursor = cursor
         while cursor.index <= cursor.range.upperBound {
-            if let match = firstMatch(cursor, regex.expression.start, 0), closure(match) {
+            if let match = firstMatch(cursor, regex.fsm.start, 0), closure(match) {
                 // Found a match, check the remainder of the string
                 cursor = cursor.startingAt(match.fullMatch.isEmpty ? match.endIndex + 1 : match.endIndex)
                 cursor.previousMatchIndex = match.fullMatch.endIndex

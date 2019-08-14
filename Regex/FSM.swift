@@ -4,10 +4,11 @@
 
 import Foundation
 
-// MARK: - Expression
+// MARK: - FSM
 
-/// A convenience API for creating expressions.
-struct Expression {
+/// A convenience API for creating finite state machines (FSM) which represent
+/// regular expressions.
+struct FSM {
     let start: State
     let end: State
 
@@ -19,7 +20,7 @@ struct Expression {
     /// Automatically sets up a single consuming transition from start to end
     /// with the given condition.
     init(condition: @escaping (Character) -> Bool) {
-        self = Expression()
+        self = FSM()
         start.transitions = [.init(end, { cursor in
             guard let character = cursor.character else {
                 return nil
@@ -28,20 +29,20 @@ struct Expression {
         })]
     }
 
-    /// Creates an empty expression.
-    static var empty: Expression {
-        let expression = Expression()
-        expression.start.transitions = [.epsilon(expression.end)]
-        return expression
+    /// Creates an empty state machine.
+    static var empty: FSM {
+        let fsm = FSM()
+        fsm.start.transitions = [.epsilon(fsm.end)]
+        return fsm
     }
 }
 
-// MARK: - Expression (Character Classes)
+// MARK: - FSM (Character Classes)
 
-extension Expression {
+extension FSM {
     /// Matches the given character.
-    static func character(_ c: Character, isCaseInsensitive: Bool) -> Expression {
-        return Expression {
+    static func character(_ c: Character, isCaseInsensitive: Bool) -> FSM {
+        return FSM {
             if isCaseInsensitive {
                 return String(c).caseInsensitiveCompare(String($0)) == ComparisonResult.orderedSame
             } else {
@@ -51,8 +52,8 @@ extension Expression {
     }
 
     /// Matches the given character set.
-    static func characterSet(_ set: CharacterSet, isCaseInsensitive: Bool) -> Expression {
-        return Expression {
+    static func characterSet(_ set: CharacterSet, isCaseInsensitive: Bool) -> FSM {
+        return FSM {
             if isCaseInsensitive, $0.isCased {
                 return set.contains(Character($0.lowercased())) || set.contains(Character($0.uppercased()))
             } else {
@@ -62,65 +63,65 @@ extension Expression {
     }
 
     /// Matches any character.
-    static func anyCharacter(includingNewline: Bool) -> Expression {
-        return Expression { includingNewline ? true : $0 != "\n" }
+    static func anyCharacter(includingNewline: Bool) -> FSM {
+        return FSM { includingNewline ? true : $0 != "\n" }
     }
 }
 
-// MARK: - Expression (Quantifiers)
+// MARK: - FSM (Quantifiers)
 
-extension Expression {
-    /// Matches the given expression zero or more times.
-    static func zeroOrMore(_ expression: Expression) -> Expression {
-        let quantifier = Expression()
+extension FSM {
+    /// Matches the given FSM zero or more times.
+    static func zeroOrMore(_ child: FSM) -> FSM {
+        let quantifier = FSM()
         quantifier.start.transitions = [
-            .epsilon(expression.start), // Loop (greedy by default)
+            .epsilon(child.start), // Loop (greedy by default)
             .epsilon(quantifier.end) // Skip
         ]
-        expression.end.transitions = [
+        child.end.transitions = [
             .epsilon(quantifier.start) // Loop
         ]
         return quantifier
     }
 
-    /// Matches the given expression one or more times.
-    static func oneOrMore(_ expression: Expression) -> Expression {
-        let quantifier = Expression()
+    /// Matches the given FSM one or more times.
+    static func oneOrMore(_ child: FSM) -> FSM {
+        let quantifier = FSM()
         quantifier.start.transitions = [
-            .epsilon(expression.start) // Execute at least once
+            .epsilon(child.start) // Execute at least once
         ]
-        expression.end.transitions = [
+        child.end.transitions = [
             .epsilon(quantifier.start), // Loop
             .epsilon(quantifier.end) // Complete
         ]
         return quantifier
     }
 
-    /// Matches the given expression either none or one time.
-    static func zeroOrOne(_ expression: Expression) -> Expression {
-        let quantifier = Expression()
+    /// Matches the given FSM either none or one time.
+    static func zeroOrOne(_ child: FSM) -> FSM {
+        let quantifier = FSM()
         quantifier.start.transitions = [
-            .epsilon(expression.start), // Loop (greedy by default)
+            .epsilon(child.start), // Loop (greedy by default)
             .epsilon(quantifier.end) // Skip
         ]
-        expression.end.transitions = [
+        child.end.transitions = [
             .epsilon(quantifier.end), // Complete
         ]
         return quantifier
     }
 }
 
-// MARK: - Expression (Anchors)
+// MARK: - FSM (Anchors)
 
-extension Expression {
+extension FSM {
     /// Matches the beginning of the string (or beginning of the line when
     /// `.multiline` option is enabled).
-    static var startOfString: Expression {
+    static var startOfString: FSM {
         return anchor { cursor in cursor.index == 0 }
     }
 
     /// Matches the beginning of the string (ignores `.multiline` option).
-    static var startOfStringOnly: Expression {
+    static var startOfStringOnly: FSM {
         return anchor { cursor in
             cursor.index == 0 && cursor.substring.startIndex == cursor.string.startIndex
         }
@@ -128,14 +129,14 @@ extension Expression {
 
     /// Matches the end of the string or `\n` at the end of the string
     /// (end of the line in `.multiline` mode).
-    static var endOfString: Expression {
+    static var endOfString: FSM {
         return anchor { cursor in
             return cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
-    static var endOfStringOnly: Expression {
+    static var endOfStringOnly: FSM {
         return anchor { cursor in
             guard cursor.substring.endIndex == cursor.string.endIndex ||
                 // In multiline mode `\n` are removed from the lines during preprocessing.
@@ -147,7 +148,7 @@ extension Expression {
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
-    static var endOfStringOnlyNotNewline: Expression {
+    static var endOfStringOnlyNotNewline: FSM {
         return anchor { cursor in
             return cursor.substring.endIndex == cursor.string.endIndex && cursor.isEmpty
         }
@@ -155,7 +156,7 @@ extension Expression {
 
     /// Match must occur at the point where the previous match ended. Ensures
     /// that all matches are contiguous.
-    static var previousMatchEnd: Expression {
+    static var previousMatchEnd: FSM {
         return anchor { cursor in
             if cursor.substring.startIndex == cursor.string.startIndex {
                 return true // There couldn't be any matches before the start index
@@ -168,21 +169,21 @@ extension Expression {
     }
 
     /// The match must occur on a word boundary.
-    static var wordBoundary: Expression {
+    static var wordBoundary: FSM {
         return anchor { cursor in cursor.isAtWordBoundary }
     }
 
     /// The match must occur on a non-word boundary.
-    static var nonWordBoundary: Expression {
+    static var nonWordBoundary: FSM {
         return anchor { cursor in !cursor.isAtWordBoundary }
     }
 
-    private static func anchor(_ condition: @escaping (Cursor) -> Bool) -> Expression {
-        let expression = Expression()
-        expression.start.transitions = [
-            .epsilon(expression.end, condition)
+    private static func anchor(_ condition: @escaping (Cursor) -> Bool) -> FSM {
+        let anchor = FSM()
+        anchor.start.transitions = [
+            .epsilon(anchor.end, condition)
         ]
-        return expression
+        return anchor
     }
 }
 
@@ -202,24 +203,24 @@ private extension Cursor {
     }
 }
 
-// MARK: - Expression (Group)
+// MARK: - FSM (Group)
 
-extension Expression {
-    static func group(_ expression: Expression) -> Expression {
-        let group = Expression()
-        group.start.transitions = [.epsilon(expression.start)]
-        expression.end.transitions = [.epsilon(group.end)]
+extension FSM {
+    static func group(_ child: FSM) -> FSM {
+        let group = FSM()
+        group.start.transitions = [.epsilon(child.start)]
+        child.end.transitions = [.epsilon(group.end)]
         return group
     }
 }
 
-// MARK: - Expression (Backreferences)
+// MARK: - FSM (Backreferences)
 
-extension Expression {
-    static func backreference(_ groupIndex: Int) -> Expression {
-        let expression = Expression()
-        expression.start.transitions = [
-            .init(expression.end) { cursor -> Int? in
+extension FSM {
+    static func backreference(_ groupIndex: Int) -> FSM {
+        let backreference = FSM()
+        backreference.start.transitions = [
+            .init(backreference.end) { cursor -> Int? in
                 guard let groupRange = cursor.groups[groupIndex] else {
                     return nil
                 }
@@ -230,52 +231,52 @@ extension Expression {
                 return groupRange.count
             }
         ]
-        return expression
+        return backreference
     }
 }
 
-// MARK: - Expression (Operations)
+// MARK: - FSM (Operations)
 
-extension Expression {
+extension FSM {
 
-    static func concatenate<S>(_ expressions: S) -> Expression
-        where S: Collection, S.Element == Expression {
-            guard let first = expressions.first else {
-                return .empty
-            }
-            return expressions.dropFirst().reduce(first, Expression.concatenate)
+    /// Concatenates the given state machines so that they are executed one by
+    /// one in a row.
+    static func concatenate<S>(_ machines: S) -> FSM
+        where S: Collection, S.Element == FSM {
+            guard let first = machines.first else { return .empty }
+            return machines.dropFirst().reduce(first, FSM.concatenate)
     }
 
-    static func concatenate(_ lhs: Expression, _ rhs: Expression) -> Expression {
+    static func concatenate(_ lhs: FSM, _ rhs: FSM) -> FSM {
         precondition(lhs.end.transitions.isEmpty, "Invalid state of \(lhs)")
         precondition(rhs.end.transitions.isEmpty, "Invalid state of \(rhs)")
 
         lhs.end.transitions = [.epsilon(rhs.start)]
-        return Expression(start: lhs.start, end: rhs.end)
+        return FSM(start: lhs.start, end: rhs.end)
     }
 
-    static func alternate<S>(_ expressions: S) -> Expression
-        where S: Sequence, S.Element == Expression {
-            let alternation = Expression()
+    static func alternate<S>(_ machines: S) -> FSM
+        where S: Sequence, S.Element == FSM {
+            let alternation = FSM()
 
-            for expression in expressions {
-                precondition(expression.end.transitions.isEmpty, "Invalid state of \(expression)")
+            for fsm in machines {
+                precondition(fsm.end.transitions.isEmpty, "Invalid state of \(fsm)")
 
-                alternation.start.transitions.append(.epsilon(expression.start))
-                expression.end.transitions = [.epsilon(alternation.end)]
+                alternation.start.transitions.append(.epsilon(fsm.start))
+                fsm.end.transitions = [.epsilon(alternation.end)]
             }
 
             return alternation
     }
 
-    static func alternate(_ lhs: Expression, _ rhs: Expression) -> Expression {
+    static func alternate(_ lhs: FSM, _ rhs: FSM) -> FSM {
         return alternate([lhs, rhs])
     }
 }
 
-// MARK: - Expression (Symbols)
+// MARK: - FSM (Symbols)
 
-extension Expression {
+extension FSM {
     func description(_ symbols: Symbols) -> String {
         var states = [String]()
 
@@ -295,7 +296,7 @@ extension Expression {
         return states.joined(separator: "\n")
     }
 
-    /// Enumerates all the state in the expression using breadth-first search.
+    /// Enumerates all the state in the state machine using breadth-first search.
     func allStates() -> [State] {
         var states = [State]()
         visit { state, _ in
