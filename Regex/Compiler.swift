@@ -9,7 +9,7 @@ final class Compiler {
     private let options: Regex.Options
     private var symbols: Symbols
     private var captureGroups: [CaptureGroup] = []
-    private var backreferences: [AST.Backreference] = []
+    private var backreferences: [Backreference] = []
 
     init(_ pattern: String, _ options: Regex.Options) {
         self.parser = Parser(pattern, options)
@@ -20,7 +20,7 @@ final class Compiler {
     func compile() throws -> (CompiledRegex, Symbols) {
         let ast = try parser.parse()
         symbols.ast = ast
-        let fsm = try compile(ast.expression)
+        let fsm = try compile(ast.root)
         try validateBackreferences()
         return (CompiledRegex(fsm: fsm, captureGroups: captureGroups), symbols)
     }
@@ -38,10 +38,10 @@ private extension Compiler {
 
     func _compile(_ unit: Unit) throws -> FSM {
         switch unit {
-        case let expression as AST.Expression:
+        case let expression as Expression:
             return .concatenate(try expression.children.map(compile))
 
-        case let group as AST.Group:
+        case let group as Group:
             let fsms = try group.children.map(compile)
             let fms = FSM.group(.concatenate(fsms))
             if group.isCapturing { // Remember the group that we just compiled.
@@ -49,14 +49,14 @@ private extension Compiler {
             }
             return fms
 
-        case let backreference as AST.Backreference:
+        case let backreference as Backreference:
             backreferences.append(backreference)
             return .backreference(backreference.index)
 
-        case let alternation as AST.Alternation:
+        case let alternation as Alternation:
             return .alternate(try alternation.children.map(compile))
 
-        case let anchor as AST.Anchor:
+        case let anchor as Anchor:
             switch anchor.type {
             case .startOfString: return .startOfString
             case .startOfStringOnly: return .startOfStringOnly
@@ -68,7 +68,7 @@ private extension Compiler {
             case .previousMatchEnd: return .previousMatchEnd
             }
 
-        case let quantifier as AST.QuantifiedExpression:
+        case let quantifier as QuantifiedExpression:
             let expression = quantifier.expression
             switch quantifier.type {
             case .zeroOrMore: return .zeroOrMore(try compile(expression))
@@ -77,7 +77,7 @@ private extension Compiler {
             case let .range(range): return try compile(expression, range)
             }
 
-        case let match as AST.Match:
+        case let match as Match:
             let isCaseInsensitive = options.contains(.caseInsensitive)
             switch match.type {
             case let .character(c): return .character(c, isCaseInsensitive: isCaseInsensitive)

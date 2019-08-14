@@ -32,7 +32,7 @@ final class Parser {
         }
         units.append(try parseExpression())
 
-        let ast = AST(expression: try expression(units), pattern: pattern)
+        let ast = AST(root: try expression(units), pattern: pattern)
 
         guard scanner.peak() == nil else {
             throw Regex.Error("Unmatched closing parentheses", 0)
@@ -57,12 +57,12 @@ private extension Parser {
         }
 
         // Appplies quantifier to the last expression.
-        func apply(_ quantifier: AST.Quantifier) throws {
+        func apply(_ quantifier: Quantifier) throws {
             guard let last = children[children.endIndex-1].popLast() else {
                 throw Regex.Error("The preceeding token is not quantifiable", 0)
             }
             let source = last.source.lowerBound..<scanner.i
-            add(AST.QuantifiedExpression(type: quantifier, expression: last, source: source))
+            add(QuantifiedExpression(type: quantifier, expression: last, source: source))
         }
 
         while let c = scanner.peak(), c != ")" {
@@ -80,7 +80,7 @@ private extension Parser {
         case 1: return expressions[0] // No alternation
         default:
             let source = Range.merge(expressions.first!.source, expressions.last!.source)
-            return AST.Alternation(children: expressions, source: source)
+            return Alternation(children: expressions, source: source)
         }
     }
 
@@ -91,34 +91,34 @@ private extension Parser {
         switch c {
         case ".":
             let newline = options.contains(.dotMatchesLineSeparators)
-            return AST.Match(type: .anyCharacter(includingNewline: newline), source: scanner.read())
+            return Match(type: .anyCharacter(includingNewline: newline), source: scanner.read())
         case "\\":
             return try parseEscapedCharacter()
         case "[":
             let (set, range) = try scanner.readCharacterSet()
-            return AST.Match(type: .characterSet(set), source: range)
+            return Match(type: .characterSet(set), source: range)
         case "$":
-            return AST.Anchor(type: .endOfString, source: scanner.read())
+            return Anchor(type: .endOfString, source: scanner.read())
         default:
-            return AST.Match(type: .character(c), source: scanner.read())
+            return Match(type: .character(c), source: scanner.read())
         }
     }
 
     // MARK: Groups
 
     /// Parses a group, can be called recursively.
-    func parseGroup() throws -> AST.Group {
+    func parseGroup() throws -> Group {
         let groupIndex = nextGroupIndex
         let start = try scanner.read("(", orThrow: "Unmatched closing parantheses")
         let isCapturing = scanner.read("?:") == nil
         let expression = try parseExpression()
         let end = try scanner.read(")", orThrow: "Unmatched opening parentheses")
-        return AST.Group(index: groupIndex, isCapturing: isCapturing, children: [expression], source: .merge(start, end))
+        return Group(index: groupIndex, isCapturing: isCapturing, children: [expression], source: .merge(start, end))
     }
 
     // MARK: Quantifiers
 
-    func parseQuantifier(_ c: Character) throws -> AST.Quantifier {
+    func parseQuantifier(_ c: Character) throws -> Quantifier {
         scanner.read()
         switch c {
         case "*": return .zeroOrMore
@@ -129,9 +129,9 @@ private extension Parser {
         }
     }
 
-    func parseRangeQuantifier() throws -> AST.Quantifier {
+    func parseRangeQuantifier() throws -> Quantifier {
         let range = try scanner.readRangeQuantifier()
-        return AST.Quantifier.range(range)
+        return Quantifier.range(range)
     }
 
     // MARK: Character Escapes
@@ -144,24 +144,24 @@ private extension Parser {
         }
 
         if let (index, range) = scanner.readInt() {
-            return AST.Backreference(index: index, source: .merge(start, range))
+            return Backreference(index: index, source: .merge(start, range))
         }
 
         if let anchor = anchor(for: c) {
-            return AST.Anchor(type: anchor, source: .merge(start, scanner.read()))
+            return Anchor(type: anchor, source: .merge(start, scanner.read()))
         }
 
         // TODO: tidy up
         scanner.read()
         if let set = try scanner.readCharacterClassSpecialCharacter(c) {
-            return AST.Match(type: .characterSet(set), source: .merge(start, scanner.i..<scanner.i))
+            return Match(type: .characterSet(set), source: .merge(start, scanner.i..<scanner.i))
         }
         scanner.undoRead()
 
-        return AST.Match(type: .character(c), source: .merge(start, scanner.read()))
+        return Match(type: .character(c), source: .merge(start, scanner.read()))
     }
 
-    func anchor(for c: Character) -> AST.AnchorType? {
+    func anchor(for c: Character) -> AnchorType? {
         switch c {
         case "b": return .wordBoundary
         case "B": return .nonWordBoundary
@@ -175,9 +175,9 @@ private extension Parser {
 
     // MARK: Options
 
-    func parseStartOfStringAnchor() -> AST.Anchor? {
+    func parseStartOfStringAnchor() -> Anchor? {
         guard let source = scanner.read("^") else { return nil }
-        return AST.Anchor(type: .startOfString, source: source)
+        return Anchor(type: .startOfString, source: source)
     }
 
     // MARK: Helpers
@@ -190,7 +190,7 @@ private extension Parser {
         case 1: return children[0]
         default:
             let source = Range.merge(children.first!.source, children.last!.source)
-            return AST.Expression(children: children, source: source)
+            return Expression(children: children, source: source)
         }
     }
 }

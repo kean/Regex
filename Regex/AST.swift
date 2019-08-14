@@ -25,88 +25,88 @@ protocol Traceable {
 // MARK: - AST (Components)
 
 struct AST {
-    let expression: Unit
+    let root: Unit
     let pattern: String
+}
 
-    struct Expression: CompoundUnit {
-        let children: [Unit]
-        let source: Range<Int>
-    }
+struct Expression: CompoundUnit {
+    let children: [Unit]
+    let source: Range<Int>
+}
 
-    // "(ab)"
-    struct Group: CompoundUnit {
-        let index: Int
-        let isCapturing: Bool
-        let children: [Unit]
-        let source: Range<Int>
-    }
+// "(ab)"
+struct Group: CompoundUnit {
+    let index: Int
+    let isCapturing: Bool
+    let children: [Unit]
+    let source: Range<Int>
+}
 
-    // "a|bc"
-    struct Alternation: CompoundUnit {
-        let children: [Unit]
-        let source: Range<Int>
-    }
+// "a|bc"
+struct Alternation: CompoundUnit {
+    let children: [Unit]
+    let source: Range<Int>
+}
 
-    // "(a)\1"
-    struct Backreference: Terminal {
-        let index: Int
-        let source: Range<Int>
-    }
+// "(a)\1"
+struct Backreference: Terminal {
+    let index: Int
+    let source: Range<Int>
+}
 
-    // "$", "\b", etc
-    struct Anchor: Terminal {
-        let type: AnchorType
-        let source: Range<Int>
-    }
+// "$", "\b", etc
+struct Anchor: Terminal {
+    let type: AnchorType
+    let source: Range<Int>
+}
 
-    enum AnchorType {
-        case startOfString
-        case endOfString
-        case wordBoundary
-        case nonWordBoundary
-        case startOfStringOnly
-        case endOfStringOnly
-        case endOfStringOnlyNotNewline
-        case previousMatchEnd
-    }
+enum AnchorType {
+    case startOfString
+    case endOfString
+    case wordBoundary
+    case nonWordBoundary
+    case startOfStringOnly
+    case endOfStringOnly
+    case endOfStringOnlyNotNewline
+    case previousMatchEnd
+}
 
-    struct Match: Terminal {
-        let type: MatchType
-        let source: Range<Int>
-    }
+struct Match: Terminal {
+    let type: MatchType
+    let source: Range<Int>
+}
 
-    enum MatchType {
-        case character(Character)
-        case anyCharacter(includingNewline: Bool)
-        case characterSet(CharacterSet)
-    }
+enum MatchType {
+    case character(Character)
+    case anyCharacter(includingNewline: Bool)
+    case characterSet(CharacterSet)
+}
 
-    struct QuantifiedExpression: CompoundUnit {
-        let type: Quantifier
-        let expression: Unit
-        let source: Range<Int>
+struct QuantifiedExpression: CompoundUnit {
+    let type: Quantifier
+    let expression: Unit
+    let source: Range<Int>
 
-        var children: [Unit] { return [expression] }
-    }
+    var children: [Unit] { return [expression] }
+}
 
-    // "a*", "a?", etc
-    enum Quantifier {
-        case zeroOrMore
-        case oneOrMore
-        case zeroOrOne
-        case range(ClosedRange<Int>)
-    }
+// "a*", "a?", etc
+enum Quantifier {
+    case zeroOrMore
+    case oneOrMore
+    case zeroOrOne
+    case range(ClosedRange<Int>)
 }
 
 // MARK: - AST (Description)
 
-extension AST.Expression: CustomStringConvertible {
+extension Expression: CustomStringConvertible {
     var description: String {
         return "Expression"
     }
 }
 
-extension AST.Match: CustomStringConvertible {
+extension Match: CustomStringConvertible {
     var description: String {
         switch type {
         case let .character(character): return "Character(\"\(character)\")"
@@ -116,7 +116,7 @@ extension AST.Match: CustomStringConvertible {
     }
 }
 
-extension AST.Group: CustomStringConvertible {
+extension Group: CustomStringConvertible {
     var description: String {
         if isCapturing {
             return "Group(index: \(index))"
@@ -126,25 +126,25 @@ extension AST.Group: CustomStringConvertible {
     }
 }
 
-extension AST.Alternation: CustomStringConvertible {
+extension Alternation: CustomStringConvertible {
     var description: String {
         return "Alternation"
     }
 }
 
-extension AST.Anchor: CustomStringConvertible {
+extension Anchor: CustomStringConvertible {
     var description: String {
         return "Anchor.\(type)"
     }
 }
 
-extension AST.Backreference: CustomStringConvertible {
+extension Backreference: CustomStringConvertible {
     var description: String {
         return "Backreference(index: \(index))"
     }
 }
 
-extension AST.QuantifiedExpression: CustomStringConvertible {
+extension QuantifiedExpression: CustomStringConvertible {
     var description: String {
         return "Quantifier.\(type)"
     }
@@ -154,7 +154,7 @@ extension AST: CustomStringConvertible {
     /// Returns a nicely formatted description of the unit.
     var description: String {
         var output = ""
-        visit(expression, 0) { unit, level in
+        visit(root, 0) { unit, level in
             let s = String(repeating: " ", count: level * 2) + "– " + description(for: unit)
             output.append(s)
             output.append("\n")
@@ -176,7 +176,7 @@ extension AST: CustomStringConvertible {
 extension AST {
     /// Recursively visits all nodes.
     func visit(_ closure: (Unit) -> Void) {
-        visit(expression, 0) { unit, _ in closure(unit) }
+        visit(root, 0) { unit, _ in closure(unit) }
     }
 
     /// Recursively visits all nodes.
