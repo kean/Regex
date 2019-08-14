@@ -22,7 +22,7 @@ final class Matcher {
     }
 
     /// - parameter closure: Return `false` to stop.
-    func forMatch(in string: String, _ closure: (Match) -> Bool) {
+    func forMatch(in string: String, _ closure: (Regex.Match) -> Bool) {
         // Print number of iterations performed, this is for debug purporses only but
         // it is effectively the only thing making Regex non-thread-safe which we ignore.
         os_log(.default, log: log, "%{PUBLIC}@", "Started, input: \(string)")
@@ -53,7 +53,7 @@ private extension Matcher {
     }
 
     /// - parameter closure: Return `false` to stop.
-    func forMatch(_ cursor: Cursor, _ closure: (Match) -> Bool) {
+    func forMatch(_ cursor: Cursor, _ closure: (Regex.Match) -> Bool) {
         // Include end index in the search to make sure matches runs for empty
         // strings, and also that it find all possible matches.
         var cursor = cursor
@@ -72,7 +72,7 @@ private extension Matcher {
     /// Evaluates the state machine against if finds the first possible match.
     /// The type of the match we find is going to depend on the type of pattern,
     /// e.g. whether greedy or lazy quantifiers were used.
-    func firstMatch(_ cursor: Cursor, _ state: State, _ level: Int = 0) -> Match? {
+    func firstMatch(_ cursor: Cursor, _ state: State, _ level: Int = 0) -> Regex.Match? {
         iterations += 1
         var cursor = cursor
 
@@ -88,7 +88,7 @@ private extension Matcher {
         os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(state)")
 
         if state.isEnd { // Found a match
-            return Match(cursor)
+            return Regex.Match(cursor)
         }
 
         let isBranching = state.transitions.count > 1

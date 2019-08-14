@@ -106,8 +106,6 @@ public extension Regex {
     }
 }
 
-typealias Match = Regex.Match
-
 // MARK: - Regex.Error
 
 extension Regex {
