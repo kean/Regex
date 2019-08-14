@@ -45,7 +45,7 @@ A character class matches any one of a set of characters.
 - <code><b>\z</b></code> - matches end of string (negation: <code><b>\Z</b></code>)
 - <code><b>\p{</b><i>name</i><b>}</code></b> - matches characters from the given unicode category, e.g. `\p{P}` for punctuation characters (supported categories: `P`, `Lt`, `Ll`, `N`, `S`) (negation: <code><b>\P</b></code>)
 
-> Characters consisting of **multiple unicode scalars** are interpreted as single characters, e.g. pattern  `"🇺🇸+"` matches `"🇺🇸"` and  `"🇺🇸🇺🇸"` but not `"🇸🇸"`. But when used inside character group, such characters are interpreted as individual unicode scalars, e.g. pattern `"[🇺🇸]"` matches `"🇺🇸"` and `"🇸🇸"` which consist of the same scalars.
+> Characters consisting of multiple unicode scalars (extended grapheme clusters) are interpreted as single characters, e.g. pattern  `"🇺🇸+"` matches `"🇺🇸"` and  `"🇺🇸🇺🇸"` but not `"🇸🇸"`. But when used inside character group, each unicode scalar is interpreted separately, e.g. pattern `"[🇺🇸]"` matches `"🇺🇸"` and `"🇸🇸"` which consist of the same scalars.
 
 ## Character Escapes
 
@@ -93,7 +93,7 @@ Quantifiers specify how many instances of a character, group, or character class
 - <code><b>{</b><i>n</i><b>,}</b></code> – match at least *n* times
 - <code><b>{</b><i>n</i><b>,</b><i>m</i><b>}</b></code> – match from *n* to *m* times, closed range, e.g. `a{3,4}`
 
-All quantifiers are **greedy** by default, they try to match as many occurrences of the pattern as possible.
+All quantifiers are **greedy** by default, they try to match as many occurrences of the pattern as possible. Append the `?` character to a quantifier to make it lazy and match as few occurrences as possible, e.g. `a+?`.
 
 > Warning: nesting quantifiers dramatically increases the number of comparisons that the engine performs.
 

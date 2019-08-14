@@ -193,7 +193,7 @@ class RegexSpecTests: XCTestCase {
     }
 
     // Match One or More Times (Lazy Match): +?
-    func _testQuantifier8() throws {
+    func testQuantifier8() throws {
         let pattern = #"\b\w+?\b"#
         let string = "Aa Bb Cc Dd Ee Ff"
 

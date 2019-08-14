@@ -13,7 +13,7 @@ protocol Unit: Traceable {}
 protocol Terminal: Unit {}
 
 /// An AST unit consisting of multiple units.
-protocol CompoundUnit: Unit {
+protocol Composite: Unit {
     var children: [Unit] { get }
 }
 
@@ -29,13 +29,13 @@ struct AST {
     let pattern: String
 }
 
-struct Expression: CompoundUnit {
+struct Expression: Composite {
     let children: [Unit]
     let source: Range<Int>
 }
 
 // "(ab)"
-struct Group: CompoundUnit {
+struct Group: Composite {
     let index: Int
     let isCapturing: Bool
     let children: [Unit]
@@ -43,7 +43,7 @@ struct Group: CompoundUnit {
 }
 
 // "a|bc"
-struct Alternation: CompoundUnit {
+struct Alternation: Composite {
     let children: [Unit]
     let source: Range<Int>
 }
@@ -82,8 +82,9 @@ enum MatchType {
     case characterSet(CharacterSet)
 }
 
-struct QuantifiedExpression: CompoundUnit {
+struct QuantifiedExpression: Composite {
     let type: Quantifier
+    let isLazy: Bool
     let expression: Unit
     let source: Range<Int>
 
@@ -146,7 +147,7 @@ extension Backreference: CustomStringConvertible {
 
 extension QuantifiedExpression: CustomStringConvertible {
     var description: String {
-        return "Quantifier.\(type)"
+        return "Quantifier.\(type)" + (isLazy ? "(isLazy: true)" : "")
     }
 }
 
@@ -182,7 +183,7 @@ extension AST {
     /// Recursively visits all nodes.
     private func visit(_ unit: Unit, _ level: Int, _ closure: (Unit, Int) -> Void) {
         closure(unit, level)
-        if let children = (unit as? CompoundUnit)?.children {
+        if let children = (unit as? Composite)?.children {
             for child in children {
                 visit(child, level + 1, closure)
             }

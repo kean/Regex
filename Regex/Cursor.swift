@@ -6,7 +6,7 @@ import Foundation
 
 /// Cursor represents the slice in which we are performing the matching and the
 /// current index in this slice.
-struct Cursor { // Not sure this is the best word
+struct Cursor {
     /// The entire input string.
     let string: String
 

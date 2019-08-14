@@ -70,11 +70,12 @@ private extension Compiler {
 
         case let quantifier as QuantifiedExpression:
             let expression = quantifier.expression
+            let isLazy = quantifier.isLazy
             switch quantifier.type {
-            case .zeroOrMore: return .zeroOrMore(try compile(expression))
-            case .oneOrMore: return .oneOrMore(try compile(expression))
-            case .zeroOrOne: return .zeroOrOne(try compile(expression))
-            case let .range(range): return try compile(expression, range)
+            case .zeroOrMore: return .zeroOrMore(try compile(expression), isLazy)
+            case .oneOrMore: return .oneOrMore(try compile(expression), isLazy)
+            case .zeroOrOne: return .zeroOrOne(try compile(expression), isLazy)
+            case let .range(range): return try compile(expression, range, isLazy)
             }
 
         case let match as Match:
@@ -91,20 +92,20 @@ private extension Compiler {
         }
     }
 
-    func compile(_ unit: Unit, _ range: ClosedRange<Int>) throws -> FSM {
+    func compile(_ unit: Unit, _ range: ClosedRange<Int>, _ isLazy: Bool) throws -> FSM {
         let prefix: FSM = try .concatenate((0..<range.lowerBound).map { _ in
             try compile(unit)
         })
         let suffix: FSM
         if range.upperBound == Int.max {
-            suffix = .zeroOrOne(try compile(unit))
+            suffix = .zeroOrOne(try compile(unit), isLazy)
         } else {
             // Compile the optional matches into `x(x(x(x)?)?)?`. We use this
             // specific form with grouping to make sure that matcher can cache
             // the results during backtracking.
             suffix = try range.dropLast().reduce(FSM.empty) { result, _ in
                 let expression = try compile(unit)
-                return .zeroOrOne(.group(.concatenate(expression, result)))
+                return .zeroOrOne(.group(.concatenate(expression, result)), isLazy)
             }
         }
         return FSM.concatenate(prefix, suffix)

@@ -59,8 +59,9 @@ private extension Parser {
             guard let last = children[children.endIndex-1].popLast() else {
                 throw Regex.Error("The preceeding token is not quantifiable", 0)
             }
+            let isLazy = scanner.read("?") != nil
             let source = last.source.lowerBound..<scanner.i
-            add(QuantifiedExpression(type: quantifier, expression: last, source: source))
+            add(QuantifiedExpression(type: quantifier, isLazy: isLazy, expression: last, source: source))
         }
 
         while let c = scanner.peak(), c != ")" {

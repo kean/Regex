@@ -9,4 +9,9 @@ extension String {
     func index(offsetBy offset: Int) -> String.Index {
         return index(startIndex, offsetBy: offset)
     }
+
+    /// - warning: This is used just for testing purposes!
+    func range(of substring: Substring) -> Range<Int> {
+        return distance(from: startIndex, to: substring.startIndex)..<distance(from: startIndex, to: substring.endIndex)
+    }
 }

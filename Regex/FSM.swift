@@ -72,12 +72,15 @@ extension FSM {
 
 extension FSM {
     /// Matches the given FSM zero or more times.
-    static func zeroOrMore(_ child: FSM) -> FSM {
+    static func zeroOrMore(_ child: FSM, _ isLazy: Bool) -> FSM {
         let quantifier = FSM()
         quantifier.start.transitions = [
-            .epsilon(child.start), // Loop (greedy by default)
+            .epsilon(child.start), // Loop (greedy)
             .epsilon(quantifier.end) // Skip
         ]
+        if isLazy {
+            quantifier.start.transitions.reverse()
+        }
         child.end.transitions = [
             .epsilon(quantifier.start) // Loop
         ]
@@ -85,25 +88,31 @@ extension FSM {
     }
 
     /// Matches the given FSM one or more times.
-    static func oneOrMore(_ child: FSM) -> FSM {
+    static func oneOrMore(_ child: FSM, _ isLazy: Bool) -> FSM {
         let quantifier = FSM()
         quantifier.start.transitions = [
             .epsilon(child.start) // Execute at least once
         ]
         child.end.transitions = [
-            .epsilon(quantifier.start), // Loop
+            .epsilon(quantifier.start), // Loop (greedy)
             .epsilon(quantifier.end) // Complete
         ]
+        if isLazy {
+            child.end.transitions.reverse()
+        }
         return quantifier
     }
 
     /// Matches the given FSM either none or one time.
-    static func zeroOrOne(_ child: FSM) -> FSM {
+    static func zeroOrOne(_ child: FSM, _ isLazy: Bool) -> FSM {
         let quantifier = FSM()
         quantifier.start.transitions = [
-            .epsilon(child.start), // Loop (greedy by default)
+            .epsilon(child.start), // Loop (greedy)
             .epsilon(quantifier.end) // Skip
         ]
+        if isLazy {
+            quantifier.start.transitions.reverse()
+        }
         child.end.transitions = [
             .epsilon(quantifier.end), // Complete
         ]
