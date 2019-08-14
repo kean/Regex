@@ -283,7 +283,7 @@ extension FSM {
         visit { state, _ in
             let details = symbols.map[state]
             let transitions = state.transitions
-                .map { "  – Transition to \($0.toState)" }
+                .map { "  – Transition to \($0.end)" }
                 .joined(separator: "\n")
 
             let info: String? = details.flatMap {
@@ -316,7 +316,7 @@ extension FSM {
             let (state, level) = queue.removeFirst() // This isn't fast
             closure(state, level)
 
-            for neighboor in state.transitions.map({ $0.toState })
+            for neighboor in state.transitions.map({ $0.end })
                 where !encountered.contains(neighboor) {
                     queue.append((neighboor, level+1))
                     encountered.insert(neighboor)

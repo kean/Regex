@@ -106,7 +106,7 @@ private extension Matcher {
             var cursor = cursor
             cursor.index += consumed // Consume as many characters as need (zero for epsilon transitions)
 
-            let match = firstMatch(cursor, transition.toState, isBranching ? level + 1 : level)
+            let match = firstMatch(cursor, transition.end, isBranching ? level + 1 : level)
 
             if isBranching {
                 os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")

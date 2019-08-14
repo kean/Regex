@@ -12,8 +12,6 @@ final class State: Hashable, CustomStringConvertible {
         return transitions.isEmpty
     }
 
-    init() {}
-
     // MARK: Hashable
 
     func hash(into hasher: inout Hasher) {
@@ -37,19 +35,19 @@ final class State: Hashable, CustomStringConvertible {
 /// A transition between two states of the state machine.
 struct Transition {
     /// A state into which the transition is performed.
-    let toState: State
+    let end: State
 
     /// Determines whether the transition is possible in the given context.
     /// Returns `nil` if not possible, otherwise returns number of elements to consume.
     let condition: (Cursor) -> Int?
 
-    init(_ toState: State, _ condition: @escaping (Cursor) -> Int?) {
-        self.toState = toState
+    init(_ end: State, _ condition: @escaping (Cursor) -> Int?) {
+        self.end = end
         self.condition = condition
     }
 
     /// Creates a transition which doesn't consume characters.
-    static func epsilon(_ toState: State, _ condition: @escaping (Cursor) -> Bool = { _ in true }) -> Transition {
-        return Transition(toState) { condition($0) ? 0 : nil }
+    static func epsilon(_ end: State, _ condition: @escaping (Cursor) -> Bool = { _ in true }) -> Transition {
+        return Transition(end) { condition($0) ? 0 : nil }
     }
 }
