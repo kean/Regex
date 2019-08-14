@@ -309,16 +309,17 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
     }
 
     // https://www.regexpal.com/?fam=104037
-    func _testIPv6Address() throws {
+    func testIPv6Address() throws {
         let regex = try Regex(#"^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$"#)
 
         XCTAssertTrue(regex.isMatch("1200:0000:AB00:1234:0000:2552:7777:1313"))
-        XCTAssertTrue(regex.isMatch("1200::AB00:1234::2552:7777:1313"))
+        XCTAssertFalse(regex.isMatch("1200::AB00:1234::2552:7777:1313"))
         XCTAssertTrue(regex.isMatch("21DA:D3:0:2F3B:2AA:FF:FE28:9C5A"))
         XCTAssertFalse(regex.isMatch("1200:0000:AB00:1234:O000:2552:7777:1313"))    // invalid characters present
         XCTAssertTrue(regex.isMatch("FE80:0000:0000:0000:0202:B3FF:FE1E:8329"))
         XCTAssertFalse(regex.isMatch("[2001:db8:0:1]:80"))                          // valid, no support for port numbers
         XCTAssertFalse(regex.isMatch("http://[2001:db8:0:1]:80"))                   // valid, no support for IP address in a URL
+
     }
 
     // MARK: - Date Format
@@ -464,18 +465,18 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
     }
 
     // https://www.regexpal.com/?fam=104043
-    func _testTimeFormat4() throws {
+    func testTimeFormat4() throws {
         let regex = try Regex(#"^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"#)
 
         XCTAssertTrue(regex.isMatch("12:00"))
         XCTAssertTrue(regex.isMatch("13:00"))
-        XCTAssertTrue(regex.isMatch("1:00"))
+        XCTAssertFalse(regex.isMatch("1:00"))
         XCTAssertFalse(regex.isMatch("5:5"))
-        XCTAssertTrue(regex.isMatch("5:05"))
+        XCTAssertFalse(regex.isMatch("5:05"))
         XCTAssertFalse(regex.isMatch("55:55"))
         XCTAssertTrue(regex.isMatch("09:59"))
         XCTAssertFalse(regex.isMatch(":01"))
-        XCTAssertTrue(regex.isMatch("0:59"))
+        XCTAssertFalse(regex.isMatch("0:59"))
         XCTAssertTrue(regex.isMatch("00:59"))
         XCTAssertTrue(regex.isMatch("01:59"))
         XCTAssertFalse(regex.isMatch("24:00"))
