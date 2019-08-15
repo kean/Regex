@@ -80,6 +80,8 @@ private extension Matcher {
     /// Evaluates the state machine against if finds the first possible match.
     /// The type of the match we find is going to depend on the type of pattern,
     /// e.g. whether greedy or lazy quantifiers were used.
+    ///
+    /// - warning: The matcher hasn't been optimized in any way yet
     func firstMatch(_ cursor: Cursor, _ state: State) -> Regex.Match? {
         iterations += 1
         var cursor = cursor

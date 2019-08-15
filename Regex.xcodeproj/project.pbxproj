@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0C15CFB82305E89C00CCA38D /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */; };
 		0CA617C12300139A009ED2C9 /* State.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C02300139A009ED2C9 /* State.swift */; };
 		0CA617C523009AF9009ED2C9 /* BackreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */; };
 		0CA617C72301E438009ED2C9 /* AST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C62301E438009ED2C9 /* AST.swift */; };
@@ -57,6 +58,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		0C3BFF9C2305537F008158A3 /* FoundationRegularExpression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationRegularExpression.swift; sourceTree = "<group>"; };
 		0CA617C02300139A009ED2C9 /* State.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = State.swift; sourceTree = "<group>"; };
 		0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackreferencesTests.swift; sourceTree = "<group>"; };
@@ -161,6 +163,7 @@
 				0CB3057D22FF19920083B406 /* RegexSpecTests.swift */,
 				0CB3056322FED0740083B406 /* IntegrationTests.swift */,
 				0CB3057B22FF08ED0083B406 /* Extensions.swift */,
+				0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */,
 				0C3BFF9C2305537F008158A3 /* FoundationRegularExpression.swift */,
 			);
 			path = RegexTests;
@@ -282,6 +285,7 @@
 				0CB3057622FED0740083B406 /* OptionsTests.swift in Sources */,
 				0CB3056D22FED0740083B406 /* IntegrationTests.swift in Sources */,
 				0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */,
+				0C15CFB82305E89C00CCA38D /* PerformanceTests.swift in Sources */,
 				0CB3057A22FEE9970083B406 /* MatcherTests.swift in Sources */,
 				0CB3057C22FF08ED0083B406 /* Extensions.swift in Sources */,
 				0CB3057222FED0740083B406 /* QuantifierWIthRangeTests.swift in Sources */,
