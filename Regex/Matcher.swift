@@ -32,8 +32,8 @@ final class Matcher {
         }
 
         var isRunning = true
-        for substring in preprocess(string) where isRunning {
-            let cursor = Cursor(string: string, substring: substring)
+        for line in preprocess(string) where isRunning {
+            let cursor = Cursor(string: line, completeInputString: string)
             forMatch(cursor) { match in
                 isRunning = closure(match)
                 return isRunning // We don't need to run against other lines in the input
@@ -57,14 +57,22 @@ private extension Matcher {
         // Include end index in the search to make sure matches runs for empty
         // strings, and also that it find all possible matches.
         var cursor = cursor
-        while cursor.index <= cursor.range.upperBound {
-            if let match = firstMatch(cursor, regex.fsm.start), closure(match) {
-                // Found a match, check the remainder of the string
-                cursor = cursor.startingAt(match.fullMatch.isEmpty ? match.endIndex + 1 : match.endIndex)
+        while true {
+            // TODO: tidy up
+            let match = firstMatch(cursor, regex.fsm.start)
+            guard match == nil || closure(match!) else {
+                return
+            }
+            guard cursor.index < cursor.string.endIndex else {
+                return
+            }
+            let index = match.map {
+                $0.fullMatch.isEmpty ? cursor.string.index(after: $0.endIndex) : $0.endIndex
+            } ?? cursor.string.index(after: cursor.index)
+
+            cursor.startAt(index)
+            if let match = match {
                 cursor.previousMatchIndex = match.fullMatch.endIndex
-            } else {
-                // Didn't find any matches, let's start from the next position
-                cursor = cursor.startingAt(cursor.index + 1)
             }
         }
     }
@@ -107,7 +115,7 @@ private extension Matcher {
             }
 
             var cursor = cursor
-            cursor.index += consumed // Consume as many characters as need (zero for epsilon transitions)
+            cursor.advance(by: consumed) // Consume as many characters as need (zero for epsilon transitions)
 
             if let match = firstMatch(cursor, transition.end) {
                 return match

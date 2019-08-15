@@ -126,13 +126,13 @@ extension FSM {
     /// Matches the beginning of the string (or beginning of the line when
     /// `.multiline` option is enabled).
     static var startOfString: FSM {
-        return anchor { cursor in cursor.index == 0 }
+        return anchor { cursor in cursor.index == cursor.string.startIndex }
     }
 
     /// Matches the beginning of the string (ignores `.multiline` option).
     static var startOfStringOnly: FSM {
         return anchor { cursor in
-            cursor.index == 0 && cursor.substring.startIndex == cursor.string.startIndex
+            cursor.startIndex == cursor.completeInputString.startIndex
         }
     }
 
@@ -140,26 +140,26 @@ extension FSM {
     /// (end of the line in `.multiline` mode).
     static var endOfString: FSM {
         return anchor { cursor in
-            return cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")
+            return cursor.isEmpty || (cursor.isAtLastIndex && cursor.character == "\n")
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnly: FSM {
         return anchor { cursor in
-            guard cursor.substring.endIndex == cursor.string.endIndex ||
+            guard cursor.string.endIndex == cursor.completeInputString.endIndex ||
                 // In multiline mode `\n` are removed from the lines during preprocessing.
-                (cursor.substring.endIndex == cursor.string.index(before: cursor.string.endIndex) && cursor.string.last == "\n") else {
+                (cursor.string.endIndex == cursor.completeInputString.index(before: cursor.completeInputString.endIndex) && cursor.completeInputString.last == "\n") else {
                     return false
             }
-            return cursor.isEmpty || (cursor.isLastIndex && cursor.character == "\n")
+            return cursor.isEmpty || (cursor.isAtLastIndex && cursor.character == "\n")
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnlyNotNewline: FSM {
         return anchor { cursor in
-            return cursor.substring.endIndex == cursor.string.endIndex && cursor.isEmpty
+            return cursor.string.endIndex == cursor.completeInputString.endIndex && cursor.isEmpty
         }
     }
 
@@ -167,13 +167,13 @@ extension FSM {
     /// that all matches are contiguous.
     static var previousMatchEnd: FSM {
         return anchor { cursor in
-            if cursor.substring.startIndex == cursor.string.startIndex {
+            if cursor.string.startIndex == cursor.completeInputString.startIndex {
                 return true // There couldn't be any matches before the start index
             }
             guard let previousMatchIndex = cursor.previousMatchIndex else {
                 return false
             }
-            return cursor.substring.startIndex == cursor.string.index(after: previousMatchIndex)
+            return cursor.string.startIndex == cursor.completeInputString.index(after: previousMatchIndex)
         }
     }
 
@@ -201,8 +201,9 @@ private extension Cursor {
         guard let char = character else {
             return true // Already reached the end of the string
         }
-        let lhs = character(offsetBy: -1) ?? " "
-        let rhs = character(offsetBy: 1) ?? " "
+
+        let lhs = (index > string.startIndex) ? character(offsetBy: -1) : " "
+        let rhs = (index < string.index(before: string.endIndex)) ? character(offsetBy: 1) : " "
 
         if char.isWord {
             return !lhs.isWord
@@ -233,11 +234,11 @@ extension FSM {
                 guard let groupRange = cursor.groups[groupIndex] else {
                     return nil
                 }
-                let group = cursor.substring(groupRange)
-                guard cursor.remainingSubstring.hasPrefix(group) else {
+                let group = cursor.string[groupRange]
+                guard cursor.string[cursor.index...].hasPrefix(group) else {
                     return nil
                 }
-                return groupRange.count
+                return group.count
             }
         ]
         return backreference

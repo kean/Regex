@@ -93,14 +93,13 @@ public extension Regex {
         public let groups: [Substring]
 
         /// Index where the search ended.
-        let endIndex: Int
+        let endIndex: String.Index
 
         init(_ cursor: Cursor) {
-            self.fullMatch = cursor.substring(cursor.range.lowerBound..<cursor.index)
+            self.fullMatch = cursor.string[cursor.startIndex..<cursor.index]
             self.groups = cursor.groups
                 .sorted(by: { $0.key < $1.key }) // Sort by the index of the group
-                .map { $0.value }
-                .map(cursor.substring)
+                .map { cursor.string[$0.value] }
             self.endIndex = cursor.index
         }
     }
