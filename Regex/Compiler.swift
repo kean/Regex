@@ -98,7 +98,7 @@ private extension Compiler {
         })
         let suffix: FSM
         if range.upperBound == Int.max {
-            suffix = .zeroOrOne(try compile(unit), isLazy)
+            suffix = .zeroOrMore(try compile(unit), isLazy)
         } else {
             // Compile the optional matches into `x(x(x(x)?)?)?`. We use this
             // specific form with grouping to make sure that matcher can cache
@@ -149,5 +149,16 @@ struct Symbols {
     struct Details {
         let unit: Unit
         let isEnd: Bool
+    }
+
+    func description(for state: State) -> String {
+        let details = map[state]
+
+        let info: String? = details.flatMap {
+            guard let ast = ast else { return nil }
+            return "\($0.isEnd ? "End" : "Start"), \(ast.description(for: $0.unit))"
+        }
+
+        return "\(state) [\(info ?? "<symbol missing>")]"
     }
 }

@@ -202,4 +202,15 @@ class RegexSpecTests: XCTestCase {
 
         XCTAssertEqual(matches, ["Aa", "Bb", "Cc", "Dd", "Ee", "Ff"])
     }
+
+    // Match Exactly n Times (Lazy Match): {n}?
+    func testQuantifier9() throws {
+        let pattern = #"\b(\w{3,}?\.){2}?\w{3,}?\b"#
+        let string = "www.apple.com developer.apple.com mywebsite mycompany.com"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["www.apple.com", "developer.apple.com"])
+    }
 }

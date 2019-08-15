@@ -58,7 +58,7 @@ private extension Matcher {
         // strings, and also that it find all possible matches.
         var cursor = cursor
         while cursor.index <= cursor.range.upperBound {
-            if let match = firstMatch(cursor, regex.fsm.start, 0), closure(match) {
+            if let match = firstMatch(cursor, regex.fsm.start), closure(match) {
                 // Found a match, check the remainder of the string
                 cursor = cursor.startingAt(match.fullMatch.isEmpty ? match.endIndex + 1 : match.endIndex)
                 cursor.previousMatchIndex = match.fullMatch.endIndex
@@ -72,7 +72,7 @@ private extension Matcher {
     /// Evaluates the state machine against if finds the first possible match.
     /// The type of the match we find is going to depend on the type of pattern,
     /// e.g. whether greedy or lazy quantifiers were used.
-    func firstMatch(_ cursor: Cursor, _ state: State, _ level: Int = 0) -> Regex.Match? {
+    func firstMatch(_ cursor: Cursor, _ state: State) -> Regex.Match? {
         iterations += 1
         var cursor = cursor
 
@@ -85,34 +85,31 @@ private extension Matcher {
             cursor.groupsStartIndexes[state] = cursor.index
         }
 
-        os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(state)")
+        os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))")
 
         if state.isEnd { // Found a match
-            return Regex.Match(cursor)
+            let match = Regex.Match(cursor)
+            os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match) ✅")
+            return match
         }
 
-        let isBranching = state.transitions.count > 1
-
+        var counter = 0
         for transition in state.transitions {
-            guard let consumed = transition.condition(cursor) else {
-                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \("❌")")
-                continue
+            counter += 1
+
+            if state.transitions.count > 1 {
+                os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(state.transitions.count)")
             }
 
-            if isBranching {
-                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] ᛦ")
+            guard let consumed = transition.condition(cursor) else {
+                os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \("❌")")
+                continue
             }
 
             var cursor = cursor
             cursor.index += consumed // Consume as many characters as need (zero for epsilon transitions)
 
-            let match = firstMatch(cursor, transition.end, isBranching ? level + 1 : level)
-
-            if isBranching {
-                os_log(.default, log: log, "%{PUBLIC}@", "\(String(repeating: " ", count: level))[\(cursor.index), \(cursor.character ?? "∅")] \(match == nil ? "✅" : "❌")")
-            }
-
-            if let match = match {
+            if let match = firstMatch(cursor, transition.end) {
                 return match
             }
         }

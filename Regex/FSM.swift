@@ -290,16 +290,12 @@ extension FSM {
         var states = [String]()
 
         visit { state, _ in
-            let details = symbols.map[state]
             let transitions = state.transitions
                 .map { "  – Transition to \($0.end)" }
                 .joined(separator: "\n")
 
-            let info: String? = details.flatMap {
-                guard let ast = symbols.ast else { return nil }
-                return "\($0.isEnd ? "End" : "Start"), \(ast.description(for: $0.unit))"
-            }
-            let desc = "\(state) [\(info ?? "<symbol missing>")] \n\(transitions)"
+            let info = symbols.description(for: state)
+            let desc =  "\(info)\n\(transitions)"
             states.append(desc)
         }
         return states.joined(separator: "\n")

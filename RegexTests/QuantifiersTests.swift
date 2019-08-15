@@ -228,4 +228,14 @@ class QuantifiersLazyModifierTests: XCTestCase {
         XCTAssertEqual(matches[3].range.lowerBound, 3)
         XCTAssertEqual(matches[3].range.length, 1)
     }
+
+    func testGreedyRangeQuantifierZerOrMore() throws {
+        let regex = try Regex("a{2,}")
+        let string = "aaaa"
+
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["aaaa"])
+        XCTAssertEqual(matches.map(string.range(of:)), [0..<4])
+    }
 }

@@ -37,6 +37,7 @@ class QuantifierWithRangeTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("aa"))
         XCTAssertTrue(regex.isMatch("aaa"))
+        XCTAssertTrue(regex.isMatch("aaaa"))
     }
 
     func testRange() throws {
