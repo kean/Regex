@@ -223,36 +223,28 @@ class GroupsWithQuantifiersTests: XCTestCase {
 
     func testThrowsUnmatchedParenthesis() throws {
         XCTAssertThrowsError(try Regex("a)")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Unmatched closing parentheses")
         }
     }
 
     func testThrowsUnmatchedParenthesisNested() throws {
         XCTAssertThrowsError(try Regex("a(b)c)d")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Unmatched closing parentheses")
         }
     }
 
     func testThrowsUnmatchedOpeningParanthesis() throws {
         XCTAssertThrowsError(try Regex("(a")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Unmatched opening parentheses")
         }
     }
 
     func testThrowsUnmatchedOpeningParanthesisNested() throws {
         XCTAssertThrowsError(try Regex("(a(b")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Unmatched opening parentheses")
         }
     }

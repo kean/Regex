@@ -57,6 +57,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0C3BFF9C2305537F008158A3 /* FoundationRegularExpression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationRegularExpression.swift; sourceTree = "<group>"; };
 		0CA617C02300139A009ED2C9 /* State.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = State.swift; sourceTree = "<group>"; };
 		0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackreferencesTests.swift; sourceTree = "<group>"; };
 		0CA617C62301E438009ED2C9 /* AST.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AST.swift; sourceTree = "<group>"; };
@@ -160,6 +161,7 @@
 				0CB3057D22FF19920083B406 /* RegexSpecTests.swift */,
 				0CB3056322FED0740083B406 /* IntegrationTests.swift */,
 				0CB3057B22FF08ED0083B406 /* Extensions.swift */,
+				0C3BFF9C2305537F008158A3 /* FoundationRegularExpression.swift */,
 			);
 			path = RegexTests;
 			sourceTree = "<group>";

@@ -9,9 +9,7 @@ class QuantifierZeroOrMoreTests: XCTestCase {
 
     func testThrowsThePrecedingTokenIsNotQuantifiableErrorWhenRootEmpty() {
         XCTAssertThrowsError(try Regex("*")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "The preceeding token is not quantifiable")
         }
     }
@@ -67,23 +65,6 @@ class QuantifierZeroOrMoreTests: XCTestCase {
         XCTAssertEqual(matches.map { $0.groups.isEmpty }, [true, true])
     }
 
-    func testReturnsEmptyMatchesFoundation() throws {
-        let regex = try NSRegularExpression(pattern: "(ab)*")
-        let s = "a"
-
-        let range = NSRange(s.startIndex..<s.endIndex, in: s)
-        let matches = regex.matches(in: s, options: [], range: range)
-
-        XCTAssertEqual(matches.count, 2)
-        guard matches.count == 2 else { return }
-
-        XCTAssertEqual(matches[0].range.lowerBound, 0)
-        XCTAssertEqual(matches[0].range.length, 0)
-
-        XCTAssertEqual(matches[1].range.lowerBound, 1)
-        XCTAssertEqual(matches[1].range.length, 0)
-    }
-
     func testWithAnyCharacter() throws {
         let regex = try Regex(".*")
 
@@ -133,6 +114,15 @@ class QuantifiersLazyModifierTests: XCTestCase {
         XCTAssertEqual(matches.map(string.range(of:)), [0..<4, 4..<4])
     }
 
+    /// This is a tricky scenario which works differently in different languages
+    /// and depend on the matcher details. In NSRegularExpression and other popular
+    /// regex engines like the ones found in JavaScript, Python and Go, this scenario
+    /// produces 5 matches. This is the same number of matches, that `Regex` produces.
+    /// PCRE on the other hand finds 12 matches. This isn't something that I would
+    /// expect, actually. It seems that when PCRE matcher founds a match, it tries
+    /// to find the next match by backtracking a checking other alternations if
+    /// there are any. In other implementations after the match is found, the FSM
+    /// is re-started from the index right after the match.
     func testLazyZeroOrMore() throws {
         let regex = try Regex("a*?")
         let string = "aaaa"
@@ -143,42 +133,6 @@ class QuantifiersLazyModifierTests: XCTestCase {
         XCTAssertEqual(matches.count, 5)
         XCTAssertEqual(matches, ["", "", "", "", ""])
         XCTAssertEqual(matches.map(string.range(of:)), [0..<0, 1..<1, 2..<2, 3..<3, 4..<4])
-    }
-
-    /// A companion for `testLazyZeroOrMore`. This is a tricky scenario which works
-    /// differently in different languages and depend on the matcher details. In
-    /// NSRegularExpression and other popular regex engines like the ones found
-    /// in JavaScript, Python and Go, this scenario produces 5 matches. This is
-    /// the same number of matches, that `Regex` produces. PCRE on the other hand
-    /// finds 12 matches. This isn't something that I would expect, actually. It
-    /// seems that when PCRE matcher founds a match, it tries to find the next match
-    /// by backtracking a checking other alternations if there are any. In other
-    /// implementations after the match is found, the FSM is re-started from the
-    /// index right after the match.
-    func testLazyZeroOrMoreFoundation() throws {
-        let regex = try NSRegularExpression(pattern: "a*?")
-        let s = "aaaa"
-
-        let range = NSRange(s.startIndex..<s.endIndex, in: s)
-        let matches = regex.matches(in: s, options: [], range: range)
-
-        XCTAssertEqual(matches.count, 5)
-        guard matches.count == 5 else { return }
-
-        XCTAssertEqual(matches[0].range.lowerBound, 0)
-        XCTAssertEqual(matches[0].range.length, 0)
-
-        XCTAssertEqual(matches[1].range.lowerBound, 1)
-        XCTAssertEqual(matches[1].range.length, 0)
-
-        XCTAssertEqual(matches[2].range.lowerBound, 2)
-        XCTAssertEqual(matches[2].range.length, 0)
-
-        XCTAssertEqual(matches[3].range.lowerBound, 3)
-        XCTAssertEqual(matches[3].range.length, 0)
-
-        XCTAssertEqual(matches[4].range.lowerBound, 4)
-        XCTAssertEqual(matches[4].range.length, 0)
     }
 
     // MARK: RangeQuantifier
@@ -204,29 +158,6 @@ class QuantifiersLazyModifierTests: XCTestCase {
         // Expect it to match as little of the input as possible in each go.
         XCTAssertEqual(matches, ["a", "a", "a", "a"])
         XCTAssertEqual(matches.map(string.range(of:)), [0..<1, 1..<2, 2..<3, 3..<4])
-    }
-
-    func testLazyRangeQuantifierFoundation() throws {
-        let regex = try NSRegularExpression(pattern: "a{1,3}?")
-        let s = "aaaa"
-
-        let range = NSRange(s.startIndex..<s.endIndex, in: s)
-        let matches = regex.matches(in: s, options: [], range: range)
-
-        XCTAssertEqual(matches.count, 4)
-        guard matches.count == 4 else { return }
-
-        XCTAssertEqual(matches[0].range.lowerBound, 0)
-        XCTAssertEqual(matches[0].range.length, 1)
-
-        XCTAssertEqual(matches[1].range.lowerBound, 1)
-        XCTAssertEqual(matches[1].range.length, 1)
-
-        XCTAssertEqual(matches[2].range.lowerBound, 2)
-        XCTAssertEqual(matches[2].range.length, 1)
-
-        XCTAssertEqual(matches[3].range.lowerBound, 3)
-        XCTAssertEqual(matches[3].range.length, 1)
     }
 
     func testGreedyRangeQuantifierZerOrMore() throws {

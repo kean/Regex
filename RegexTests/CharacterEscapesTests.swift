@@ -51,9 +51,7 @@ class CharacterEscapesTests: XCTestCase {
 
     func testThrowsEndingWithAtTrailingBackslash() throws {
         XCTAssertThrowsError(try Regex(#"\"#)) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Pattern may not end with a trailing backslash")
             XCTAssertEqual(error.index, 0)
         }
@@ -61,9 +59,7 @@ class CharacterEscapesTests: XCTestCase {
 
     func testThrowsEndingWithAtTrailingBackslashInsideRange() throws {
         XCTAssertThrowsError(try Regex(#"[\"#)) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Pattern may not end with a trailing backslash")
             XCTAssertEqual(error.index, 1)
         }

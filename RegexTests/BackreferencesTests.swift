@@ -32,9 +32,7 @@ class BackreferencesTests: XCTestCase {
 
     func testThrowsNonExistentSubpattern() throws {
         XCTAssertThrowsError(try Regex("(a)\\2")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "The token '\\2' references a non-existent or invalid subpattern")
             XCTAssertEqual(error.index, 0)
         }
@@ -42,9 +40,7 @@ class BackreferencesTests: XCTestCase {
 
     func testThrowsNonExistentSubpatternSubpatterns() throws {
         XCTAssertThrowsError(try Regex("ab\\1")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "The token '\\1' references a non-existent or invalid subpattern")
         }
     }

@@ -61,18 +61,14 @@ class AlternationConstructsTests: XCTestCase {
 
     func testAlternationInitEmptyFirstImplititGroup() {
         XCTAssertThrowsError(try Regex("|b")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Pattern must not be empty")
         }
     }
 
     func testAlternationInitThrows() throws {
         XCTAssertThrowsError(try Regex("(|b)")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Pattern must not be empty")
         }
     }

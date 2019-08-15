@@ -8,18 +8,14 @@ import Regex
 class RegexMiscTests: XCTestCase {
     func testThrowsEmptyRegex() {
         XCTAssertThrowsError(try Regex("")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Pattern must not be empty")
         }
     }
 
     func testThrowsEmptyRegexOnlyAnchor() {
         XCTAssertThrowsError(try Regex("^")) { error in
-            guard let error = (error as? Regex.Error) else {
-                return XCTFail("Unexpected error")
-            }
+            guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Pattern must not be empty")
         }
     }
