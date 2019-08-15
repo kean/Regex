@@ -89,7 +89,14 @@ public final class Regex {
 
 public extension Regex {
     struct Match {
+        /// A full match.
+        ///
+        /// Substrings are only intended for short-term storage because they keep
+        /// a reference to the original String. When the match is complete and you
+        /// want to store the results or pass them on to another subsystem,
+        /// you should create a new String from a match substring.
         public let fullMatch: Substring
+
         public let groups: [Substring]
 
         /// Index where the search ended.
