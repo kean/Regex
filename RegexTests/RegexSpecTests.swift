@@ -213,4 +213,16 @@ class RegexSpecTests: XCTestCase {
 
         XCTAssertEqual(matches, ["www.apple.com", "developer.apple.com"])
     }
+
+    // Match Between n and m Times (Lazy Match): {n,m}?
+    // TODO: this doesn't finish in a reasonable amount of time
+    func _testQuantifier10() throws {
+        let pattern = #"\b[A-Z](\w*?\s*?){1,10}[.!?]"#
+        let string = "Hi. I am writing a short note. Its purpose is to test a regular expression that attempts to find sentences with ten or fewer words. Most sentences in this note are short."
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["Hi.", "I am writing a short note.", "Most sentences in this note are short."])
+    }
 }
