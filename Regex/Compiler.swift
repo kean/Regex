@@ -5,21 +5,20 @@
 import Foundation
 
 final class Compiler {
-    private let parser: Parser
+    private let ast: AST
     private let options: Regex.Options
+
     private var symbols: Symbols
     private var captureGroups: [CaptureGroup] = []
     private var backreferences: [Backreference] = []
 
-    init(_ pattern: String, _ options: Regex.Options) {
-        self.parser = Parser(pattern)
+    init(_ ast: AST, _ options: Regex.Options) {
+        self.ast = ast
         self.options = options
-        self.symbols = Symbols()
+        self.symbols = Symbols(ast: ast)
     }
 
     func compile() throws -> (CompiledRegex, Symbols) {
-        let ast = try parser.parse()
-        symbols.ast = ast
         let fsm = try compile(ast.root)
         try validateBackreferences()
         return (CompiledRegex(fsm: fsm, captureGroups: captureGroups), symbols)
@@ -142,8 +141,7 @@ struct CaptureGroup {
 /// Mapping between states of the finite state machine and the nodes for which
 /// they were produced.
 struct Symbols {
-    // TODO: tidy up
-    fileprivate(set) var ast: AST?
+    let ast: AST
     fileprivate(set) var map = [State: Details]()
 
     struct Details {
@@ -155,7 +153,6 @@ struct Symbols {
         let details = map[state]
 
         let info: String? = details.flatMap {
-            guard let ast = ast else { return nil }
             return "\($0.isEnd ? "End" : "Start"), \(ast.description(for: $0.unit))"
         }
 

@@ -49,8 +49,8 @@ public final class Regex {
 
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
-            let compiler = Compiler(pattern, options)
-            (self.regex, self.symbols) = try compiler.compile()
+            let ast = try Parser(pattern).parse()
+            (self.regex, self.symbols) = try Compiler(ast, options).compile()
             self.options = options
             os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.fsm.description(symbols))
         } catch {
