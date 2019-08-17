@@ -100,15 +100,18 @@ extension FSM {
     /// Matches the given FSM zero or more times.
     static func zeroOrMore(_ child: FSM, _ isLazy: Bool) -> FSM {
         let quantifier = FSM()
+
         quantifier.start.transitions = [
-            .epsilon(child.start), // Loop (greedy)
-            .epsilon(quantifier.end) // Skip
+            .epsilon(child.start), // Optimizer will take care of it
         ]
+        child.start.transitions.append(
+            .epsilon(quantifier.end)
+        )
         if isLazy {
-            quantifier.start.transitions.reverse()
+            child.start.transitions.reverse()
         }
         child.end.transitions = [
-            .epsilon(quantifier.start) // Loop
+            .epsilon(child.start) // Loop
         ]
         return quantifier
     }
