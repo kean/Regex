@@ -30,7 +30,7 @@ final class Parser {
         }
         units.append(try parseExpression())
 
-        let ast = AST(root: try expression(units), pattern: pattern)
+        let ast = (AST(root: optimize(try expression(units)), pattern: pattern))
 
         guard scanner.peak() == nil else {
             throw Regex.Error("Unmatched closing parentheses", 0)
@@ -43,6 +43,8 @@ final class Parser {
         return ast
     }
 }
+
+// MARK: - Parser (Parse)
 
 private extension Parser {
 
@@ -84,6 +86,8 @@ private extension Parser {
             return Alternation(children: expressions, source: source)
         }
     }
+
+    static let terminalKeywords = CharacterSet(charactersIn: ".\\[$")
 
     /// Parses a terminal part of the expression, e.g. a simple character match,
     /// or an anchor, anything that doesn't contain subexpressions.
@@ -192,5 +196,81 @@ private extension Parser {
             let source = Range.merge(children.first!.source, children.last!.source)
             return Expression(children: children, source: source)
         }
+    }
+}
+
+// MARK: - Parser (Optimize)
+
+private extension Parser {
+
+    func optimize(_ unit: Unit) -> Unit {
+        switch unit {
+        case let expression as Expression:
+            return optimize(expression)
+        case let group as Group:
+            return optimize(group)
+        case let alternation as Alternation:
+            return optimize(alternation)
+        case let quantifier as QuantifiedExpression:
+            return optimize(quantifier)
+        default:
+            return unit
+        }
+    }
+
+    func optimize(_ expression: Expression) -> Unit {
+        var input = Array(expression.children.reversed())
+        var output = [Unit]()
+
+        while let unit = input.popLast() {
+            switch unit {
+            // [Optimization] Collapse multiple string into a single string
+            case let match as Match:
+                guard case let .character(c) = match.type else {
+                    output.append(match)
+                    continue
+                }
+
+                var range = match.source
+                var chars = [c]
+                while let match = input.last as? Match, case let .character(c) = match.type {
+                    input.removeLast()
+                    chars.append(c)
+                    range = range.lowerBound..<match.source.upperBound
+                }
+                if chars.count > 1 {
+                    output.append(Match(type: .string(String(chars)), source: range))
+                } else {
+                    output.append(Match(type: .character(chars[0]), source: range))
+                }
+            default:
+                output.append(optimize(unit))
+            }
+        }
+        if output.count > 1 {
+            return Expression(children: output, source: expression.source)
+        } else {
+            return output[0]
+        }
+    }
+
+    func optimize(_ group: Group) -> Group {
+        return Group(
+            index: group.index,
+            isCapturing: group.isCapturing,
+            children: group.children.map(optimize),
+            source: group.source
+        )
+    }
+
+    func optimize(_ alternation: Alternation) -> Alternation {
+        return Alternation(
+            children: alternation.children.map(optimize),
+            source: alternation.source
+        )
+    }
+
+    func optimize(_ quantifier: QuantifiedExpression) -> QuantifiedExpression {
+        return QuantifiedExpression(type: quantifier.type, isLazy: quantifier.isLazy, expression: optimize(quantifier.expression), source: quantifier.source)
     }
 }

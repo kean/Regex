@@ -98,6 +98,8 @@ private extension Compiler {
             let dotMatchesLineSeparators = options.contains(.dotMatchesLineSeparators)
             switch match.type {
             case let .character(c): return .character(c, isCaseInsensitive: isCaseInsensitive)
+            case let .string(s): return .string(s
+                , isCaseInsensitive: isCaseInsensitive)
             case .anyCharacter: return .anyCharacter(includingNewline: dotMatchesLineSeparators)
             case let .characterSet(set): return .characterSet(set, isCaseInsensitive: isCaseInsensitive)
             }
@@ -108,9 +110,7 @@ private extension Compiler {
     }
 
     func compile(_ unit: Unit, _ range: ClosedRange<Int>, _ isLazy: Bool) throws -> FSM {
-        let prefix: FSM = try .concatenate((0..<range.lowerBound).map { _ in
-            try compile(unit)
-        })
+        let prefix = try compileRangePrefix(unit, range)
         let suffix: FSM
         if range.upperBound == Int.max {
             suffix = .zeroOrMore(try compile(unit), isLazy)
@@ -124,6 +124,29 @@ private extension Compiler {
             }
         }
         return FSM.concatenate(prefix, suffix)
+    }
+
+    func compileRangePrefix(_ unit: Unit, _ range: ClosedRange<Int>) throws -> FSM {
+        func getString() -> String? {
+            guard let match = unit as? Match else {
+                return nil
+            }
+            switch match.type {
+            case let .character(c): return String(c)
+            case let .string(s): return s
+            default: return nil
+            }
+        }
+
+        guard let string = getString() else {
+            return try .concatenate((0..<range.lowerBound).map { _ in
+                try compile(unit)
+            })
+        }
+
+        // [Optimization] compile a{4} as if it was .string("aaaa")
+        let s = String(repeating: string, count: (0..<range.lowerBound).count)
+        return FSM.string(s, isCaseInsensitive: options.contains(.caseInsensitive))
     }
 
     func validateBackreferences() throws {
@@ -142,7 +165,7 @@ private extension Compiler {
 
         for state in fsm.allStates() {
             state.transitions = state.transitions.map {
-                // Remove "technical" states
+                // [Optimization] Remove "technical" states
                 if !captureGroupState.contains($0.end) &&
                     $0.end.transitions.count == 1 &&
                     $0.end.transitions[0].isUnconditionalEpsilon {

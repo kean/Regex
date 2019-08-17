@@ -26,6 +26,16 @@ class AnchorMatchBeginningOfStringTests: XCTestCase {
     }
 
     func testRange() throws {
+        let regex = try Regex("^a{8}")
+
+        XCTAssertFalse(regex.isMatch(""))
+        XCTAssertFalse(regex.isMatch("a"))
+        XCTAssertFalse(regex.isMatch("aaaaaaa"))
+        XCTAssertTrue(regex.isMatch("aaaaaaaa"))
+        XCTAssertTrue(regex.isMatch("aaaaaaaaa"))
+    }
+
+    func testRange2() throws {
         let regex = try Regex("^a{2,4}")
 
         XCTAssertFalse(regex.isMatch(""))

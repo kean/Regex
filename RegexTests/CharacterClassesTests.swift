@@ -9,6 +9,7 @@ class CharacterClassesTests: XCTestCase {
 
     func testCharacter() throws {
         let regex = try Regex("a")
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("ba"))
         XCTAssertFalse(regex.isMatch("b"))
@@ -17,6 +18,7 @@ class CharacterClassesTests: XCTestCase {
 
     func testTwoCharactersInARow() throws {
         let regex = try Regex("ab")
+
         XCTAssertTrue(regex.isMatch("ab"))
         XCTAssertFalse(regex.isMatch("a"))
         XCTAssertFalse(regex.isMatch("ba"))
@@ -26,6 +28,7 @@ class CharacterClassesTests: XCTestCase {
 
     func testAnyCharacter() throws {
         let regex = try Regex(".")
+
         XCTAssertTrue(regex.isMatch("a"))
         XCTAssertTrue(regex.isMatch("b"))
         XCTAssertFalse(regex.isMatch(""))
@@ -34,6 +37,7 @@ class CharacterClassesTests: XCTestCase {
 
     func testAnyCharacterMixedWithSomeCharacter() throws {
         let regex = try Regex(".a")
+
         XCTAssertTrue(regex.isMatch("aa"))
         XCTAssertTrue(regex.isMatch("ba"))
         XCTAssertFalse(regex.isMatch("av"))

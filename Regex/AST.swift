@@ -78,6 +78,7 @@ struct Match: Terminal {
 
 enum MatchType {
     case character(Character)
+    case string(String)
     case anyCharacter
     case characterSet(CharacterSet)
 }
@@ -111,6 +112,7 @@ extension Match: CustomStringConvertible {
     var description: String {
         switch type {
         case let .character(character): return "Character(\"\(character)\")"
+        case let .string(string): return "String(\"\(string)\")"
         case let .characterSet(set): return "CharacterSet(\"\(set)\")"
         case .anyCharacter: return  "AnyCharacter"
         }

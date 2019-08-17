@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0C15CFCB23082A8800CCA38D /* libRegex.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CB3053E22FED01C0083B406 /* libRegex.a */; };
-		0C15CFD523082C4B00CCA38D /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */; };
 		0CA617C12300139A009ED2C9 /* State.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C02300139A009ED2C9 /* State.swift */; };
 		0CA617C523009AF9009ED2C9 /* BackreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */; };
 		0CA617C72301E438009ED2C9 /* AST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C62301E438009ED2C9 /* AST.swift */; };
@@ -31,6 +30,8 @@
 		0CB3057A22FEE9970083B406 /* MatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057922FEE9970083B406 /* MatcherTests.swift */; };
 		0CB3057C22FF08ED0083B406 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057B22FF08ED0083B406 /* Extensions.swift */; };
 		0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057D22FF19920083B406 /* RegexSpecTests.swift */; };
+		0CDBED7423087A60009E1793 /* OptimizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED7323087A60009E1793 /* OptimizationTests.swift */; };
+		0CDBED7623087EB0009E1793 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */; };
 		FF3C36492301877600BD9513 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C36482301877600BD9513 /* Parser.swift */; };
 		FF3C364B23018A4500BD9513 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364A23018A4500BD9513 /* Scanner.swift */; };
 		FF3C364D23018C6900BD9513 /* Compiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364C23018C6900BD9513 /* Compiler.swift */; };
@@ -94,6 +95,7 @@
 		0CB3057922FEE9970083B406 /* MatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatcherTests.swift; sourceTree = "<group>"; };
 		0CB3057B22FF08ED0083B406 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		0CB3057D22FF19920083B406 /* RegexSpecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegexSpecTests.swift; sourceTree = "<group>"; };
+		0CDBED7323087A60009E1793 /* OptimizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationTests.swift; sourceTree = "<group>"; };
 		FF3C36482301877600BD9513 /* Parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		FF3C364A23018A4500BD9513 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
 		FF3C364C23018C6900BD9513 /* Compiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compiler.swift; sourceTree = "<group>"; };
@@ -180,6 +182,7 @@
 				0CB3057922FEE9970083B406 /* MatcherTests.swift */,
 				0CB3057D22FF19920083B406 /* RegexSpecTests.swift */,
 				0CB3056322FED0740083B406 /* IntegrationTests.swift */,
+				0CDBED7323087A60009E1793 /* OptimizationTests.swift */,
 				0CB3057B22FF08ED0083B406 /* Extensions.swift */,
 				0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */,
 				0C3BFF9C2305537F008158A3 /* FoundationRegularExpression.swift */,
@@ -307,7 +310,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C15CFD523082C4B00CCA38D /* PerformanceTests.swift in Sources */,
+				0CDBED7623087EB0009E1793 /* PerformanceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -340,6 +343,7 @@
 				0CB3057622FED0740083B406 /* OptionsTests.swift in Sources */,
 				0CB3056D22FED0740083B406 /* IntegrationTests.swift in Sources */,
 				0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */,
+				0CDBED7423087A60009E1793 /* OptimizationTests.swift in Sources */,
 				0CB3057A22FEE9970083B406 /* MatcherTests.swift in Sources */,
 				0CB3057C22FF08ED0083B406 /* Extensions.swift in Sources */,
 				0CB3057222FED0740083B406 /* QuantifierWIthRangeTests.swift in Sources */,

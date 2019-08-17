@@ -51,6 +51,32 @@ extension FSM {
         }
     }
 
+    /// Matches the given string. In general is going to be much faster than
+    /// checking the individual characters (fast substring search).
+    static func string(_ s: String, isCaseInsensitive: Bool) -> FSM {
+        let fsm = FSM()
+        fsm.start.transitions = [
+            .init(fsm.end) { cursor -> Int? in
+                if isCaseInsensitive {
+                    guard let ub = cursor.string.index(cursor.index, offsetBy: s.count, limitedBy: cursor.string.endIndex) else {
+                        return nil
+                    }
+                    // TODO: test this
+                    guard String(cursor.string[cursor.index..<ub]).caseInsensitiveCompare(s) == ComparisonResult.orderedSame else {
+                        return nil
+                    }
+                    return s.count
+                } else {
+                    guard cursor.string[cursor.index...].hasPrefix(s) else {
+                        return nil
+                    }
+                    return s.count
+                }
+            }
+        ]
+        return fsm
+    }
+
     /// Matches the given character set.
     static func characterSet(_ set: CharacterSet, isCaseInsensitive: Bool) -> FSM {
         return FSM {

@@ -95,6 +95,7 @@ private extension Matcher {
         var retryCursor = cursor
         var reachableStates = Set<State>([start])
         var newReachableStates = Set<State>()
+        var reachableUntil = [State: String.Index]() // some transitions jump multiple indices
         var encountered = Set<State>()
         var potentialMatch: Cursor?
         var stack = [State]()
@@ -107,6 +108,18 @@ private extension Matcher {
             // accept the next character from the input string.
             for state in reachableStates {
                 iterations += 1
+
+                // [Optimization] Support for Match.string
+                if let index = reachableUntil[state] {
+                    if index > cursor.index {
+                        newReachableStates.insert(state)
+                        encountered.insert(state)
+                         // Important! Don't update capture groups, haven't reached the index yet!
+                        continue
+                    } else {
+                        reachableUntil[state] = nil
+                    }
+                }
 
                 // Go throught the graph of states using depth-first search.
                 stack.append(state)
@@ -131,6 +144,10 @@ private extension Matcher {
                         }
                         if consumed > 0 {
                             newReachableStates.insert(transition.end)
+                            // The state is going to be reachable until we reach index T+consumed
+                            if consumed > 1 {
+                                reachableUntil[transition.end] = cursor.string.index(cursor.index, offsetBy: consumed, limitedBy: cursor.string.endIndex)
+                            }
                         } else {
                             stack.append(transition.end)
                         }
@@ -142,7 +159,13 @@ private extension Matcher {
             guard !cursor.isEmpty else {
                 break
             }
-            cursor.advance(by: 1)
+
+            // Support for String.match
+            if reachableUntil.count > 1 && reachableUntil.count == newReachableStates.count {
+                cursor.startAt(reachableUntil.values.min()!)
+            } else {
+                cursor.advance(by: 1)
+            }
 
             // The iteration produced the exact same set of reachable states as
             // one of the previous ones. If we fail to match a string, we can

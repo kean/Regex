@@ -5,19 +5,27 @@
 import XCTest
 import Regex
 
-class PerformanceTests: XCTestCase {
-    // MARK: - Nearly Matching Input
+class PerformanceNearlyMatchingInputTests: XCTestCase {
 
-    // NSRegularExpression: 0.002 seconds
-    // Regex: 0.180 seconds
-    func testNearlyMatchingSubstring() throws {
-        let regex = try Regex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac")
-        let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
+    // NSRegularExpression: 0.403 seconds
+    // Regex: 0.110 seconds
+    func testNearlyMatchingSubstringCreateWithRange() throws {
+        let regex = try Regex("a{1000}c")
+        let string = String(repeating: "a", count: 50_000) + "b"
 
         measure {
-            for _ in 0...1000 {
-                let _ = regex.matches(in: string)
-            }
+            let _ = regex.matches(in: string)
+        }
+    }
+
+    // NSRegularExpression: 0.667 seconds
+    // Regex: 0.028 seconds
+    func testNearlyMatchingSubstringCreateWithRangeAndAlternation() throws {
+        let regex = try Regex("(a{1000}|a{800})c")
+        let string = String(repeating: "a", count: 50_000) + "b"
+
+        measure {
+            let _ = regex.matches(in: string)
         }
     }
 
@@ -35,7 +43,7 @@ class PerformanceTests: XCTestCase {
     }
 
     // NSRegularExpression: didn't finish in a reasonable time
-    // Regex: 0.138 seconds
+    // Regex: 0.118 seconds
     func testNearlyMatchingPatternWithLongInput() throws {
         let regex = try Regex("a*c")
         let string = String(repeating: "a", count: 50_000) + "b"
@@ -46,7 +54,7 @@ class PerformanceTests: XCTestCase {
     }
 
     // NSRegularExpression: 0.106 seconds
-    // Regex: 0.137 seconds
+    // Regex: 0.132 seconds
     func testNearlyMatchingPatternWithNestedGreedyQuantifier2() throws {
         let regex = try Regex("(aa)*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
@@ -59,7 +67,7 @@ class PerformanceTests: XCTestCase {
     }
 
     // NSRegularExpression: didn't finish in a reasonable time
-    // Regex: 0.117 seconds
+    // Regex: 0.163 seconds
     func testNearlyMatchingPatternWithNestedGreedyQuantifier() throws {
         let regex = try Regex("(a*)*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
@@ -82,5 +90,31 @@ class PerformanceTests: XCTestCase {
                  let _ = regex.matches(in: string)
              }
          }
+    }
+
+    // NSRegularExpression: 0.002 seconds
+    // Regex: 0.135 seconds
+    func testNearlyMatchingSubstring() throws {
+        let regex = try Regex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac")
+        let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
+
+        measure {
+            for _ in 0...1000 {
+                let _ = regex.matches(in: string)
+            }
+        }
+    }
+}
+
+class PerformanceCommonRegexesTests: XCTestCase {
+    // https://www.regexpal.com/?fam=104037
+    func testIPv6Address() throws {
+        let regex = try Regex(#"^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$"#)
+
+        measure {
+            for _ in 0...200 {
+                let _ = regex.isMatch("1200:0000:AB00:1234:O000:2552:7777:1313")    // invalid characters present
+            }
+        }
     }
 }
