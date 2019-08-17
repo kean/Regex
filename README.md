@@ -109,7 +109,13 @@ All quantifiers are **greedy** by default, they try to match as many occurrences
 - `.multiline` –  control the behavior of `^` and `$` anchors. By default, these match at the start and end of the input text. If this flag is set, will match at the start and end of each line within the input text.
 - `.dotMatchesLineSeparators` – allow `.` to match any character, including line separators.
 
-# Unsupported Features
+# Matcher and Performance
+
+Regex switches between two different algorithm for matching depending on what features are used in the pattern. It uses *fast* algorithm for most features, and *slow* algorithm when either *backreferences* or *lazy* quantifiers are used. It's best to avoid the later!
+
+> *Fast* algorithm executes NFA iteratively by keeping track of all reachable states for the current index and checking reachability using DFS. It scales well for large inputs and can handle complex patterns. *Slow* algorithm executes NFA using backtracking.
+
+# Not supported Features
 
 - Most unicode categories are not support, e.g.`\p{Sc}` (currency symbols) is not supported
 - Character class subtraction, e.g. `[a-z-[b-f]]`
