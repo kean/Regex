@@ -8,6 +8,8 @@
 final class State: Hashable, CustomStringConvertible {
     var transitions = [Transition]()
 
+    var tag: Int = 0
+
     var isEnd: Bool {
         return transitions.isEmpty
     }

@@ -99,7 +99,7 @@ private extension Matcher {
         var reachableStates = Set<State>([start])
         var newReachableStates = Set<State>()
         var reachableUntil = [State: String.Index]() // some transitions jump multiple indices
-        var encountered = Set<State>()
+        var encountered = Array<Bool>(repeating: false, count: regex.states.count)
         var potentialMatch: Cursor?
         var stack = [State]()
         var encounteredReachableStatesCombinations = Set<Set<State>>()
@@ -116,7 +116,7 @@ private extension Matcher {
                 if let index = reachableUntil[state] {
                     if index > cursor.index {
                         newReachableStates.insert(state)
-                        encountered.insert(state)
+                        encountered[state.tag] = true
                          // Important! Don't update capture groups, haven't reached the index yet!
                         continue
                     } else {
@@ -126,9 +126,9 @@ private extension Matcher {
 
                 // Go throught the graph of states using depth-first search.
                 stack.append(state)
-                encountered.removeAll()
+                for index in encountered.indices { encountered[index] = false }
                 
-                while let state = stack.popLast(), !encountered.contains(state) {
+                while let state = stack.popLast(), !encountered[state.tag] {
                     // Capture a group if needed or update group start indexes
                     updateCaptureGroup(&cursor, state)
 
@@ -139,7 +139,7 @@ private extension Matcher {
                         continue
                     }
 
-                    encountered.insert(state)
+                    encountered[state.tag] = true
 
                     for transition in state.transitions {
                         guard let consumed = transition.condition(cursor) else {

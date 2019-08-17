@@ -24,9 +24,15 @@ final class Compiler {
         let fsm = try compile(ast.root)
         optimize(fsm)
 
+        let allStates = fsm.allStates()
+        for (state, index) in zip(allStates, allStates.indices) {
+            state.tag = index
+        }
+
         try validateBackreferences()
         let regex = CompiledRegex(
             fsm: fsm,
+            states: allStates,
             captureGroups: captureGroups,
             isRegular: !containsLazyQuantifiers && backreferences.isEmpty,
             isFromStartOfString: ast.isFromStartOfString
@@ -183,6 +189,9 @@ private extension Compiler {
 struct CompiledRegex {
     /// The starting index in the compiled regular expression.
     let fsm: FSM
+
+    /// All states in the state machine.
+    let states: [State]
 
     /// All the capture groups with their indexes.
     let captureGroups: [CaptureGroup]
