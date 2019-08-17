@@ -93,11 +93,12 @@ private extension Matcher {
     func firstMatch(_ cursor: Cursor, _ start: State) -> Regex.Match? {
         var cursor = cursor
         var retryCursor = cursor
-        var reachableStates = [start]
-        var newReachableStates = [State]()
+        var reachableStates = Set<State>([start])
+        var newReachableStates = Set<State>()
         var encountered = Set<State>()
         var potentialMatch: Cursor?
         var stack = [State]()
+        var cache = Cache<Set<State>, Bool>(countLimit: 100)
 
         while !reachableStates.isEmpty {
             newReachableStates.removeAll()
@@ -129,9 +130,7 @@ private extension Matcher {
                             continue
                         }
                         if consumed > 0 {
-                            if !newReachableStates.contains(transition.end) {
-                                newReachableStates.append(transition.end)
-                            }
+                            newReachableStates.insert(transition.end)
                         } else {
                             stack.append(transition.end)
                         }
@@ -145,12 +144,16 @@ private extension Matcher {
             }
             cursor.advance(by: 1)
 
-            // The iteration produced the exact same result as the previous one,
-            // if we need to fallback, we don't have to fallback all the way
-            // TODO: enable the same optimization for longer NFAs
-            if Set(reachableStates) == Set(newReachableStates) && !newReachableStates.isEmpty {
-                retryCursor = cursor
+            // The iteration produced the exact same set of reachable states as
+            // one of the previous ones. If we fail to match a string, we can
+            // skip the entire section of the string up to the current cursor.
+            if !newReachableStates.isEmpty {
+                if cache.value(forKey: newReachableStates) != nil {
+                    retryCursor = cursor
+                }
+                cache.set(true, forKey: newReachableStates)
             }
+
             reachableStates = newReachableStates
             
             // We failed to find any matches within a given string
