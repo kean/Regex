@@ -22,6 +22,8 @@ final class Compiler {
 
     func compile() throws -> (CompiledRegex, Symbols) {
         let fsm = try compile(ast.root)
+        optimize(fsm)
+
         try validateBackreferences()
         let regex = CompiledRegex(
             fsm: fsm,
@@ -36,8 +38,12 @@ private extension Compiler {
     func compile(_ unit: Unit) throws -> FSM {
         let fsm = try _compile(unit)
         if Regex.isDebugModeEnabled {
-            symbols.map[fsm.start] = Symbols.Details(unit: unit, isEnd: false)
-            symbols.map[fsm.end] = Symbols.Details(unit: unit, isEnd: true)
+            if symbols.map[fsm.start] == nil {
+                symbols.map[fsm.start] = Symbols.Details(unit: unit, isEnd: false)
+            }
+            if symbols.map[fsm.end] == nil {
+                symbols.map[fsm.end] = Symbols.Details(unit: unit, isEnd: true)
+            }
         }
         return fsm
     }
@@ -125,6 +131,24 @@ private extension Compiler {
             // TODO: move validation to parser?
             guard captureGroups.contains(where: { $0.index == backreference.index }) else {
                 throw Regex.Error("The token '\\\(backreference.index)' references a non-existent or invalid subpattern", 0)
+            }
+        }
+    }
+}
+
+private extension Compiler {
+    func optimize(_ fsm: FSM) {
+        let captureGroupState = Set(captureGroups.flatMap { [$0.start, $0.end] })
+
+        for state in fsm.allStates() {
+            state.transitions = state.transitions.map {
+                // Remove "technical" states
+                if !captureGroupState.contains($0.end) &&
+                    $0.end.transitions.count == 1 &&
+                    $0.end.transitions[0].isUnconditionalEpsilon {
+                    return Transition($0.end.transitions[0].end, $0.condition)
+                }
+                return $0
             }
         }
     }

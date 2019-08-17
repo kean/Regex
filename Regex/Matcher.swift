@@ -95,8 +95,8 @@ private extension Matcher {
         var retryCursor = cursor
         var reachableStates = [start]
         var newReachableStates = [State]()
-        var potentialMatch: Cursor?
         var encountered = Set<State>()
+        var potentialMatch: Cursor?
         var stack = [State]()
 
         while !reachableStates.isEmpty {
@@ -108,10 +108,10 @@ private extension Matcher {
                 iterations += 1
 
                 // Go throught the graph of states using depth-first search.
-                encountered.removeAll()
                 stack.append(state)
+                encountered.removeAll()
                 
-                while let state = stack.popLast() {
+                while let state = stack.popLast(), !encountered.contains(state) {
                     // Capture a group if needed or update group start indexes
                     updateCaptureGroup(&cursor, state)
 
@@ -121,9 +121,10 @@ private extension Matcher {
                         }
                         continue
                     }
-                    
-                    for transition in state.transitions where !encountered.contains(transition.end) {
-                        encountered.insert(transition.end)
+
+                    encountered.insert(state)
+
+                    for transition in state.transitions {
                         guard let consumed = transition.condition(cursor) else {
                             continue
                         }
@@ -139,7 +140,7 @@ private extension Matcher {
             }
 
             // Check if nothing left to match
-            guard !cursor.isEmpty else{
+            guard !cursor.isEmpty else {
                 break
             }
             cursor.advance(by: 1)

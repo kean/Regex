@@ -41,13 +41,21 @@ struct Transition {
     /// Returns `nil` if not possible, otherwise returns number of elements to consume.
     let condition: (Cursor) -> Int?
 
-    init(_ end: State, _ condition: @escaping (Cursor) -> Int?) {
+    let isUnconditionalEpsilon: Bool
+
+    init(isUnconditionalEpsilon: Bool = false, _ end: State, _ condition: @escaping (Cursor) -> Int?) {
+        self.isUnconditionalEpsilon = isUnconditionalEpsilon
         self.end = end
         self.condition = condition
     }
 
     /// Creates a transition which doesn't consume characters.
-    static func epsilon(_ end: State, _ condition: @escaping (Cursor) -> Bool = { _ in true }) -> Transition {
+    static func epsilon(_ end: State, _ condition: @escaping (Cursor) -> Bool) -> Transition {
         return Transition(end) { condition($0) ? 0 : nil }
+    }
+
+    /// Creates a unconditional transition which doesn't consume characters.
+    static func epsilon(_ end: State) -> Transition {
+        return Transition(isUnconditionalEpsilon: true, end) { _ in 0 }
     }
 }
