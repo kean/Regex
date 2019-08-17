@@ -17,7 +17,6 @@ class BackreferencesTests: XCTestCase {
         XCTAssertEqual(matches, ["aa"])
     }
 
-
     func testReturnsNumberOfCapturingGroups() throws {
         let pattern = #"(\w)\1"#
         let string = "trellis seerlatter summer hoarse lesser aardvark stunned"

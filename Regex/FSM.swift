@@ -94,7 +94,7 @@ extension FSM {
             .epsilon(child.start) // Execute at least once
         ]
         child.end.transitions = [
-            .epsilon(quantifier.start), // Loop (greedy)
+            .epsilon(child.start), // Loop (greedy)
             .epsilon(quantifier.end) // Complete
         ]
         if isLazy {

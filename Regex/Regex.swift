@@ -52,7 +52,9 @@ public final class Regex {
             let ast = try Parser(pattern).parse()
             (self.regex, self.symbols) = try Compiler(ast, options).compile()
             self.options = options
-            os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.fsm.description(symbols))
+            if Regex.isDebugModeEnabled {
+                os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.fsm.description(symbols))
+            }
         } catch {
             var error = error as! Error
             error.pattern = pattern // Attach additional context

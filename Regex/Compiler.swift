@@ -11,6 +11,8 @@ final class Compiler {
     private var symbols: Symbols
     private var captureGroups: [CaptureGroup] = []
     private var backreferences: [Backreference] = []
+    private var containsLazyQuantifiers = false
+
 
     init(_ ast: AST, _ options: Regex.Options) {
         self.ast = ast
@@ -21,7 +23,12 @@ final class Compiler {
     func compile() throws -> (CompiledRegex, Symbols) {
         let fsm = try compile(ast.root)
         try validateBackreferences()
-        return (CompiledRegex(fsm: fsm, captureGroups: captureGroups), symbols)
+        let regex = CompiledRegex(
+            fsm: fsm,
+            captureGroups: captureGroups,
+            isRegular: !containsLazyQuantifiers && backreferences.isEmpty
+        )
+        return (regex, symbols)
     }
 }
 
@@ -70,6 +77,9 @@ private extension Compiler {
         case let quantifier as QuantifiedExpression:
             let expression = quantifier.expression
             let isLazy = quantifier.isLazy
+            if isLazy {
+                containsLazyQuantifiers = true
+            }
             switch quantifier.type {
             case .zeroOrMore: return .zeroOrMore(try compile(expression), isLazy)
             case .oneOrMore: return .oneOrMore(try compile(expression), isLazy)
@@ -128,6 +138,10 @@ struct CompiledRegex {
 
     /// All the capture groups with their indexes.
     let captureGroups: [CaptureGroup]
+
+    /// `true` if the regex doesn't contain any of the features which can't be
+    /// simulated solely by NFA and require backtracking.
+    let isRegular: Bool
 }
 
 struct CaptureGroup {
