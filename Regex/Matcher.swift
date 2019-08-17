@@ -99,7 +99,7 @@ private extension Matcher {
         var encountered = Set<State>()
         var potentialMatch: Cursor?
         var stack = [State]()
-        var cache = Cache<Set<State>, Bool>(countLimit: 100)
+        var encounteredReachableStatesCombinations = Set<Set<State>>()
 
         while !reachableStates.isEmpty {
             newReachableStates.removeAll()
@@ -171,10 +171,11 @@ private extension Matcher {
             // one of the previous ones. If we fail to match a string, we can
             // skip the entire section of the string up to the current cursor.
             if !newReachableStates.isEmpty {
-                if cache.value(forKey: newReachableStates) != nil {
+                if encounteredReachableStatesCombinations.contains(newReachableStates) {
                     retryCursor = cursor
+                } else {
+                    encounteredReachableStatesCombinations.insert(newReachableStates)
                 }
-                cache.set(true, forKey: newReachableStates)
             }
 
             reachableStates = newReachableStates
