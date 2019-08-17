@@ -28,7 +28,8 @@ final class Compiler {
         let regex = CompiledRegex(
             fsm: fsm,
             captureGroups: captureGroups,
-            isRegular: !containsLazyQuantifiers && backreferences.isEmpty
+            isRegular: !containsLazyQuantifiers && backreferences.isEmpty,
+            isFromStartOfString: ast.isFromStartOfString
         )
         return (regex, symbols)
     }
@@ -189,6 +190,9 @@ struct CompiledRegex {
     /// `true` if the regex doesn't contain any of the features which can't be
     /// simulated solely by NFA and require backtracking.
     let isRegular: Bool
+
+    /// If `true`, requires the pattern to match the start of the string.
+    let isFromStartOfString: Bool
 }
 
 struct CaptureGroup {

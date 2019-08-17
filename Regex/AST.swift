@@ -26,6 +26,7 @@ protocol Traceable {
 
 struct AST {
     let root: Unit
+    let isFromStartOfString: Bool
     let pattern: String
 }
 

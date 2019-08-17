@@ -24,13 +24,14 @@ final class Parser {
     /// Parses the pattern with which the parser was initialized with and
     /// constrats an AST (abstract syntax tree).
     func parse() throws -> AST {
-        var units = [Unit]()
-        if let startOfString = parseStartOfStringAnchor() {
-            units.append(startOfString)
-        }
-        units.append(try parseExpression())
+        // We don't compile it, assume Matcher will take care of it
+        let startOfString = parseStartOfStringAnchor() != nil
 
-        let ast = (AST(root: optimize(try expression(units)), pattern: pattern))
+        let ast = AST(
+            root: optimize(try parseExpression()),
+            isFromStartOfString: startOfString,
+            pattern: pattern
+        )
 
         guard scanner.peak() == nil else {
             throw Regex.Error("Unmatched closing parentheses", 0)

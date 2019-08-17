@@ -76,6 +76,9 @@ private extension Matcher {
             guard cursor.index < cursor.string.endIndex else {
                 return
             }
+            guard !regex.isFromStartOfString else {
+                return
+            }
             if match.fullMatch.isEmpty {
                 cursor.startAt(cursor.string.index(after: match.endIndex))
             } else {
@@ -181,7 +184,7 @@ private extension Matcher {
             reachableStates = newReachableStates
             
             // We failed to find any matches within a given string
-            if reachableStates.isEmpty && potentialMatch == nil && retryCursor.index < cursor.string.endIndex {
+            if reachableStates.isEmpty && potentialMatch == nil && retryCursor.index < cursor.string.endIndex && !regex.isFromStartOfString {
                 // TODO: tidy up
                 if retryCursor.index < cursor.index {
                     // We haven't saved any "optimial" retry cursor so we simply restart
@@ -251,6 +254,9 @@ private extension Matcher {
             let match = firstMatchBacktracking(cursor, regex.fsm.start)
             
             guard match == nil || closure(match!) else {
+                return
+            }
+            guard !regex.isFromStartOfString else {
                 return
             }
             guard cursor.index < cursor.string.endIndex else {
