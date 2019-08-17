@@ -34,6 +34,17 @@ class PerformanceTests: XCTestCase {
         }
     }
 
+    // NSRegularExpression: didn't finish in a reasonable time
+    // Regex: 0.138 seconds
+    func testNearlyMatchingPatternWithLongInput() throws {
+        let regex = try Regex("a*c")
+        let string = String(repeating: "a", count: 50_000) + "b"
+
+        measure {
+            let _ = regex.matches(in: string)
+        }
+    }
+
     // NSRegularExpression: 0.106 seconds
     // Regex: 0.137 seconds
     func testNearlyMatchingPatternWithNestedGreedyQuantifier2() throws {
