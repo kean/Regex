@@ -106,7 +106,6 @@ private extension Matcher {
         var encountered = ContiguousArray<Bool>(repeating: false, count: regex.states.count)
         var potentialMatch: Cursor?
         var stack = [State]()
-        var encounteredReachableStatesCombinations = Set<MicroSet<State>>()
 
         while !reachableStates.isEmpty {
             newReachableStates.removeAll()
@@ -181,12 +180,8 @@ private extension Matcher {
             // The iteration produced the exact same set of reachable states as
             // one of the previous ones. If we fail to match a string, we can
             // skip the entire section of the string up to the current cursor.
-            if !newReachableStates.isEmpty {
-                if encounteredReachableStatesCombinations.contains(newReachableStates) {
-                    retryCursor = cursor
-                } else {
-                    encounteredReachableStatesCombinations.insert(newReachableStates)
-                }
+            if reachableStates == newReachableStates {
+                retryCursor = cursor
             }
 
             reachableStates = newReachableStates
