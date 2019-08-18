@@ -110,7 +110,7 @@ private extension Matcher {
         while !reachableStates.isEmpty {
             newReachableStates.removeAll()
 
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Reachable \(reachableStates.map(symbols.description(for:)))") }
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map(symbols.description(for:)))") }
 
             for index in encountered.indices { encountered[index] = false }
 
@@ -123,6 +123,10 @@ private extension Matcher {
                 if let index = reachableUntil[state] {
                     if index > cursor.index {
                         newReachableStates.insert(state)
+                        encountered[state.tag] = true
+
+                        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Still reachable for this index, re-add \(reachableStates.map(symbols.description(for:)))") }
+
                          // Important! Don't update capture groups, haven't reached the index yet!
                         continue
                     } else {
@@ -137,11 +141,14 @@ private extension Matcher {
                     guard !encountered[state.tag] else { continue }
                     encountered[state.tag] = true
 
+                    if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))") }
+
                     // Capture a group if needed or update group start indexes
                     updateCaptureGroup(&cursor, state)
 
                     guard !state.isEnd else {
                         if potentialMatch == nil || cursor.index > potentialMatch!.index {
+                            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: state))") }
                             potentialMatch = cursor // Found a match!
                         }
                         continue
@@ -149,8 +156,10 @@ private extension Matcher {
 
                     for transition in state.transitions {
                         guard let consumed = transition.condition(cursor) else {
+                            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: End state NOT reachable \(symbols.description(for: transition.end))") }
                             continue
                         }
+                        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: End state reachable \(symbols.description(for: transition.end))") }
                         if consumed > 0 {
                             newReachableStates.insert(transition.end)
                             // The state is going to be reachable until we reach index T+consumed
@@ -186,9 +195,13 @@ private extension Matcher {
             }
 
             reachableStates = newReachableStates
+
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: << Reachable \(reachableStates.map(symbols.description(for:)))") }
             
             // We failed to find any matches within a given string
             if reachableStates.isEmpty && potentialMatch == nil && retryCursor.index < cursor.string.endIndex && !regex.isFromStartOfString {
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map(symbols.description(for:)))") }
+
                 // TODO: tidy up
                 if retryCursor.index < cursor.index {
                     // We haven't saved any "optimial" retry cursor so we simply restart
@@ -202,8 +215,15 @@ private extension Matcher {
                 reachableStates = MicroSet(start)
             }
         }
+
+        if let cursor = potentialMatch {
+            let match = Regex.Match(cursor)
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found match \(match)") }
+            return match
+        }
         
-        return potentialMatch.map { Regex.Match($0) }
+        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches") }
+        return nil
     }
 
     private func updateCaptureGroup(_ cursor: inout Cursor, _ state: State) {
