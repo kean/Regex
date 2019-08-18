@@ -103,7 +103,7 @@ private extension Matcher {
         var reachableStates = MicroSet<State>(start)
         var newReachableStates = MicroSet<State>()
         var reachableUntil = [State: String.Index]() // some transitions jump multiple indices
-        var encountered = ContiguousArray<Bool>(repeating: false, count: regex.states.count)
+        var encountered = [Bool](repeating: false, count: regex.states.count)
         var potentialMatch: Cursor?
         var stack = [State]()
 
@@ -111,6 +111,8 @@ private extension Matcher {
             newReachableStates.removeAll()
 
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Reachable \(reachableStates.map(symbols.description(for:)))") }
+
+            for index in encountered.indices { encountered[index] = false }
 
             // For each state check if there are any reachable states – states which
             // accept the next character from the input string.
@@ -121,7 +123,6 @@ private extension Matcher {
                 if let index = reachableUntil[state] {
                     if index > cursor.index {
                         newReachableStates.insert(state)
-                        encountered[state.tag] = true
                          // Important! Don't update capture groups, haven't reached the index yet!
                         continue
                     } else {
@@ -131,9 +132,11 @@ private extension Matcher {
 
                 // Go throught the graph of states using depth-first search.
                 stack.append(state)
-                for index in encountered.indices { encountered[index] = false }
-                
-                while let state = stack.popLast(), !encountered[state.tag] {
+
+                while let state = stack.popLast() {
+                    guard !encountered[state.tag] else { continue }
+                    encountered[state.tag] = true
+
                     // Capture a group if needed or update group start indexes
                     updateCaptureGroup(&cursor, state)
 
@@ -143,8 +146,6 @@ private extension Matcher {
                         }
                         continue
                     }
-
-                    encountered[state.tag] = true
 
                     for transition in state.transitions {
                         guard let consumed = transition.condition(cursor) else {
