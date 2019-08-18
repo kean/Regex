@@ -11,7 +11,7 @@ class RegexTests: XCTestCase {
         let regex = try Regex("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$")
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("#1f1f1F")
                 _ = regex.isMatch("#AFAFAF")
                 _ = regex.isMatch("#1AFFa1")
@@ -39,7 +39,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^\d+$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("45")
                 _ = regex.isMatch("45.5")
                 _ = regex.isMatch("+99")
@@ -54,7 +54,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^\d*\.\d+$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("100")
                 _ = regex.isMatch("10.2")
                 _ = regex.isMatch("0.5")
@@ -71,7 +71,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^\d*(\.\d+)?$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("5.0")
                 _ = regex.isMatch("3")
                 _ = regex.isMatch("0.0")
@@ -89,7 +89,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^-?\d*(\.\d+)?$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("100")
                 _ = regex.isMatch("10.2")
                 _ = regex.isMatch("0.5")
@@ -127,7 +127,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex("^[a-zA-Z0-9]*$")
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("hello")
                 _ = regex.isMatch("what")
                 _ = regex.isMatch("how are you?")
@@ -142,7 +142,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex("^[a-zA-Z0-9 ]*$")
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("hello")
                 _ = regex.isMatch("what")
                 _ = regex.isMatch("how are you")
@@ -246,7 +246,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^[a-z0-9_-]{3,16}$"#, [.caseInsensitive])
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("hi")
                 _ = regex.isMatch("hi!")
                 _ = regex.isMatch("hie")
@@ -504,7 +504,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("12:00")
                 _ = regex.isMatch("13:00")
                 _ = regex.isMatch("1:00")
@@ -528,7 +528,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("12:00")
                 _ = regex.isMatch("13:00")
                 _ = regex.isMatch("1:00")
@@ -552,7 +552,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"(?:[01]\d|2[0123]):(?:[012345]\d):(?:[012345]\d)"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("12:00")
                 _ = regex.isMatch("13:00:00")
                 _ = regex.isMatch("1:00:59")
@@ -640,7 +640,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(pattern, [.caseInsensitive])
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...300 {
                 _ = regex.isMatch("hello")
                 _ = regex.isMatch("Hello")
                 _ = regex.isMatch("-")

@@ -8,11 +8,15 @@ import Foundation
 /// current index in this slice.
 struct Cursor: CustomStringConvertible {
     /// The entire input string.
-    let completeInputString: String
+    var completeInputString: String {
+        return ref.completeInputString
+    }
 
     /// The string in which we are performing the search, a single line of
     /// input when `.multiline` option is enabled (disabled by default).
-    let string: Substring
+    var string: Substring {
+        return ref.string
+    }
 
     /// The index from which we started the search.
     private(set) var startIndex: String.Index
@@ -21,17 +25,25 @@ struct Cursor: CustomStringConvertible {
     private(set) var index: String.Index
 
     /// Captured groups.
-    var groups: [Int: Range<String.Index>] = [:]
+    var groups: [Int: Range<String.Index>] {
+        get { return ref.groups }
+        set { mutate { $0.groups = newValue } }
+    }
 
     /// Indexes where the group with the given start state was captured.
-    var groupsStartIndexes: [State: String.Index] = [:]
+    var groupsStartIndexes: [State: String.Index] {
+        get { return ref.groupsStartIndexes }
+        set { mutate { $0.groupsStartIndexes = newValue } }
+    }
 
     /// An index where the previous match occured.
-    var previousMatchIndex: String.Index? = nil
+    var previousMatchIndex: String.Index?  {
+        get { return ref.previousMatchIndex }
+        set { mutate { $0.previousMatchIndex = newValue } }
+    }
 
     init(string: Substring, completeInputString: String) {
-        self.completeInputString = completeInputString
-        self.string = string
+        self.ref = Container(string: string, completeInputString: completeInputString)
         self.startIndex = string.startIndex
         self.index = string.startIndex
     }
@@ -80,5 +92,43 @@ struct Cursor: CustomStringConvertible {
 
     var description: String {
         return "\(string.offset(for: index)), \(character ?? "∅")"
+    }
+
+    // MARK: - CoW
+
+    private var ref: Container
+
+    private mutating func mutate(_ closure: (Container) -> Void) {
+        if !isKnownUniquelyReferenced(&ref) {
+            ref = Container(container: ref)
+        }
+        closure(ref)
+    }
+
+    /// Just like many Swift built-in types, `ImageRequest` uses CoW approach to
+    /// avoid memberwise retain/releases when `ImageRequest` is passed around.
+    private class Container {
+        let completeInputString: String
+        let string: Substring
+        var groups: [Int: Range<String.Index>]
+        var groupsStartIndexes: [State: String.Index]
+        var previousMatchIndex: String.Index? = nil
+
+        /// Creates a resource with a default processor.
+        init(string: Substring, completeInputString: String) {
+            self.completeInputString = completeInputString
+            self.string = string
+            self.groups = [:]
+            self.groupsStartIndexes = [:]
+        }
+
+        /// Creates a copy.
+        init(container ref: Container) {
+            self.completeInputString = ref.completeInputString
+            self.string = ref.string
+            self.groups = ref.groups
+            self.groupsStartIndexes = ref.groupsStartIndexes
+            self.previousMatchIndex = ref.previousMatchIndex
+        }
     }
 }
