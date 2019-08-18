@@ -76,3 +76,92 @@ extension OSLog {
         return isEnabled(type: .default)
     }
 }
+
+// MARK: - MicroSet
+
+// Abuses the following two facts:
+//
+// - In most regexes there are only up to two states reachable at any given time
+// - The order in which states are inserted is deterministic
+struct MicroSet<Element: Hashable>: Hashable, Sequence {
+    private(set) var count: Int = 0
+    private var e1: Element?
+    private var e2: Element?
+
+    var isEmpty: Bool {
+        return count == 0
+    }
+
+    private var set: ContiguousArray<Element>?
+
+    init() {}
+
+    init(_ element: Element) {
+        insert(element)
+    }
+
+    mutating func insert(_ element: Element) {
+        switch count {
+        case 0:
+            e1 = element
+            count += 1
+        case 1:
+            e2 = element
+            count += 1
+        default:
+            if set == nil {
+                set = ContiguousArray()
+            }
+            if !set!.contains(element) {
+                set!.append(element)
+                count += 1
+            }
+        }
+    }
+
+    func contains(_ element: Element) -> Bool {
+        switch count {
+        case 0: return false
+        case 1: return e1 == element
+        case 2: return e1 == element || e2 == element
+        default: return e1 == element || e2 == element || set!.contains(element)
+        }
+    }
+
+    mutating func removeAll() {
+        e1 = nil
+        e2 = nil
+        set?.removeAll()
+        count = 0
+    }
+
+    private func element(at index: Int) -> Element? {
+        guard index < count else {
+            return nil
+        }
+        switch index {
+        case 0: return e1!
+        case 1: return e2!
+        default:
+            return set![index-2]
+        }
+    }
+
+    __consuming func makeIterator() -> MicroSet<Element>.Iterator {
+        return Iterator(set: self)
+    }
+
+    struct Iterator: IteratorProtocol {
+        private let set: MicroSet
+        private var index: Int = 0
+
+        init(set: MicroSet) {
+            self.set = set
+        }
+
+        mutating func next() -> Element? {
+            defer { index += 1}
+            return set.element(at: index)
+        }
+    }
+}

@@ -30,9 +30,9 @@
 		0CB3057A22FEE9970083B406 /* MatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057922FEE9970083B406 /* MatcherTests.swift */; };
 		0CB3057C22FF08ED0083B406 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057B22FF08ED0083B406 /* Extensions.swift */; };
 		0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057D22FF19920083B406 /* RegexSpecTests.swift */; };
+		0CCC097023099EFE0060CC17 /* PerformanceCommontRegexesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED8023093388009E1793 /* PerformanceCommontRegexesTests.swift */; };
 		0CDBED7423087A60009E1793 /* OptimizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED7323087A60009E1793 /* OptimizationTests.swift */; };
 		0CDBED78230880CE009E1793 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */; };
-		0CDBED81230933B4009E1793 /* PerformanceCommontRegexesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED8023093388009E1793 /* PerformanceCommontRegexesTests.swift */; };
 		FF3C36492301877600BD9513 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C36482301877600BD9513 /* Parser.swift */; };
 		FF3C364B23018A4500BD9513 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364A23018A4500BD9513 /* Scanner.swift */; };
 		FF3C364D23018C6900BD9513 /* Compiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364C23018C6900BD9513 /* Compiler.swift */; };
@@ -313,7 +313,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0CDBED81230933B4009E1793 /* PerformanceCommontRegexesTests.swift in Sources */,
+				0CCC097023099EFE0060CC17 /* PerformanceCommontRegexesTests.swift in Sources */,
 				0CDBED78230880CE009E1793 /* PerformanceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -100,13 +100,13 @@ private extension Matcher {
     func firstMatch(_ cursor: Cursor, _ start: State) -> Regex.Match? {
         var cursor = cursor
         var retryCursor = cursor
-        var reachableStates = Set<State>([start])
-        var newReachableStates = Set<State>()
+        var reachableStates = MicroSet<State>(start)
+        var newReachableStates = MicroSet<State>()
         var reachableUntil = [State: String.Index]() // some transitions jump multiple indices
-        var encountered = Array<Bool>(repeating: false, count: regex.states.count)
+        var encountered = ContiguousArray<Bool>(repeating: false, count: regex.states.count)
         var potentialMatch: Cursor?
         var stack = [State]()
-        var encounteredReachableStatesCombinations = Set<Set<State>>()
+        var encounteredReachableStatesCombinations = Set<MicroSet<State>>()
 
         while !reachableStates.isEmpty {
             newReachableStates.removeAll()
@@ -203,7 +203,7 @@ private extension Matcher {
                 removeOutdatedCaptureGroups(&retryCursor)
                 
                 cursor = retryCursor
-                reachableStates = [start]
+                reachableStates = MicroSet(start)
             }
         }
         
