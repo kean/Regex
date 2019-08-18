@@ -32,6 +32,7 @@
 		0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057D22FF19920083B406 /* RegexSpecTests.swift */; };
 		0CDBED7423087A60009E1793 /* OptimizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED7323087A60009E1793 /* OptimizationTests.swift */; };
 		0CDBED78230880CE009E1793 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */; };
+		0CDBED81230933B4009E1793 /* PerformanceCommontRegexesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED8023093388009E1793 /* PerformanceCommontRegexesTests.swift */; };
 		FF3C36492301877600BD9513 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C36482301877600BD9513 /* Parser.swift */; };
 		FF3C364B23018A4500BD9513 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364A23018A4500BD9513 /* Scanner.swift */; };
 		FF3C364D23018C6900BD9513 /* Compiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364C23018C6900BD9513 /* Compiler.swift */; };
@@ -96,6 +97,7 @@
 		0CB3057B22FF08ED0083B406 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		0CB3057D22FF19920083B406 /* RegexSpecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegexSpecTests.swift; sourceTree = "<group>"; };
 		0CDBED7323087A60009E1793 /* OptimizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationTests.swift; sourceTree = "<group>"; };
+		0CDBED8023093388009E1793 /* PerformanceCommontRegexesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceCommontRegexesTests.swift; sourceTree = "<group>"; };
 		FF3C36482301877600BD9513 /* Parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		FF3C364A23018A4500BD9513 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
 		FF3C364C23018C6900BD9513 /* Compiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compiler.swift; sourceTree = "<group>"; };
@@ -184,8 +186,9 @@
 				0CB3056322FED0740083B406 /* IntegrationTests.swift */,
 				0CDBED7323087A60009E1793 /* OptimizationTests.swift */,
 				0CB3057B22FF08ED0083B406 /* Extensions.swift */,
-				0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */,
 				0C3BFF9C2305537F008158A3 /* FoundationRegularExpression.swift */,
+				0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */,
+				0CDBED8023093388009E1793 /* PerformanceCommontRegexesTests.swift */,
 			);
 			path = RegexTests;
 			sourceTree = "<group>";
@@ -310,6 +313,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0CDBED81230933B4009E1793 /* PerformanceCommontRegexesTests.swift in Sources */,
 				0CDBED78230880CE009E1793 /* PerformanceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
