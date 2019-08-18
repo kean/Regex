@@ -57,24 +57,29 @@ extension FSM {
         let fsm = FSM()
         fsm.start.transitions = [
             .init(fsm.end) { cursor -> Int? in
-                if isCaseInsensitive {
-                    guard let ub = cursor.string.index(cursor.index, offsetBy: s.count, limitedBy: cursor.string.endIndex) else {
-                        return nil
-                    }
-                    // TODO: test this
-                    guard String(cursor.string[cursor.index..<ub]).caseInsensitiveCompare(s) == ComparisonResult.orderedSame else {
-                        return nil
-                    }
-                    return s.count
-                } else {
-                    guard cursor.string[cursor.index...].hasPrefix(s) else {
-                        return nil
-                    }
-                    return s.count
-                }
+                match(cursor, s, isCaseInsensitive: isCaseInsensitive)
             }
         ]
         return fsm
+    }
+
+    private static func match(_ cursor: Cursor, _ s: String, isCaseInsensitive: Bool) -> Int? {
+        guard let ub = cursor.string.index(cursor.index, offsetBy: s.count, limitedBy: cursor.string.endIndex) else {
+            return nil
+        }
+        let input = cursor.string[cursor.index..<ub]
+
+        if isCaseInsensitive {
+            // TODO: test this
+            guard String(input).caseInsensitiveCompare(s) == ComparisonResult.orderedSame else {
+                return nil
+            }
+        } else {
+            guard input == s else {
+                return nil
+            }
+        }
+        return s.count
     }
 
     /// Matches the given character set.
