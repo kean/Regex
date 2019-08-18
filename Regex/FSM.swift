@@ -55,16 +55,17 @@ extension FSM {
     /// checking the individual characters (fast substring search).
     static func string(_ s: String, isCaseInsensitive: Bool) -> FSM {
         let fsm = FSM()
+        let count = s.count // Pre-calculate count
         fsm.start.transitions = [
             .init(fsm.end) { cursor -> Int? in
-                match(cursor, s, isCaseInsensitive: isCaseInsensitive)
+                match(cursor, s, count, isCaseInsensitive: isCaseInsensitive)
             }
         ]
         return fsm
     }
 
-    private static func match(_ cursor: Cursor, _ s: String, isCaseInsensitive: Bool) -> Int? {
-        guard let ub = cursor.string.index(cursor.index, offsetBy: s.count, limitedBy: cursor.string.endIndex) else {
+    private static func match(_ cursor: Cursor, _ s: String, _ sCount: Int, isCaseInsensitive: Bool) -> Int? {
+        guard let ub = cursor.string.index(cursor.index, offsetBy: sCount, limitedBy: cursor.string.endIndex) else {
             return nil
         }
         let input = cursor.string[cursor.index..<ub]
