@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>classNames</key>
+	<dict>
+		<key>PerformanceCommonRegexesTests</key>
+		<dict>
+			<key>testIPv6Address()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.13257</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+		</dict>
+		<key>PerformanceNearlyMatchingInputTests</key>
+		<dict>
+			<key>testNearlyMatchingPattern()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.069685</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+			<key>testNearlyMatchingPatternWithGreedyQuantifier()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.04655</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+			<key>testNearlyMatchingPatternWithLongInput()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.049377</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+			<key>testNearlyMatchingPatternWithNestedGreedyQuantifier()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.082923</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+			<key>testNearlyMatchingPatternWithNestedGreedyQuantifier2()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.04905</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+			<key>testNearlyMatchingSubstring()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.12053</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+			<key>testNearlyMatchingSubstringCreateWithRange()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.053359</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+			<key>testNearlyMatchingSubstringCreateWithRangeAndAlternation()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.014923</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>18 Aug 2019 at 07:42:59</string>
+				</dict>
+			</dict>
+		</dict>
+	</dict>
+</dict>
+</plist>

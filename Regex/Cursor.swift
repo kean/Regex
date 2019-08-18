@@ -6,7 +6,7 @@ import Foundation
 
 /// Cursor represents the slice in which we are performing the matching and the
 /// current index in this slice.
-struct Cursor {
+struct Cursor: CustomStringConvertible {
     /// The entire input string.
     let completeInputString: String
 
@@ -41,8 +41,12 @@ struct Cursor {
         self.index = index
     }
 
+    mutating func advance(to index: String.Index) {
+        self.index = index
+    }
+
     mutating func advance(by offset: Int) {
-        index = string.index(index, offsetBy: offset)
+        self.index = string.index(index, offsetBy: offset)
     }
 
     /// Returns the character at the current `index`.
@@ -72,5 +76,9 @@ struct Cursor {
     /// Returns `true` if the current index is the index of the last character.
     var isAtLastIndex: Bool {
         return index < string.endIndex && string.index(after: index) == string.endIndex
+    }
+
+    var description: String {
+        return "\(string.offset(for: index)), \(character ?? "∅")"
     }
 }

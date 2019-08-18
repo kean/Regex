@@ -3,6 +3,7 @@
 // Copyright (c) 2019 Alexander Grebenyuk (github.com/kean).
 
 import Foundation
+import os.log
 
 // MARK: - CharacterSet
 
@@ -57,8 +58,21 @@ extension String {
 
 extension Substring {
     /// Returns a substring with the given range. The indexes are automatically
-     /// calculated by offsetting the existing indexes.
-     func substring(_ range: Range<Int>) -> Substring {
-         return self[index(startIndex, offsetBy: range.lowerBound)..<index(startIndex, offsetBy: range.upperBound)]
-     }
+    /// calculated by offsetting the existing indexes.
+    func substring(_ range: Range<Int>) -> Substring {
+        return self[index(startIndex, offsetBy: range.lowerBound)..<index(startIndex, offsetBy: range.upperBound)]
+    }
+
+    func offset(for index: String.Index) -> Int {
+        return distance(from: startIndex, to: index)
+    }
+}
+
+// MARK: - OSLog
+
+extension OSLog {
+    // Returns `true` if the default logging type enabled.
+    var isEnabled: Bool {
+        return isEnabled(type: .default)
+    }
 }

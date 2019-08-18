@@ -8,7 +8,7 @@ import Regex
 class PerformanceNearlyMatchingInputTests: XCTestCase {
 
     // NSRegularExpression: 0.403 seconds
-    // Regex: 0.079 seconds
+    // Regex: 0.053 seconds
     func testNearlyMatchingSubstringCreateWithRange() throws {
         let regex = try Regex("a{1000}c")
         let string = String(repeating: "a", count: 50_000) + "b"
@@ -19,7 +19,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: 0.667 seconds
-    // Regex: 0.020 seconds
+    // Regex: 0.015 seconds
     func testNearlyMatchingSubstringCreateWithRangeAndAlternation() throws {
         let regex = try Regex("(a{1000}|a{800})c")
         let string = String(repeating: "a", count: 50_000) + "b"
@@ -54,7 +54,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: 0.106 seconds
-    // Regex: 0.065 seconds
+    // Regex: 0.050 seconds
     func testNearlyMatchingPatternWithNestedGreedyQuantifier2() throws {
         let regex = try Regex("(aa)*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"

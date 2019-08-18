@@ -25,22 +25,26 @@ final class Matcher {
     func forMatch(in string: String, _ closure: (Regex.Match) -> Bool) {
         // Print number of iterations performed, this is for debug purporses only but
         // it is effectively the only thing making Regex non-thread-safe which we ignore.
-        os_log(.default, log: log, "%{PUBLIC}@", "Started, input: \(string)")
+        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Started, input: \(string)") }
         iterations = 0
         defer {
-            os_log(.default, log: log, "%{PUBLIC}@", "Finished, iterations: \(iterations)")
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Finished, iterations: \(iterations)") }
         }
         
         var isRunning = true
         for line in preprocess(string) where isRunning {
             let cursor = Cursor(string: line, completeInputString: string)
             if regex.isRegular {
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
+
                 // Use optimized NFA simulation
                 forMatch(cursor) { match in
                     isRunning = closure(match)
                     return isRunning // We don't need to run against other lines in the input
                 }
             } else {
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Fallback to backtracking") }
+
                 // Fallback to backtracing
                 forMatchBacktracking(cursor) { match in
                     isRunning = closure(match)
@@ -107,6 +111,8 @@ private extension Matcher {
         while !reachableStates.isEmpty {
             newReachableStates.removeAll()
 
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Reachable \(reachableStates.map(symbols.description(for:)))") }
+
             // For each state check if there are any reachable states – states which
             // accept the next character from the input string.
             for state in reachableStates {
@@ -164,8 +170,10 @@ private extension Matcher {
             }
 
             // Support for String.match
-            if reachableUntil.count > 1 && reachableUntil.count == newReachableStates.count {
-                cursor.startAt(reachableUntil.values.min()!)
+            if reachableUntil.count > 0 && reachableUntil.count == newReachableStates.count {
+                // We can jump multiple indices at a time because there are going to be
+                // not changes to reachable states until the suggested index.
+                cursor.advance(to: reachableUntil.values.min()!)
             } else {
                 cursor.advance(by: 1)
             }
@@ -293,15 +301,11 @@ private extension Matcher {
             }
         }
 
-        if Regex.isDebugModeEnabled {
-            os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))")
-        }
+        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))") }
         
         if state.isEnd { // Found a match
             let match = Regex.Match(cursor)
-            if Regex.isDebugModeEnabled {
-                os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match) ✅")
-            }
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match) ✅") }
             return match
         }
         
@@ -310,15 +314,11 @@ private extension Matcher {
             counter += 1
             
             if state.transitions.count > 1 {
-                if Regex.isDebugModeEnabled {
-                    os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(state.transitions.count)")
-                }
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(state.transitions.count)") }
             }
             
             guard let consumed = transition.condition(cursor) else {
-                if Regex.isDebugModeEnabled {
-                    os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \("❌")")
-                }
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \("❌")") }
                 continue
             }
             
