@@ -92,15 +92,17 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
          }
     }
 
-    // NSRegularExpression: 0.002 seconds
-    // Regex: 0.121 seconds
+    // NSRegularExpression: 0.004 seconds
+    // Regex: 0.140 seconds
     func testNearlyMatchingSubstring() throws {
-        let regex = try Regex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac")
-        let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
+        let p = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac"
+        let s = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
+
+        let regex = try Regex(p)
 
         measure {
             for _ in 0...1000 {
-                let _ = regex.matches(in: string)
+                let _ = regex.matches(in: s)
             }
         }
     }
