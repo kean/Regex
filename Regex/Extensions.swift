@@ -136,13 +136,6 @@ struct MicroSet<Element: Hashable>: Hashable, Sequence {
         }
     }
 
-    mutating func removeAll() {
-        e1 = nil
-        e2 = nil
-        set?.removeAll()
-        count = 0
-    }
-
     private func element(at index: Int) -> Element? {
         guard index < count else {
             return nil

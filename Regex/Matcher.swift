@@ -104,7 +104,7 @@ private extension Matcher {
         var stack = [StateId]()
 
         while !reachableStates.isEmpty {
-            newReachableStates.removeAll()
+            newReachableStates = MicroSet()
 
             #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map { symbols.description(for: states[$0]) })") }
