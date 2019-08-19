@@ -19,14 +19,9 @@ struct FSM {
 
     /// Automatically sets up a single consuming transition from start to end
     /// with the given condition.
-    init(condition: @escaping (Character) -> Bool) {
+    init(condition: @escaping (Cursor) -> Int?) {
         self = FSM()
-        start.transitions = [.init(end, { cursor in
-            guard let character = cursor.character else {
-                return nil
-            }
-            return condition(character) ? 1 : nil
-        })]
+        start.transitions = [.init(end, condition)]
     }
 
     /// Creates an empty state machine.
@@ -42,61 +37,73 @@ struct FSM {
 extension FSM {
     /// Matches the given character.
     static func character(_ c: Character, isCaseInsensitive: Bool) -> FSM {
-        return FSM {
+        FSM(condition: match(c, isCaseInsensitive))
+    }
+
+    private static func match(_ c: Character, _ isCaseInsensitive: Bool) -> (_ cursor: Cursor) -> Int? {
+        return { cursor in
+            guard let input = cursor.character else { return nil }
+            let isEqual: Bool
             if isCaseInsensitive {
-                return String(c).caseInsensitiveCompare(String($0)) == ComparisonResult.orderedSame
+                isEqual = String(c).caseInsensitiveCompare(String(input)) == ComparisonResult.orderedSame
             } else {
-                return $0 == c
+                isEqual = input == c
             }
+            return isEqual ? 1 : nil
         }
     }
 
     /// Matches the given string. In general is going to be much faster than
     /// checking the individual characters (fast substring search).
     static func string(_ s: String, isCaseInsensitive: Bool) -> FSM {
-        let fsm = FSM()
-        let count = s.count // Pre-calculate count
-        fsm.start.transitions = [
-            .init(fsm.end) { cursor -> Int? in
-                match(cursor, s, count, isCaseInsensitive: isCaseInsensitive)
-            }
-        ]
-        return fsm
+        FSM(condition: match(s, s.count, isCaseInsensitive))
     }
 
-    private static func match(_ cursor: Cursor, _ s: String, _ sCount: Int, isCaseInsensitive: Bool) -> Int? {
-        guard let ub = cursor.string.index(cursor.index, offsetBy: sCount, limitedBy: cursor.string.endIndex) else {
-            return nil
-        }
-        let input = cursor.string[cursor.index..<ub]
+    private static func match(_ s: String, _ sCount: Int, _ isCaseInsensitive: Bool) -> (_ cursor: Cursor) -> Int? {
+        return { cursor in
+            guard let ub = cursor.string.index(cursor.index, offsetBy: sCount, limitedBy: cursor.string.endIndex) else {
+                return nil
+            }
+            let input = cursor.string[cursor.index..<ub]
 
-        if isCaseInsensitive {
-            // TODO: test this
-            guard String(input).caseInsensitiveCompare(s) == ComparisonResult.orderedSame else {
-                return nil
+            if isCaseInsensitive {
+                // TODO: test this
+                guard String(input).caseInsensitiveCompare(s) == ComparisonResult.orderedSame else {
+                    return nil
+                }
+            } else {
+                guard input == s else {
+                    return nil
+                }
             }
-        } else {
-            guard input == s else {
-                return nil
-            }
+            return s.count
         }
-        return s.count
     }
 
     /// Matches the given character set.
     static func characterSet(_ set: CharacterSet, isCaseInsensitive: Bool) -> FSM {
-        return FSM {
-            if isCaseInsensitive, $0.isCased {
-                return set.contains(Character($0.lowercased())) || set.contains(Character($0.uppercased()))
+        FSM(condition: match(set, isCaseInsensitive))
+    }
+
+    private static func match(_ set: CharacterSet, _ isCaseInsensitive: Bool) -> (_ cursor: Cursor) -> Int? {
+        return { cursor in
+            guard let input = cursor.character else { return nil }
+            let isMatch: Bool
+            if isCaseInsensitive, input.isCased {
+                isMatch = set.contains(Character(input.lowercased())) || set.contains(Character(input.uppercased()))
             } else {
-                return set.contains($0)
+                isMatch = set.contains(input)
             }
+            return isMatch ? 1 : nil
         }
     }
 
     /// Matches any character.
     static func anyCharacter(includingNewline: Bool) -> FSM {
-        return FSM { includingNewline ? true : $0 != "\n" }
+        FSM { cursor in
+            guard !cursor.isEmpty else { return nil }
+            return (includingNewline || cursor.string[cursor.index] != "\n") ? 1 : nil
+        }
     }
 }
 
@@ -160,14 +167,14 @@ extension FSM {
 extension FSM {
     /// Matches the beginning of the line.
     static var startOfString: FSM {
-        return anchor { cursor in
+        anchor { cursor in
             cursor.startIndex == cursor.string.startIndex || cursor.isEmpty || cursor.character == "\n"
         }
     }
 
     /// Matches the beginning of the string (ignores `.multiline` option).
     static var startOfStringOnly: FSM {
-        return anchor { cursor in
+        anchor { cursor in
             cursor.startIndex == cursor.string.startIndex
         }
     }
@@ -175,27 +182,27 @@ extension FSM {
     /// Matches the end of the string or `\n` at the end of the string
     /// (end of the line in `.multiline` mode).
     static var endOfString: FSM {
-        return anchor { cursor in
+        anchor { cursor in
             cursor.isEmpty || cursor.character == "\n"
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string.
     static var endOfStringOnly: FSM {
-        return anchor { cursor in
+        anchor { cursor in
             cursor.isEmpty || (cursor.isAtLastIndex && cursor.character == "\n")
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnlyNotNewline: FSM {
-        return anchor { cursor in cursor.isEmpty }
+        anchor { cursor in cursor.isEmpty }
     }
 
     /// Match must occur at the point where the previous match ended. Ensures
     /// that all matches are contiguous.
     static var previousMatchEnd: FSM {
-        return anchor { cursor in
+        anchor { cursor in
             if cursor.index == cursor.string.startIndex {
                 return true // There couldn't be any matches before the start index
             }
@@ -208,12 +215,12 @@ extension FSM {
 
     /// The match must occur on a word boundary.
     static var wordBoundary: FSM {
-        return anchor { cursor in cursor.isAtWordBoundary }
+        anchor { cursor in cursor.isAtWordBoundary }
     }
 
     /// The match must occur on a non-word boundary.
     static var nonWordBoundary: FSM {
-        return anchor { cursor in !cursor.isAtWordBoundary }
+        anchor { cursor in !cursor.isAtWordBoundary }
     }
 
     private static func anchor(_ condition: @escaping (Cursor) -> Bool) -> FSM {
