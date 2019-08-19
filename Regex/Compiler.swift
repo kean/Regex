@@ -9,10 +9,9 @@ final class Compiler {
     private let options: Regex.Options
 
     private var symbols: Symbols
-    private var captureGroups: [CaptureGroup] = []
+    private var captureGroups: [IndermediateCaptureGroup] = []
     private var backreferences: [Backreference] = []
     private var containsLazyQuantifiers = false
-
 
     init(_ ast: AST, _ options: Regex.Options) {
         self.ast = ast
@@ -25,8 +24,14 @@ final class Compiler {
         optimize(fsm)
 
         let allStates = fsm.allStates()
+        var map = [State: Int]()
         for (state, index) in zip(allStates, allStates.indices) {
-            state.tag = index
+            state.id = index
+            map[state] = index
+        }
+
+        let captureGroups = self.captureGroups.map {
+            CaptureGroup(index: $0.index, start: map[$0.start]!, end: map[$0.end]!)
         }
 
         try validateBackreferences()
@@ -64,7 +69,7 @@ private extension Compiler {
             let fsms = try group.children.map(compile)
             let fms = FSM.group(.concatenate(fsms))
             if group.isCapturing { // Remember the group that we just compiled.
-                captureGroups.append(CaptureGroup(index: group.index, start: fms.start, end: fms.end))
+                captureGroups.append(IndermediateCaptureGroup(index: group.index, start: fms.start, end: fms.end))
             }
             return fms
 
@@ -204,10 +209,17 @@ struct CompiledRegex {
     let isFromStartOfString: Bool
 }
 
-struct CaptureGroup {
+// An intermediate representation which we use until we assign state IDs.
+private struct IndermediateCaptureGroup {
     let index: Int
     let start: State
     let end: State
+}
+
+struct CaptureGroup {
+    let index: Int
+    let start: StateId
+    let end: StateId
 }
 
 // MARK: - Symbols

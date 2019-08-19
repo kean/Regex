@@ -8,7 +8,7 @@
 final class State: Hashable, CustomStringConvertible {
     var transitions = [Transition]()
 
-    var tag: Int = 0
+    var id: StateId = 0
 
     var isEnd: Bool {
         return transitions.isEmpty
@@ -31,6 +31,8 @@ final class State: Hashable, CustomStringConvertible {
             .replacingOccurrences(of: "0000", with: "")
     }
 }
+
+typealias StateId = Int
 
 // MARK: - Transition
 

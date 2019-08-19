@@ -27,7 +27,7 @@ struct Cursor: CustomStringConvertible {
     }
 
     /// Indexes where the group with the given start state was captured.
-    var groupsStartIndexes: [State: String.Index] {
+    var groupsStartIndexes: [StateId: String.Index] {
         get { ref.groupsStartIndexes }
         set { mutate { $0.groupsStartIndexes = newValue } }
     }
@@ -107,7 +107,7 @@ struct Cursor: CustomStringConvertible {
         let completeInputString: String
         let string: Substring
         var groups: [Int: Range<String.Index>] = [:]
-        var groupsStartIndexes: [State: String.Index] = [:]
+        var groupsStartIndexes: [StateId: String.Index] = [:]
         var previousMatchIndex: String.Index?
 
         /// Creates a resource with a default processor.

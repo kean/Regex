@@ -39,7 +39,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^\d+$"#)
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...10000 {
                 _ = regex.isMatch("45")
                 _ = regex.isMatch("45.5")
                 _ = regex.isMatch("+99")
@@ -54,7 +54,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^\d*\.\d+$"#)
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...5000 {
                 _ = regex.isMatch("100")
                 _ = regex.isMatch("10.2")
                 _ = regex.isMatch("0.5")
@@ -107,7 +107,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^[-]?[0-9]+[,.]?[0-9]*([\/][0-9]+[,.]?[0-9]*)*$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...1000 {
                 _ = regex.isMatch("123.4")
                 _ = regex.isMatch("123")
                 _ = regex.isMatch("21cc")
@@ -127,7 +127,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex("^[a-zA-Z0-9]*$")
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...5000 {
                 _ = regex.isMatch("hello")
                 _ = regex.isMatch("what")
                 _ = regex.isMatch("how are you?")

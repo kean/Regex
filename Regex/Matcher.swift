@@ -12,11 +12,13 @@ final class Matcher {
     
     private let options: Regex.Options
     private let regex: CompiledRegex
+    private let states: [State]
     private let symbols: Symbols
     private var iterations = 0
     
     init(regex: CompiledRegex, options: Regex.Options, symbols: Symbols) {
         self.regex = regex
+        self.states = regex.states
         self.options = options
         self.symbols = symbols
     }
@@ -83,7 +85,7 @@ private extension Matcher {
         // Include end index in the search to make sure matches runs for empty
         // strings, and also that it find all possible matches.
         var cursor = cursor
-        while let match = firstMatch(cursor, regex.fsm.start), closure(match) {
+        while let match = firstMatch(cursor), closure(match) {
             guard cursor.index < cursor.string.endIndex else {
                 return
             }
@@ -104,74 +106,76 @@ private extension Matcher {
     /// e.g. whether greedy or lazy quantifiers were used.
     ///
     /// - warning: The matcher hasn't been optimized in any way yet
-    func firstMatch(_ cursor: Cursor, _ start: State) -> Regex.Match? {
+    func firstMatch(_ cursor: Cursor) -> Regex.Match? {
         var cursor = cursor
         var retryCursor = cursor
-        var reachableStates = MicroSet<State>(start)
-        var newReachableStates = MicroSet<State>()
-        var reachableUntil = [State: String.Index]() // some transitions jump multiple indices
+        var reachableStates = MicroSet<StateId>(0)
+        var newReachableStates = MicroSet<StateId>()
+        var reachableUntil = [StateId: String.Index]() // some transitions jump multiple indices
         var encountered = [Bool](repeating: false, count: regex.states.count)
         var potentialMatch: Cursor?
-        var stack = [State]()
+        var stack = [StateId]()
 
         while !reachableStates.isEmpty {
             newReachableStates.removeAll()
 
             #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map(symbols.description(for:)))") }
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map { symbols.description(for: states[$0]) })") }
             #endif
 
+            // The array works great where there are not a lot of states which
+            // isn't the case with patterns like a{24,42}
             for index in encountered.indices { encountered[index] = false }
 
             // For each state check if there are any reachable states – states which
             // accept the next character from the input string.
-            for state in reachableStates {
+            for stateId in reachableStates {
                 // [Optimization] Support for Match.string
-                if let index = reachableUntil[state] {
+                if let index = reachableUntil[stateId] {
                     if index > cursor.index {
-                        newReachableStates.insert(state)
-                        encountered[state.tag] = true
+                        newReachableStates.insert(stateId)
+                        encountered[stateId] = true
 
                         #if DEBUG
-                        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Still reachable for this index, re-add \(reachableStates.map(symbols.description(for:)))") }
+                        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Still reachable for this index, re-add \(symbols.description(for: states[stateId]))") }
                         #endif
 
                          // Important! Don't update capture groups, haven't reached the index yet!
                         continue
                     } else {
-                        reachableUntil[state] = nil
+                        reachableUntil[stateId] = nil
                     }
                 }
 
                 // Go throught the graph of states using depth-first search.
-                stack.append(state)
+                stack.append(stateId)
 
-                while let state = stack.popLast() {
-                    guard !encountered[state.tag] else { continue }
-                    encountered[state.tag] = true
+                while let stateId = stack.popLast() {
+                    guard !encountered[stateId] else { continue }
+                    encountered[stateId] = true
 
                     #if DEBUG
                     iterations += 1
-                    if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))") }
+                    if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: states[stateId])))") }
                     #endif
 
                     // Capture a group if needed or update group start indexes
                     if !regex.captureGroups.isEmpty {
-                        updateCaptureGroup(&cursor, state)
+                        updateCaptureGroup(&cursor, stateId)
                     }
 
-                    guard !state.isEnd else {
+                    guard !states[stateId].isEnd else {
                         if potentialMatch == nil || cursor.index > potentialMatch!.index {
                             potentialMatch = cursor // Found a match!
 
                             #if DEBUG
-                            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: state))") }
+                            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: states[stateId]))") }
                             #endif
                         }
                         continue
                     }
 
-                    for transition in state.transitions {
+                    for transition in states[stateId].transitions {
                         guard let consumed = transition.condition(cursor) else {
                             #if DEBUG
                             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: End state NOT reachable \(symbols.description(for: transition.end))") }
@@ -184,13 +188,13 @@ private extension Matcher {
                         #endif
 
                         if consumed > 0 {
-                            newReachableStates.insert(transition.end)
+                            newReachableStates.insert(transition.end.id)
                             // The state is going to be reachable until we reach index T+consumed
                             if consumed > 1 {
-                                reachableUntil[transition.end] = cursor.string.index(cursor.index, offsetBy: consumed, limitedBy: cursor.string.endIndex)
+                                reachableUntil[transition.end.id] = cursor.string.index(cursor.index, offsetBy: consumed, limitedBy: cursor.string.endIndex)
                             }
                         } else {
-                            stack.append(transition.end)
+                            stack.append(transition.end.id)
                         }
                     }
                 }
@@ -220,14 +224,14 @@ private extension Matcher {
             reachableStates = newReachableStates
 
             #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: << Reachable \(reachableStates.map(symbols.description(for:)))") }
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: << Reachable \(reachableStates.map { symbols.description(for: states[$0]) })") }
             #endif
             
             // We failed to find any matches within a given string
             if reachableStates.isEmpty && potentialMatch == nil && retryCursor.index < cursor.string.endIndex && !regex.isFromStartOfString {
                 
                 #if DEBUG
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map(symbols.description(for:)))") }
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: states[$0]) })") }
                 #endif
 
                 // TODO: tidy up
@@ -242,7 +246,7 @@ private extension Matcher {
                 }
                 
                 cursor = retryCursor
-                reachableStates = MicroSet(start)
+                reachableStates = MicroSet(0)
             }
         }
 
@@ -261,17 +265,17 @@ private extension Matcher {
         return nil
     }
 
-    private func updateCaptureGroup(_ cursor: inout Cursor, _ state: State) {
-        if let captureGroup = regex.captureGroups.first(where: { $0.end == state }),
+    private func updateCaptureGroup(_ cursor: inout Cursor, _ stateId: StateId) {
+        if let captureGroup = regex.captureGroups.first(where: { $0.end == stateId }),
             // Capture a group
             let startIndex = cursor.groupsStartIndexes[captureGroup.start] {
             let groupIndex = captureGroup.index
             cursor.groups[groupIndex] = startIndex..<cursor.index
         } else {
             // Remember where the group started
-            if regex.captureGroups.contains(where: { $0.start == state }) {
-                if cursor.groupsStartIndexes[state] == nil {
-                    cursor.groupsStartIndexes[state] = cursor.index
+            if regex.captureGroups.contains(where: { $0.start == stateId }) {
+                if cursor.groupsStartIndexes[stateId] == nil {
+                    cursor.groupsStartIndexes[stateId] = cursor.index
                 }
             }
         }
@@ -339,12 +343,12 @@ private extension Matcher {
         
         // Capture a group if needed
         if !regex.captureGroups.isEmpty {
-            if let captureGroup = regex.captureGroups.first(where: { $0.end == state }),
+            if let captureGroup = regex.captureGroups.first(where: { $0.end == state.id }),
                 let startIndex = cursor.groupsStartIndexes[captureGroup.start] {
                 let groupIndex = captureGroup.index
                 cursor.groups[groupIndex] = startIndex..<cursor.index
             } else {
-                cursor.groupsStartIndexes[state] = cursor.index
+                cursor.groupsStartIndexes[state.id] = cursor.index
             }
         }
 
