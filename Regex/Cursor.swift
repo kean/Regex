@@ -33,10 +33,7 @@ struct Cursor: CustomStringConvertible {
     }
 
     /// An index where the previous match occured.
-    var previousMatchIndex: String.Index?  {
-        get { ref.previousMatchIndex }
-        set { mutate { $0.previousMatchIndex = newValue } }
-    }
+    var previousMatchIndex: String.Index?
 
     init(string: Substring, completeInputString: String) {
         self.ref = Container(string: string, completeInputString: completeInputString)
@@ -108,7 +105,6 @@ struct Cursor: CustomStringConvertible {
         let string: Substring
         var groups: [Int: Range<String.Index>] = [:]
         var groupsStartIndexes: [StateId: String.Index] = [:]
-        var previousMatchIndex: String.Index?
 
         /// Creates a resource with a default processor.
         init(string: Substring, completeInputString: String) {
@@ -122,7 +118,6 @@ struct Cursor: CustomStringConvertible {
             self.string = ref.string
             self.groups = ref.groups
             self.groupsStartIndexes = ref.groupsStartIndexes
-            self.previousMatchIndex = ref.previousMatchIndex
         }
     }
 }
