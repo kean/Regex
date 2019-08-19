@@ -85,11 +85,12 @@ extension OSLog {
 // - The order in which states are inserted is deterministic
 struct MicroSet<Element: Hashable>: Hashable, Sequence {
     private(set) var count: Int = 0
+    // Inlinable
     private var e1: Element?
     private var e2: Element?
 
     var isEmpty: Bool {
-        return count == 0
+        count == 0
     }
 
     private var set: ContiguousArray<Element>?
@@ -106,9 +107,12 @@ struct MicroSet<Element: Hashable>: Hashable, Sequence {
             e1 = element
             count += 1
         case 1:
+            guard e2 != element else { return }
             e2 = element
             count += 1
         default:
+            guard e1 != element, e2 != element else { return }
+
             if set == nil {
                 set = ContiguousArray()
             }
@@ -142,13 +146,12 @@ struct MicroSet<Element: Hashable>: Hashable, Sequence {
         switch index {
         case 0: return e1!
         case 1: return e2!
-        default:
-            return set![index-2]
+        default: return set![index-2]
         }
     }
 
     __consuming func makeIterator() -> MicroSet<Element>.Iterator {
-        return Iterator(set: self)
+        Iterator(set: self)
     }
 
     struct Iterator: IteratorProtocol {
@@ -160,7 +163,7 @@ struct MicroSet<Element: Hashable>: Hashable, Sequence {
         }
 
         mutating func next() -> Element? {
-            defer { index += 1}
+            defer { index += 1 }
             return set.element(at: index)
         }
     }
