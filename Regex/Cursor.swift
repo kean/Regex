@@ -44,6 +44,10 @@ struct Cursor: CustomStringConvertible {
     mutating func startAt(_ index: String.Index) {
         self.startIndex = index
         self.index = index
+        mutate {
+            $0.groups = [:]
+            $0.groupsStartIndexes = [:]
+        }
     }
 
     mutating func advance(to index: String.Index) {

@@ -19,7 +19,7 @@ final class Matcher {
     // Capture groups are quite expensive, we can ignore. If we use `isMatch`,
     // we can skip capturing them.
     private let isCapturingGroups: Bool
-    
+
     init(regex: CompiledRegex, options: Regex.Options, symbols: Symbols, ignoreCaptureGroups: Bool) {
         self.regex = regex
         self.states = regex.states
@@ -113,7 +113,7 @@ private extension Matcher {
     /// - warning: The matcher hasn't been optimized in any way yet
     func firstMatch(_ cursor: Cursor) -> Regex.Match? {
         var cursor = cursor
-        var retryCursor = cursor
+        var retryIndex: String.Index?
         var reachableStates = MicroSet<StateId>(0)
         var newReachableStates = MicroSet<StateId>()
         var reachableUntil = [StateId: String.Index]() // some transitions jump multiple indices
@@ -223,7 +223,7 @@ private extension Matcher {
             // one of the previous ones. If we fail to match a string, we can
             // skip the entire section of the string up to the current cursor.
             if reachableStates == newReachableStates {
-                retryCursor = cursor
+                retryIndex = cursor.index // We can restart earlier
             }
 
             reachableStates = newReachableStates
@@ -233,24 +233,18 @@ private extension Matcher {
             #endif
             
             // We failed to find any matches within a given string
-            if reachableStates.isEmpty && potentialMatch == nil && retryCursor.index < cursor.string.endIndex && !regex.isFromStartOfString {
+            if reachableStates.isEmpty && potentialMatch == nil && !regex.isFromStartOfString {
                 
                 #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: states[$0]) })") }
                 #endif
 
-                // TODO: tidy up
-                if retryCursor.index < cursor.index {
-                    // We haven't saved any "optimial" retry cursor so we simply restart
-                    retryCursor.startAt(cursor.string.index(after: retryCursor.index))
+                if let index = retryIndex {
+                    cursor.startAt(index)
+                    retryIndex = nil
+                } else {
+                    cursor.startAt(cursor.string.index(after: cursor.startIndex))
                 }
-                
-                // Remove groups which can't be captures after retry
-                if isCapturingGroups {
-                    removeOutdatedCaptureGroups(&retryCursor)
-                }
-                
-                cursor = retryCursor
                 reachableStates = MicroSet(0)
             }
         }
@@ -282,20 +276,6 @@ private extension Matcher {
                 if cursor.groupsStartIndexes[stateId] == nil {
                     cursor.groupsStartIndexes[stateId] = cursor.index
                 }
-            }
-        }
-    }
-
-    /// Remove the capture groups which fall behind the current cursor.
-    private func removeOutdatedCaptureGroups(_ cursor: inout Cursor) {
-        for (key, group) in cursor.groups {
-            if group.lowerBound < cursor.startIndex {
-                cursor.groups[key] = nil
-            }
-        }
-        for (key, index) in cursor.groupsStartIndexes {
-            if index < cursor.startIndex {
-                cursor.groupsStartIndexes[key] = nil
             }
         }
     }
