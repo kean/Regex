@@ -267,6 +267,17 @@ class MatchWherePreviousMatchEndedTests: XCTestCase {
         // We can't currently capture groups so the match is a bit clunky.
         XCTAssertEqual(matches, ["capybara,", "squirrel,", "chipmunk,", "porcupine,", "gopher,", "beaver,", "groundhog,", "hamster"])
     }
+
+    func testContiguousMatchesNegative() throws {
+        let pattern = "\\Ga,"
+        let string = "a,a,aa,a"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        // We can't currently capture groups so the match is a bit clunky.
+        XCTAssertEqual(matches, ["a,", "a,"])
+    }
 }
 
 // \b, \B

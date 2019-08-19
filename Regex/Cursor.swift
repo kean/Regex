@@ -8,11 +8,7 @@ import Foundation
 /// current index in this slice.
 struct Cursor: CustomStringConvertible {
     /// The entire input string.
-    var completeInputString: String { ref.completeInputString }
-
-    /// The string in which we are performing the search, a single line of
-    /// input when `.multiline` option is enabled (disabled by default).
-    var string: Substring { ref.string }
+    var string: String { ref.string }
 
     /// The index from which we started the search.
     private(set) var startIndex: String.Index
@@ -35,8 +31,8 @@ struct Cursor: CustomStringConvertible {
     /// An index where the previous match occured.
     var previousMatchIndex: String.Index?
 
-    init(string: Substring, completeInputString: String) {
-        self.ref = Container(string: string, completeInputString: completeInputString)
+    init(string: String) {
+        self.ref = Container(string: string)
         self.startIndex = string.startIndex
         self.index = string.startIndex
     }
@@ -74,7 +70,7 @@ struct Cursor: CustomStringConvertible {
     /// Returns the character at the index with the given offset from the
     /// current index.
     func character(offsetBy offset: Int) -> Character {
-        string[completeInputString.index(index, offsetBy: offset)]
+        string[string.index(index, offsetBy: offset)]
     }
 
     /// Returns `true` if there are no more characters to match.
@@ -88,7 +84,8 @@ struct Cursor: CustomStringConvertible {
     }
 
     var description: String {
-        "\(string.offset(for: index)), \(character ?? "∅")"
+        let char = String(character ?? "∅")
+        return "\(string.offset(for: index)), \(char == "\n" ? "\\n" : char)"
     }
 
     // MARK: - CoW
@@ -105,20 +102,17 @@ struct Cursor: CustomStringConvertible {
     /// Just like many Swift built-in types, `ImageRequest` uses CoW approach to
     /// avoid memberwise retain/releases when `ImageRequest` is passed around.
     private class Container {
-        let completeInputString: String
-        let string: Substring
+        let string: String
         var groups: [Int: Range<String.Index>] = [:]
         var groupsStartIndexes: [StateId: String.Index] = [:]
 
         /// Creates a resource with a default processor.
-        init(string: Substring, completeInputString: String) {
-            self.completeInputString = completeInputString
+        init(string: String) {
             self.string = string
         }
 
         /// Creates a copy.
         init(container ref: Container) {
-            self.completeInputString = ref.completeInputString
             self.string = ref.string
             self.groups = ref.groups
             self.groupsStartIndexes = ref.groupsStartIndexes

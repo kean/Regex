@@ -20,11 +20,14 @@ final class Matcher {
     // we can skip capturing them.
     private let isCapturingGroups: Bool
 
+    private let isStartingFromStartIndex: Bool
+
     init(regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
         self.regex = regex
         self.states = regex.states
         self.options = options
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
+        self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
     }
     
     /// - parameter closure: Return `false` to stop.
@@ -39,42 +42,21 @@ final class Matcher {
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Finished, iterations: \(iterations)") }
         }
         #endif
-        
-        var isRunning = true
-        for line in preprocess(string) where isRunning {
-            let cursor = Cursor(string: line, completeInputString: string)
-            if regex.isRegular {
-                #if DEBUG
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
-                #endif
 
-                // Use optimized NFA simulation
-                forMatch(cursor) { match in
-                    isRunning = closure(match)
-                    return isRunning // We don't need to run against other lines in the input
-                }
-            } else {
-                #if DEBUG
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Fallback to backtracking") }
-                #endif
+        if regex.isRegular {
+            #if DEBUG
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
+            #endif
 
-                // Fallback to backtracing
-                forMatchBacktracking(cursor) { match in
-                    isRunning = closure(match)
-                    return isRunning // We don't need to run against other lines in the input
-                }
-            }
-        }
-    }
-}
-
-private extension Matcher {
-    
-    func preprocess(_ string: String) -> [Substring] {
-        if options.contains(.multiline) {
-            return string.split(separator: "\n")
+            // Use optimized NFA simulation
+            forMatch(string, closure)
         } else {
-            return [string[...]]
+            #if DEBUG
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Fallback to backtracking") }
+            #endif
+
+            // Fallback to backtracing
+            forMatchBacktracking(string, closure)
         }
     }
 }
@@ -85,15 +67,15 @@ private extension Matcher {
 private extension Matcher {
     
     /// - parameter closure: Return `false` to stop.
-    func forMatch(_ cursor: Cursor, _ closure: (Regex.Match) -> Bool) {
+    func forMatch(_ string: String, _ closure: (Regex.Match) -> Bool) {
         // Include end index in the search to make sure matches runs for empty
         // strings, and also that it find all possible matches.
-        var cursor = cursor
+        var cursor = Cursor(string: string)
         while let match = firstMatch(cursor), closure(match) {
             guard cursor.index < cursor.string.endIndex else {
                 return
             }
-            guard !regex.isFromStartOfString else {
+            guard !isStartingFromStartIndex else {
                 return
             }
             if match.fullMatch.isEmpty {
@@ -232,7 +214,7 @@ private extension Matcher {
             #endif
             
             // We failed to find any matches within a given string
-            if reachableStates.isEmpty && potentialMatch == nil && !regex.isFromStartOfString {
+            if reachableStates.isEmpty && potentialMatch == nil && !isStartingFromStartIndex {
                 
                 #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: states[$0]) })") }
@@ -288,10 +270,10 @@ private extension Matcher {
 private extension Matcher {
     
     /// - parameter closure: Return `false` to stop.
-    func forMatchBacktracking(_ cursor: Cursor, _ closure: (Regex.Match) -> Bool) {
+    func forMatchBacktracking(_ string: String, _ closure: (Regex.Match) -> Bool) {
         // Include end index in the search to make sure matches runs for empty
         // strings, and also that it find all possible matches.
-        var cursor = cursor
+        var cursor = Cursor(string: string)
         while true {
             // TODO: tidy up
             let match = firstMatchBacktracking(cursor, regex.fsm.start)

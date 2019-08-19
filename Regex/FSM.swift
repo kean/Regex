@@ -158,16 +158,17 @@ extension FSM {
 // MARK: - FSM (Anchors)
 
 extension FSM {
-    /// Matches the beginning of the string (or beginning of the line when
-    /// `.multiline` option is enabled).
+    /// Matches the beginning of the line.
     static var startOfString: FSM {
-        return anchor { cursor in cursor.index == cursor.string.startIndex }
+        return anchor { cursor in
+            cursor.startIndex == cursor.string.startIndex || cursor.isEmpty || cursor.character == "\n"
+        }
     }
 
     /// Matches the beginning of the string (ignores `.multiline` option).
     static var startOfStringOnly: FSM {
         return anchor { cursor in
-            cursor.startIndex == cursor.completeInputString.startIndex
+            cursor.startIndex == cursor.string.startIndex
         }
     }
 
@@ -175,40 +176,33 @@ extension FSM {
     /// (end of the line in `.multiline` mode).
     static var endOfString: FSM {
         return anchor { cursor in
-            return cursor.isEmpty || (cursor.isAtLastIndex && cursor.character == "\n")
+            cursor.isEmpty || cursor.character == "\n"
         }
     }
 
-    /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
+    /// Matches the end of the string or `\n` at the end of the string.
     static var endOfStringOnly: FSM {
         return anchor { cursor in
-            guard cursor.string.endIndex == cursor.completeInputString.endIndex ||
-                // In multiline mode `\n` are removed from the lines during preprocessing.
-                (cursor.string.endIndex == cursor.completeInputString.index(before: cursor.completeInputString.endIndex) && cursor.completeInputString.last == "\n") else {
-                    return false
-            }
-            return cursor.isEmpty || (cursor.isAtLastIndex && cursor.character == "\n")
+            cursor.isEmpty || (cursor.isAtLastIndex && cursor.character == "\n")
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
     static var endOfStringOnlyNotNewline: FSM {
-        return anchor { cursor in
-            return cursor.string.endIndex == cursor.completeInputString.endIndex && cursor.isEmpty
-        }
+        return anchor { cursor in cursor.isEmpty }
     }
 
     /// Match must occur at the point where the previous match ended. Ensures
     /// that all matches are contiguous.
     static var previousMatchEnd: FSM {
         return anchor { cursor in
-            if cursor.string.startIndex == cursor.completeInputString.startIndex {
+            if cursor.index == cursor.string.startIndex {
                 return true // There couldn't be any matches before the start index
             }
             guard let previousMatchIndex = cursor.previousMatchIndex else {
                 return false
             }
-            return cursor.string.startIndex == cursor.completeInputString.index(after: previousMatchIndex)
+            return cursor.index == previousMatchIndex
         }
     }
 

@@ -89,9 +89,9 @@ private extension Compiler {
 
         case let anchor as Anchor:
             switch anchor.type {
-            case .startOfString: return .startOfString
+            case .startOfString: return options.contains(.multiline) ? .startOfString : .startOfStringOnly
             case .startOfStringOnly: return .startOfStringOnly
-            case .endOfString: return .endOfString
+            case .endOfString: return options.contains(.multiline) ? .endOfString : .endOfStringOnly
             case .endOfStringOnly: return .endOfStringOnly
             case .endOfStringOnlyNotNewline: return .endOfStringOnlyNotNewline
             case .wordBoundary: return .wordBoundary
