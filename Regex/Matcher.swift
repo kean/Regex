@@ -30,6 +30,27 @@ final class Matcher {
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
     }
+
+    func firstMatch(in string: String) -> Regex.Match? {
+        if regex.isRegular {
+            #if DEBUG
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
+            #endif
+
+            return firstMatch(Cursor(string: string)) // Skip forMatch entirely
+        } else {
+            #if DEBUG
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Fallback to backtracking") }
+            #endif
+
+            var match: Regex.Match?
+            forMatchBacktracking(string) {
+                match = $0
+                return false // It's enough to find one match
+            }
+            return match
+        }
+    }
     
     /// - parameter closure: Return `false` to stop.
     func forMatch(in string: String, _ closure: (Regex.Match) -> Bool) {
@@ -48,14 +69,12 @@ final class Matcher {
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
             #endif
 
-            // Use optimized NFA simulation
             forMatch(string, closure)
         } else {
             #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Fallback to backtracking") }
             #endif
 
-            // Fallback to backtracing
             forMatchBacktracking(string, closure)
         }
     }

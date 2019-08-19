@@ -66,12 +66,12 @@ public final class Regex {
 
     /// Determine whether the regular expression pattern occurs in the input text.
     public func isMatch(_ string: String) -> Bool {
-        var isMatchFound = false
-        makeMatcher(for: string, ignoreCaptureGroups: true).forMatch(in: string) { match in
-            isMatchFound = true
-            return false // It's enough to find one match
-        }
-        return isMatchFound
+        return makeMatcher(for: string, ignoreCaptureGroups: true).firstMatch(in: string) != nil
+    }
+
+    /// Returns first match in the given string.
+    public func firstMatch(in string: String) -> Match? {
+        return makeMatcher(for: string).firstMatch(in: string)
     }
 
     /// Returns an array containing all the matches in the string.
@@ -84,6 +84,7 @@ public final class Regex {
         return matches
     }
 
+    /// - paramter ignoreCaptureGroups: enables some performance optimizations
     private func makeMatcher(for string: String, ignoreCaptureGroups: Bool = false) -> Matcher {
         return Matcher(regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
     }
