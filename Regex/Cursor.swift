@@ -8,7 +8,7 @@ import Foundation
 /// current index in this slice.
 struct Cursor: CustomStringConvertible {
     /// The entire input string.
-    var string: String { ref.string }
+    let string: String
 
     /// The index from which we started the search.
     private(set) var startIndex: String.Index
@@ -17,33 +17,22 @@ struct Cursor: CustomStringConvertible {
     private(set) var index: String.Index
 
     /// Captured groups.
-    var groups: [Int: Range<String.Index>] {
-        get { ref.groups }
-        set { mutate { $0.groups = newValue } }
-    }
-
-    /// Indexes where the group with the given start state was captured.
-    var groupsStartIndexes: [StateId: String.Index] {
-        get { ref.groupsStartIndexes }
-        set { mutate { $0.groupsStartIndexes = newValue } }
-    }
+    var groups: [Int: Range<String.Index>]
 
     /// An index where the previous match occured.
     var previousMatchIndex: String.Index?
 
     init(string: String) {
-        self.ref = Container(string: string)
+        self.string = string
         self.startIndex = string.startIndex
+        self.groups = [:]
         self.index = string.startIndex
     }
 
     mutating func startAt(_ index: String.Index) {
         self.startIndex = index
         self.index = index
-        mutate {
-            $0.groups = [:]
-            $0.groupsStartIndexes = [:]
-        }
+        self.groups = [:]
     }
 
     mutating func advance(to index: String.Index) {
@@ -86,36 +75,5 @@ struct Cursor: CustomStringConvertible {
     var description: String {
         let char = String(character ?? "∅")
         return "\(string.offset(for: index)), \(char == "\n" ? "\\n" : char)"
-    }
-
-    // MARK: - CoW
-
-    private var ref: Container
-
-    private mutating func mutate(_ closure: (Container) -> Void) {
-        if !isKnownUniquelyReferenced(&ref) {
-            ref = Container(container: ref)
-        }
-        closure(ref)
-    }
-
-    /// Just like many Swift built-in types, `ImageRequest` uses CoW approach to
-    /// avoid memberwise retain/releases when `ImageRequest` is passed around.
-    private class Container {
-        let string: String
-        var groups: [Int: Range<String.Index>] = [:]
-        var groupsStartIndexes: [StateId: String.Index] = [:]
-
-        /// Creates a resource with a default processor.
-        init(string: String) {
-            self.string = string
-        }
-
-        /// Creates a copy.
-        init(container ref: Container) {
-            self.string = ref.string
-            self.groups = ref.groups
-            self.groupsStartIndexes = ref.groupsStartIndexes
-        }
     }
 }

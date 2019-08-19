@@ -100,6 +100,7 @@ private extension Matcher {
         var reachableUntil = [StateId: String.Index]() // some transitions jump multiple indices
         var encountered = [Bool](repeating: false, count: regex.states.count)
         var potentialMatch: Cursor?
+        var groupsStartIndexes = [StateId: String.Index]()
         var stack = [StateId]()
 
         while !reachableStates.isEmpty {
@@ -146,7 +147,19 @@ private extension Matcher {
 
                     // Capture a group if needed or update group start indexes
                     if isCapturingGroups {
-                        updateCaptureGroup(&cursor, stateId)
+                        if let captureGroup = regex.captureGroups.first(where: { $0.end == stateId }),
+                            // Capture a group
+                            let startIndex = groupsStartIndexes[captureGroup.start] {
+                            let groupIndex = captureGroup.index
+                            cursor.groups[groupIndex] = startIndex..<cursor.index
+                        } else {
+                            // Remember where the group started
+                            if regex.captureGroups.contains(where: { $0.start == stateId }) {
+                                if groupsStartIndexes[stateId] == nil {
+                                    groupsStartIndexes[stateId] = cursor.index
+                                }
+                            }
+                        }
                     }
 
                     guard !states[stateId].isEnd else {
@@ -225,6 +238,9 @@ private extension Matcher {
                 } else {
                     cursor.startAt(cursor.string.index(after: cursor.startIndex))
                 }
+                if isCapturingGroups {
+                    groupsStartIndexes = [:]
+                }
                 reachableStates = MicroSet(0)
             }
         }
@@ -243,22 +259,6 @@ private extension Matcher {
 
         return nil
     }
-
-    private func updateCaptureGroup(_ cursor: inout Cursor, _ stateId: StateId) {
-        if let captureGroup = regex.captureGroups.first(where: { $0.end == stateId }),
-            // Capture a group
-            let startIndex = cursor.groupsStartIndexes[captureGroup.start] {
-            let groupIndex = captureGroup.index
-            cursor.groups[groupIndex] = startIndex..<cursor.index
-        } else {
-            // Remember where the group started
-            if regex.captureGroups.contains(where: { $0.start == stateId }) {
-                if cursor.groupsStartIndexes[stateId] == nil {
-                    cursor.groupsStartIndexes[stateId] = cursor.index
-                }
-            }
-        }
-    }
 }
 
 // MARK: - Matcher (Option 2: Backtracking)
@@ -275,7 +275,7 @@ private extension Matcher {
         var cursor = Cursor(string: string)
         while true {
             // TODO: tidy up
-            let match = firstMatchBacktracking(cursor, regex.states[0])
+            let match = firstMatchBacktracking(cursor, [:], regex.states[0])
             
             guard match == nil || closure(match!) else {
                 return
@@ -302,17 +302,18 @@ private extension Matcher {
     /// e.g. whether greedy or lazy quantifiers were used.
     ///
     /// - warning: The matcher hasn't been optimized in any way yet
-    func firstMatchBacktracking(_ cursor: Cursor, _ state: State) -> Regex.Match? {
+    func firstMatchBacktracking(_ cursor: Cursor, _ groupsStartIndexes: [StateId: String.Index], _ state: State) -> Regex.Match? {
         var cursor = cursor
+        var groupsStartIndexes = groupsStartIndexes
         
         // Capture a group if needed
         if !regex.captureGroups.isEmpty {
             if let captureGroup = regex.captureGroups.first(where: { $0.end == state.id }),
-                let startIndex = cursor.groupsStartIndexes[captureGroup.start] {
+                let startIndex = groupsStartIndexes[captureGroup.start] {
                 let groupIndex = captureGroup.index
                 cursor.groups[groupIndex] = startIndex..<cursor.index
             } else {
-                cursor.groupsStartIndexes[state.id] = cursor.index
+                groupsStartIndexes[state.id] = cursor.index
             }
         }
 
@@ -348,7 +349,7 @@ private extension Matcher {
             var cursor = cursor
             cursor.advance(by: consumed) // Consume as many characters as need (zero for epsilon transitions)
             
-            if let match = firstMatchBacktracking(cursor, transition.end) {
+            if let match = firstMatchBacktracking(cursor, groupsStartIndexes, transition.end) {
                 return match
             }
         }

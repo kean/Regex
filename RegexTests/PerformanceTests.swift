@@ -8,7 +8,7 @@ import Regex
 class PerformanceNearlyMatchingInputTests: XCTestCase {
 
     // NSRegularExpression: 0.165 seconds
-    // Regex: 0.021 seconds
+    // Regex: 0.020 seconds
     func testNearlyMatchingPatternWithGreedyQuantifier() throws {
         let regex = try Regex("a*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
@@ -32,7 +32,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: 0.106 seconds
-    // Regex: 0.028 seconds
+    // Regex: 0.024 seconds
     func testNearlyMatchingPatternWithNestedGreedyQuantifier2() throws {
         let regex = try Regex("(aa)*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
@@ -45,7 +45,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: didn't finish in a reasonable time
-    // Regex: 0.04 seconds
+    // Regex: 0.038 seconds
     func testNearlyMatchingPatternWithNestedGreedyQuantifier() throws {
         let regex = try Regex("(a*)*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
@@ -58,7 +58,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: didn't finish in a reasonable time
-    // Regex: 0.040 seconds
+    // Regex: 0.034 seconds
     func testNearlyMatchingPattern() throws {
         let regex = try Regex("X(.+)+X")
         let string = "=XX========================================="
@@ -71,7 +71,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: 0.004 seconds
-    // Regex: 0.031 seconds
+    // Regex: 0.027 seconds
     func testNearlyMatchingSubstring() throws {
         let p = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac"
         let s = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
