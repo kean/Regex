@@ -82,7 +82,10 @@ extension FSM {
 
     /// Matches the given character set.
     static func characterSet(_ set: CharacterSet, isCaseInsensitive: Bool) -> FSM {
-        FSM(condition: match(set, isCaseInsensitive))
+        if set == .decimalDigits {
+            return FSM(condition: matchAnyNumber)
+        }
+        return FSM(condition: match(set, isCaseInsensitive))
     }
 
     private static func match(_ set: CharacterSet, _ isCaseInsensitive: Bool) -> (_ cursor: Cursor) -> Int? {
@@ -96,6 +99,11 @@ extension FSM {
             }
             return isMatch ? 1 : nil
         }
+    }
+
+    private static func matchAnyNumber(_ cursor: Cursor) -> Int? {
+        guard let input = cursor.character else { return nil }
+        return input.isNumber ? 1 : nil
     }
 
     /// Matches any character.
