@@ -39,15 +39,13 @@ final class Compiler {
         }
 
         try validateBackreferences()
-        let regex = CompiledRegex(
-            fsm: fsm,
+        return CompiledRegex(
             states: allStates,
             captureGroups: captureGroups,
             isRegular: !containsLazyQuantifiers && backreferences.isEmpty,
             isFromStartOfString: ast.isFromStartOfString,
             symbols: symbols
         )
-        return regex
     }
 }
 
@@ -198,10 +196,7 @@ private extension Compiler {
 
 // MARK: - CompiledRegex
 
-struct CompiledRegex {
-    /// The starting index in the compiled regular expression.
-    let fsm: FSM
-
+final class CompiledRegex {
     /// All states in the state machine.
     let states: [State]
 
@@ -216,6 +211,18 @@ struct CompiledRegex {
     let isFromStartOfString: Bool
 
     let symbols: Symbols
+
+    init(states: [State], captureGroups: [CaptureGroup], isRegular: Bool, isFromStartOfString: Bool, symbols: Symbols) {
+        self.states = states
+        self.captureGroups = captureGroups
+        self.isRegular = isRegular
+        self.isFromStartOfString = isFromStartOfString
+        self.symbols = symbols
+    }
+
+    deinit {
+        states.forEach { $0.transitions.removeAll() }
+    }
 }
 
 // An intermediate representation which we use until we assign state IDs.

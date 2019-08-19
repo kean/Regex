@@ -55,7 +55,7 @@ public final class Regex {
             self.regex = try Compiler(ast, options).compile()
             self.options = options
             #if DEBUG
-            if self.log.isEnabled { os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.fsm.description(regex.symbols)) }
+            if self.log.isEnabled { os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.states[0].description(regex.symbols)) }
             #endif
         } catch {
             var error = error as! Error

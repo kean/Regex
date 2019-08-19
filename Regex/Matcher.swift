@@ -275,7 +275,7 @@ private extension Matcher {
         var cursor = Cursor(string: string)
         while true {
             // TODO: tidy up
-            let match = firstMatchBacktracking(cursor, regex.fsm.start)
+            let match = firstMatchBacktracking(cursor, regex.states[0])
             
             guard match == nil || closure(match!) else {
                 return

@@ -316,6 +316,17 @@ extension FSM {
 // MARK: - FSM (Symbols)
 
 extension FSM {
+    /// Enumerates all the state in the state machine using breadth-first search.
+    func allStates() -> [State] {
+        var states = [State]()
+        start.visit { state, _ in
+            states.append(state)
+        }
+        return states
+    }
+}
+
+extension State {
     func description(_ symbols: Symbols) -> String {
         var states = [String]()
 
@@ -331,21 +342,12 @@ extension FSM {
         return states.joined(separator: "\n")
     }
 
-    /// Enumerates all the state in the state machine using breadth-first search.
-    func allStates() -> [State] {
-        var states = [State]()
-        visit { state, _ in
-            states.append(state)
-        }
-        return states
-    }
-
     func visit(_ closure: (State, Int) -> Void) {
         // Go throught the graph of states using breadh-first search.
         var encountered = Set<State>()
         var queue = [(State, Int)]()
-        queue.append((start, 0))
-        encountered.insert(start)
+        queue.append((self, 0))
+        encountered.insert(self)
 
         while !queue.isEmpty {
             let (state, level) = queue.removeFirst() // This isn't fast
