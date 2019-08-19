@@ -15,12 +15,17 @@ final class Matcher {
     private let states: [State]
     private let symbols: Symbols
     private var iterations = 0
+
+    // Capture groups are quite expensive, we can ignore. If we use `isMatch`,
+    // we can skip capturing them.
+    private let isCapturingGroups: Bool
     
-    init(regex: CompiledRegex, options: Regex.Options, symbols: Symbols) {
+    init(regex: CompiledRegex, options: Regex.Options, symbols: Symbols, ignoreCaptureGroups: Bool) {
         self.regex = regex
         self.states = regex.states
         self.options = options
         self.symbols = symbols
+        self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
     }
     
     /// - parameter closure: Return `false` to stop.
@@ -160,7 +165,7 @@ private extension Matcher {
                     #endif
 
                     // Capture a group if needed or update group start indexes
-                    if !regex.captureGroups.isEmpty {
+                    if isCapturingGroups {
                         updateCaptureGroup(&cursor, stateId)
                     }
 
@@ -241,7 +246,7 @@ private extension Matcher {
                 }
                 
                 // Remove groups which can't be captures after retry
-                if !regex.captureGroups.isEmpty {
+                if isCapturingGroups {
                     removeOutdatedCaptureGroups(&retryCursor)
                 }
                 
@@ -251,7 +256,7 @@ private extension Matcher {
         }
 
         if let cursor = potentialMatch {
-            let match = Regex.Match(cursor, !regex.captureGroups.isEmpty)
+            let match = Regex.Match(cursor, isCapturingGroups)
             #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found match \(match)") }
             #endif

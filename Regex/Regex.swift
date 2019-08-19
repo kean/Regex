@@ -65,7 +65,7 @@ public final class Regex {
     /// Determine whether the regular expression pattern occurs in the input text.
     public func isMatch(_ string: String) -> Bool {
         var isMatchFound = false
-        makeMatcher(for: string).forMatch(in: string) { match in
+        makeMatcher(for: string, ignoreCaptureGroups: true).forMatch(in: string) { match in
             isMatchFound = true
             return false // It's enough to find one match
         }
@@ -82,8 +82,8 @@ public final class Regex {
         return matches
     }
 
-    private func makeMatcher(for string: String) -> Matcher {
-        return Matcher(regex: regex, options: options, symbols: symbols)
+    private func makeMatcher(for string: String, ignoreCaptureGroups: Bool = false) -> Matcher {
+        return Matcher(regex: regex, options: options, symbols: symbols, ignoreCaptureGroups: ignoreCaptureGroups)
     }
 }
 
