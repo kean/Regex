@@ -104,11 +104,15 @@ public extension Regex {
         /// Index where the search ended.
         let endIndex: String.Index
 
-        init(_ cursor: Cursor) {
+        init(_ cursor: Cursor, _ hasCaptureGroups: Bool) {
             self.fullMatch = cursor.string[cursor.startIndex..<cursor.index]
-            self.groups = cursor.groups
-                .sorted(by: { $0.key < $1.key }) // Sort by the index of the group
-                .map { cursor.string[$0.value] }
+            if hasCaptureGroups {
+                self.groups = cursor.groups
+                    .sorted(by: { $0.key < $1.key }) // Sort by the index of the group
+                    .map { cursor.string[$0.value] }
+            } else {
+                self.groups = []
+            }
             self.endIndex = cursor.index
         }
     }

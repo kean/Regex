@@ -8,15 +8,11 @@ import Foundation
 /// current index in this slice.
 struct Cursor: CustomStringConvertible {
     /// The entire input string.
-    var completeInputString: String {
-        return ref.completeInputString
-    }
+    var completeInputString: String { ref.completeInputString }
 
     /// The string in which we are performing the search, a single line of
     /// input when `.multiline` option is enabled (disabled by default).
-    var string: Substring {
-        return ref.string
-    }
+    var string: Substring { ref.string }
 
     /// The index from which we started the search.
     private(set) var startIndex: String.Index
@@ -26,19 +22,19 @@ struct Cursor: CustomStringConvertible {
 
     /// Captured groups.
     var groups: [Int: Range<String.Index>] {
-        get { return ref.groups }
+        get { ref.groups }
         set { mutate { $0.groups = newValue } }
     }
 
     /// Indexes where the group with the given start state was captured.
     var groupsStartIndexes: [State: String.Index] {
-        get { return ref.groupsStartIndexes }
+        get { ref.groupsStartIndexes }
         set { mutate { $0.groupsStartIndexes = newValue } }
     }
 
     /// An index where the previous match occured.
     var previousMatchIndex: String.Index?  {
-        get { return ref.previousMatchIndex }
+        get { ref.previousMatchIndex }
         set { mutate { $0.previousMatchIndex = newValue } }
     }
 
@@ -63,7 +59,7 @@ struct Cursor: CustomStringConvertible {
 
     /// Returns the character at the current `index`.
     var character: Character? {
-        return character(at: index)
+        character(at: index)
     }
 
     /// Returns the character at the given index if it exists. Returns `nil` otherwise.
@@ -77,21 +73,21 @@ struct Cursor: CustomStringConvertible {
     /// Returns the character at the index with the given offset from the
     /// current index.
     func character(offsetBy offset: Int) -> Character {
-        return string[completeInputString.index(index, offsetBy: offset)]
+        string[completeInputString.index(index, offsetBy: offset)]
     }
 
     /// Returns `true` if there are no more characters to match.
     var isEmpty: Bool {
-        return index == string.endIndex
+        index == string.endIndex
     }
 
     /// Returns `true` if the current index is the index of the last character.
     var isAtLastIndex: Bool {
-        return index < string.endIndex && string.index(after: index) == string.endIndex
+        index < string.endIndex && string.index(after: index) == string.endIndex
     }
 
     var description: String {
-        return "\(string.offset(for: index)), \(character ?? "∅")"
+        "\(string.offset(for: index)), \(character ?? "∅")"
     }
 
     // MARK: - CoW
@@ -110,16 +106,14 @@ struct Cursor: CustomStringConvertible {
     private class Container {
         let completeInputString: String
         let string: Substring
-        var groups: [Int: Range<String.Index>]
-        var groupsStartIndexes: [State: String.Index]
-        var previousMatchIndex: String.Index? = nil
+        var groups: [Int: Range<String.Index>] = [:]
+        var groupsStartIndexes: [State: String.Index] = [:]
+        var previousMatchIndex: String.Index?
 
         /// Creates a resource with a default processor.
         init(string: Substring, completeInputString: String) {
             self.completeInputString = completeInputString
             self.string = string
-            self.groups = [:]
-            self.groupsStartIndexes = [:]
         }
 
         /// Creates a copy.

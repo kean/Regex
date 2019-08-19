@@ -144,7 +144,9 @@ private extension Matcher {
                     if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))") }
 
                     // Capture a group if needed or update group start indexes
-                    updateCaptureGroup(&cursor, state)
+                    if !regex.captureGroups.isEmpty {
+                        updateCaptureGroup(&cursor, state)
+                    }
 
                     guard !state.isEnd else {
                         if potentialMatch == nil || cursor.index > potentialMatch!.index {
@@ -209,7 +211,9 @@ private extension Matcher {
                 }
                 
                 // Remove groups which can't be captures after retry
-                removeOutdatedCaptureGroups(&retryCursor)
+                if !regex.captureGroups.isEmpty {
+                    removeOutdatedCaptureGroups(&retryCursor)
+                }
                 
                 cursor = retryCursor
                 reachableStates = MicroSet(start)
@@ -217,7 +221,7 @@ private extension Matcher {
         }
 
         if let cursor = potentialMatch {
-            let match = Regex.Match(cursor)
+            let match = Regex.Match(cursor, !regex.captureGroups.isEmpty)
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found match \(match)") }
             return match
         }
@@ -227,10 +231,6 @@ private extension Matcher {
     }
 
     private func updateCaptureGroup(_ cursor: inout Cursor, _ state: State) {
-        guard !regex.captureGroups.isEmpty else {
-            return
-        }
-
         if let captureGroup = regex.captureGroups.first(where: { $0.end == state }),
             // Capture a group
             let startIndex = cursor.groupsStartIndexes[captureGroup.start] {
@@ -320,7 +320,7 @@ private extension Matcher {
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))") }
         
         if state.isEnd { // Found a match
-            let match = Regex.Match(cursor)
+            let match = Regex.Match(cursor, !regex.captureGroups.isEmpty)
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match) ✅") }
             return match
         }
