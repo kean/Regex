@@ -10,7 +10,6 @@ import os.log
 public final class Regex {
     private let options: Options
     private let regex: CompiledRegex
-    private let symbols: Symbols
     private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.regex", category: "default") : .disabled
     private var iterations = 0
 
@@ -50,10 +49,10 @@ public final class Regex {
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
             let ast = try Parser(pattern).parse()
-            (self.regex, self.symbols) = try Compiler(ast, options).compile()
+            self.regex = try Compiler(ast, options).compile()
             self.options = options
             #if DEBUG
-            if self.log.isEnabled { os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.fsm.description(symbols)) }
+            if self.log.isEnabled { os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.fsm.description(regex.symbols)) }
             #endif
         } catch {
             var error = error as! Error
@@ -83,7 +82,7 @@ public final class Regex {
     }
 
     private func makeMatcher(for string: String, ignoreCaptureGroups: Bool = false) -> Matcher {
-        return Matcher(regex: regex, options: options, symbols: symbols, ignoreCaptureGroups: ignoreCaptureGroups)
+        return Matcher(regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
     }
 }
 

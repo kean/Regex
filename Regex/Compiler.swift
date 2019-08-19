@@ -16,10 +16,14 @@ final class Compiler {
     init(_ ast: AST, _ options: Regex.Options) {
         self.ast = ast
         self.options = options
+        #if DEBUG
         self.symbols = Symbols(ast: ast)
+        #else
+        self.symbols = Symbols()
+        #endif
     }
 
-    func compile() throws -> (CompiledRegex, Symbols) {
+    func compile() throws -> CompiledRegex {
         let fsm = try compile(ast.root)
         optimize(fsm)
 
@@ -40,15 +44,17 @@ final class Compiler {
             states: allStates,
             captureGroups: captureGroups,
             isRegular: !containsLazyQuantifiers && backreferences.isEmpty,
-            isFromStartOfString: ast.isFromStartOfString
+            isFromStartOfString: ast.isFromStartOfString,
+            symbols: symbols
         )
-        return (regex, symbols)
+        return regex
     }
 }
 
 private extension Compiler {
     func compile(_ unit: Unit) throws -> FSM {
         let fsm = try _compile(unit)
+        #if DEBUG
         if Regex.isDebugModeEnabled {
             if symbols.map[fsm.start] == nil {
                 symbols.map[fsm.start] = Symbols.Details(unit: unit, isEnd: false)
@@ -57,6 +63,7 @@ private extension Compiler {
                 symbols.map[fsm.end] = Symbols.Details(unit: unit, isEnd: true)
             }
         }
+        #endif
         return fsm
     }
 
@@ -207,6 +214,8 @@ struct CompiledRegex {
 
     /// If `true`, requires the pattern to match the start of the string.
     let isFromStartOfString: Bool
+
+    let symbols: Symbols
 }
 
 // An intermediate representation which we use until we assign state IDs.
@@ -227,6 +236,7 @@ struct CaptureGroup {
 /// Mapping between states of the finite state machine and the nodes for which
 /// they were produced.
 struct Symbols {
+    #if DEBUG
     let ast: AST
     fileprivate(set) var map = [State: Details]()
 
@@ -234,8 +244,10 @@ struct Symbols {
         let unit: Unit
         let isEnd: Bool
     }
+    #endif
 
     func description(for state: State) -> String {
+        #if DEBUG
         let details = map[state]
 
         let info: String? = details.flatMap {
@@ -243,5 +255,8 @@ struct Symbols {
         }
 
         return "\(state) [\(info ?? "<symbol missing>")]"
+        #else
+        return "\(state) [<symbol missing>]"
+        #endif
     }
 }

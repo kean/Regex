@@ -13,18 +13,17 @@ final class Matcher {
     private let options: Regex.Options
     private let regex: CompiledRegex
     private let states: [State]
-    private let symbols: Symbols
+    private var symbols: Symbols { regex.symbols }
     private var iterations = 0
 
     // Capture groups are quite expensive, we can ignore. If we use `isMatch`,
     // we can skip capturing them.
     private let isCapturingGroups: Bool
 
-    init(regex: CompiledRegex, options: Regex.Options, symbols: Symbols, ignoreCaptureGroups: Bool) {
+    init(regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
         self.regex = regex
         self.states = regex.states
         self.options = options
-        self.symbols = symbols
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
     }
     
