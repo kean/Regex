@@ -8,13 +8,14 @@ import os.log
 // MARK: - Matcher
 
 final class Matcher {
-    private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.matcher", category: "default") : .disabled
-    
     private let options: Regex.Options
     private let regex: CompiledRegex
     private let states: [State]
+
+    #if DEBUG
     private var symbols: Symbols { regex.symbols }
-    private var iterations = 0
+    private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.matcher", category: "default") : .disabled
+    #endif
 
     // Capture groups are quite expensive, we can ignore. If we use `isMatch`,
     // we can skip capturing them.
@@ -37,9 +38,8 @@ final class Matcher {
 
         #if DEBUG
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Started, input: \(string)") }
-        iterations = 0
         defer {
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Finished, iterations: \(iterations)") }
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Finished") }
         }
         #endif
 
@@ -141,7 +141,6 @@ private extension Matcher {
                     encountered[stateId] = true
 
                     #if DEBUG
-                    iterations += 1
                     if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: states[stateId])))") }
                     #endif
 
@@ -304,7 +303,6 @@ private extension Matcher {
     ///
     /// - warning: The matcher hasn't been optimized in any way yet
     func firstMatchBacktracking(_ cursor: Cursor, _ state: State) -> Regex.Match? {
-        iterations += 1
         var cursor = cursor
         
         // Capture a group if needed

@@ -10,8 +10,11 @@ import os.log
 public final class Regex {
     private let options: Options
     private let regex: CompiledRegex
+
+    #if DEBUG
     private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.regex", category: "default") : .disabled
     private var iterations = 0
+    #endif
 
     /// Returns the number of capture groups in the regular expression.
     public var numberOfCaptureGroups: Int {

@@ -14,7 +14,10 @@ final class Parser {
         defer { groupIndex += 1 }
         return groupIndex
     }
+
+    #if DEBUG
     private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.parser", category: "default") : .disabled
+    #endif
 
     init(_ pattern: String) {
         self.pattern = pattern
