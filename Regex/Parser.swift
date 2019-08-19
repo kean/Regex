@@ -37,7 +37,9 @@ final class Parser {
             throw Regex.Error("Unmatched closing parentheses", 0)
         }
 
+        #if DEBUG
         if log.isEnabled { os_log(.default, log: self.log, "AST: \n%{PUBLIC}@", ast.description) }
+        #endif
 
         return ast
     }

@@ -25,17 +25,22 @@ final class Matcher {
     func forMatch(in string: String, _ closure: (Regex.Match) -> Bool) {
         // Print number of iterations performed, this is for debug purporses only but
         // it is effectively the only thing making Regex non-thread-safe which we ignore.
+
+        #if DEBUG
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Started, input: \(string)") }
         iterations = 0
         defer {
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Finished, iterations: \(iterations)") }
         }
+        #endif
         
         var isRunning = true
         for line in preprocess(string) where isRunning {
             let cursor = Cursor(string: line, completeInputString: string)
             if regex.isRegular {
+                #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
+                #endif
 
                 // Use optimized NFA simulation
                 forMatch(cursor) { match in
@@ -43,7 +48,9 @@ final class Matcher {
                     return isRunning // We don't need to run against other lines in the input
                 }
             } else {
+                #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Fallback to backtracking") }
+                #endif
 
                 // Fallback to backtracing
                 forMatchBacktracking(cursor) { match in
@@ -110,22 +117,24 @@ private extension Matcher {
         while !reachableStates.isEmpty {
             newReachableStates.removeAll()
 
+            #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map(symbols.description(for:)))") }
+            #endif
 
             for index in encountered.indices { encountered[index] = false }
 
             // For each state check if there are any reachable states – states which
             // accept the next character from the input string.
             for state in reachableStates {
-                iterations += 1
-
                 // [Optimization] Support for Match.string
                 if let index = reachableUntil[state] {
                     if index > cursor.index {
                         newReachableStates.insert(state)
                         encountered[state.tag] = true
 
+                        #if DEBUG
                         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Still reachable for this index, re-add \(reachableStates.map(symbols.description(for:)))") }
+                        #endif
 
                          // Important! Don't update capture groups, haven't reached the index yet!
                         continue
@@ -141,7 +150,10 @@ private extension Matcher {
                     guard !encountered[state.tag] else { continue }
                     encountered[state.tag] = true
 
+                    #if DEBUG
+                    iterations += 1
                     if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))") }
+                    #endif
 
                     // Capture a group if needed or update group start indexes
                     if !regex.captureGroups.isEmpty {
@@ -150,18 +162,27 @@ private extension Matcher {
 
                     guard !state.isEnd else {
                         if potentialMatch == nil || cursor.index > potentialMatch!.index {
-                            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: state))") }
                             potentialMatch = cursor // Found a match!
+
+                            #if DEBUG
+                            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: state))") }
+                            #endif
                         }
                         continue
                     }
 
                     for transition in state.transitions {
                         guard let consumed = transition.condition(cursor) else {
+                            #if DEBUG
                             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: End state NOT reachable \(symbols.description(for: transition.end))") }
+                            #endif
                             continue
                         }
+
+                        #if DEBUG
                         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: End state reachable \(symbols.description(for: transition.end))") }
+                        #endif
+
                         if consumed > 0 {
                             newReachableStates.insert(transition.end)
                             // The state is going to be reachable until we reach index T+consumed
@@ -198,11 +219,16 @@ private extension Matcher {
 
             reachableStates = newReachableStates
 
+            #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: << Reachable \(reachableStates.map(symbols.description(for:)))") }
+            #endif
             
             // We failed to find any matches within a given string
             if reachableStates.isEmpty && potentialMatch == nil && retryCursor.index < cursor.string.endIndex && !regex.isFromStartOfString {
+                
+                #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map(symbols.description(for:)))") }
+                #endif
 
                 // TODO: tidy up
                 if retryCursor.index < cursor.index {
@@ -222,11 +248,16 @@ private extension Matcher {
 
         if let cursor = potentialMatch {
             let match = Regex.Match(cursor, !regex.captureGroups.isEmpty)
+            #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found match \(match)") }
+            #endif
             return match
         }
-        
+
+        #if DEBUG
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches") }
+        #endif
+
         return nil
     }
 
@@ -317,11 +348,15 @@ private extension Matcher {
             }
         }
 
+        #if DEBUG
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))") }
+        #endif
         
         if state.isEnd { // Found a match
             let match = Regex.Match(cursor, !regex.captureGroups.isEmpty)
+            #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match) ✅") }
+            #endif
             return match
         }
         
@@ -330,11 +365,15 @@ private extension Matcher {
             counter += 1
             
             if state.transitions.count > 1 {
+                #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(state.transitions.count)") }
+                #endif
             }
             
             guard let consumed = transition.condition(cursor) else {
+                #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \("❌")") }
+                #endif
                 continue
             }
             
