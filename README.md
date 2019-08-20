@@ -29,6 +29,8 @@ for match in regex.matches("<h1>Title</h1>\n<p>Text</p>") {
 }
 ```
 
+If you just want a single match, use `regex.firstMatch(in:)`.
+
 # Features
 
 ## Character Classes
@@ -95,7 +97,7 @@ Quantifiers specify how many instances of a character, group, or character class
 
 All quantifiers are **greedy** by default, they try to match as many occurrences of the pattern as possible. Append the `?` character to a quantifier to make it lazy and match as few occurrences as possible, e.g. `a+?`.
 
-> Warning: nesting quantifiers dramatically increases the number of comparisons that the engine performs.
+> Warning: **lazy** quantifiers might be used to control which groups and matches are captured, but they shouldn't be used to optimize matcher performance which already uses an algorithm which can handle even nested greedy quantifiers.
 
 ## Alternation
 
@@ -114,6 +116,8 @@ All quantifiers are **greedy** by default, they try to match as many occurrences
 Regex switches between two different algorithm for matching depending on what features are used in the pattern. It uses *fast* algorithm for most features, and *slow* algorithm when either *backreferences* or *lazy* quantifiers are used. It's best to avoid the later!
 
 > *Fast* algorithm executes NFA iteratively by keeping track of all reachable states for the current index and checking reachability using DFS. It scales well for large inputs and can handle complex patterns. *Slow* algorithm executes NFA using backtracking.
+
+`Regex` is fully thead safe.
 
 # Not supported Features
 
