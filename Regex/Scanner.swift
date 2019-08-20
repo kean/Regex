@@ -132,7 +132,7 @@ final class Scanner {
     }
 
     /// We encountered `[`, read a character group, e.g. [abc], [^ab]
-    func readCharacterSet() throws -> (CharacterSet, Range<Int>) {
+    func readCharacterGroup() throws -> (CharacterGroup, Range<Int>) {
         let openingBracketIndex = i
         i += 1
 
@@ -150,10 +150,8 @@ final class Scanner {
         while let c = readCharacter() {
             switch c {
             case "]":
-                if isNegative {
-                    set.invert()
-                }
-                return (set, openingBracketIndex..<i)
+                let group = CharacterGroup(isNegative: isNegative, kind: .set(set))
+                return (group, openingBracketIndex..<i)
             case "\\":
                 guard let c = readCharacter() else {
                     throw Regex.Error("Pattern may not end with a trailing backslash", i-1)
@@ -166,9 +164,22 @@ final class Scanner {
             case "/":
                 throw Regex.Error("An unescaped delimiter must be escaped with a backslash", i-1)
             default:
+                // TODO: tidy up
                 if let range = try readCharacterRange(startingWith: c) {
+                    if peak() == "]", set.isEmpty { // group ended early
+                        i += 1
+                        let group = CharacterGroup(isNegative: isNegative, kind: .range(range))
+                        return (group, openingBracketIndex..<i)
+                    }
                     set.insert(charactersIn: range)
                 } else {
+                    if let scalar = c.unicodeScalars.first, c.unicodeScalars.count == 1 {
+                        if peak() == "]", set.isEmpty { // group ended early
+                            i += 1
+                            let group = CharacterGroup(isNegative: isNegative, kind: .range(scalar...scalar))
+                            return (group, openingBracketIndex..<i)
+                        }
+                    }
                     set.insert(c)
                 }
             }
@@ -289,5 +300,22 @@ final class Scanner {
         }
 
         return lb...ub
+    }
+}
+
+struct CharacterGroup {
+    let isNegative: Bool
+    let kind: Kind
+
+    enum Kind {
+        /// A range of unicode scalars. Can be compiled into a more efficient
+        /// representation than a character set.
+        /// TODO: we could potentially also compile multiple ranges like that into
+        /// a (sorted) array of ranges? Maybe that's what character set does more
+        /// efficiently already, not sure.
+        case range(ClosedRange<Unicode.Scalar>)
+
+        /// A predefined character set.
+        case set(CharacterSet)
     }
 }

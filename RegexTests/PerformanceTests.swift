@@ -24,7 +24,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     // Regex: 0.21 seconds
     func testNearlyMatchingPatternWithLongInput() throws {
         let regex = try Regex("a*c")
-        let string = String(repeating: "a", count: 50_000) + "b"
+        let string = String(repeating: "a", count: 75_000) + "b"
 
         measure {
             let _ = regex.matches(in: string)
@@ -38,7 +38,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
 
         measure {
-            for _ in 0...1000 {
+            for _ in 0...1500 {
                 let _ = regex.matches(in: string)
             }
         }

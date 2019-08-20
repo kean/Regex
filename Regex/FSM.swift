@@ -35,6 +35,9 @@ struct FSM {
 // MARK: - FSM (Character Classes)
 
 extension FSM {
+
+    // MARK: .character
+
     /// Matches the given character.
     static func character(_ c: Character, isCaseInsensitive: Bool) -> FSM {
         FSM(condition: match(c, isCaseInsensitive))
@@ -52,6 +55,8 @@ extension FSM {
             return isEqual ? 1 : nil
         }
     }
+
+    // MARK: .string
 
     /// Matches the given string. In general is going to be much faster than
     /// checking the individual characters (fast substring search).
@@ -80,15 +85,17 @@ extension FSM {
         }
     }
 
+    // MARK: .characterSet
+
     /// Matches the given character set.
-    static func characterSet(_ set: CharacterSet, isCaseInsensitive: Bool) -> FSM {
+    static func characterSet(_ set: CharacterSet, _ isCaseInsensitive: Bool, _ isNegative: Bool) -> FSM {
         if set == .decimalDigits {
             return FSM(condition: matchAnyNumber)
         }
-        return FSM(condition: match(set, isCaseInsensitive))
+        return FSM(condition: match(set, isCaseInsensitive, isNegative))
     }
 
-    private static func match(_ set: CharacterSet, _ isCaseInsensitive: Bool) -> (_ cursor: Cursor) -> Int? {
+    private static func match(_ set: CharacterSet, _ isCaseInsensitive: Bool, _ isNegative: Bool) -> (_ cursor: Cursor) -> Int? {
         return { cursor in
             guard let input = cursor.character else { return nil }
             let isMatch: Bool
@@ -97,7 +104,7 @@ extension FSM {
             } else {
                 isMatch = set.contains(input)
             }
-            return isMatch ? 1 : nil
+            return (isMatch != isNegative) ? 1 : nil
         }
     }
 
@@ -105,6 +112,25 @@ extension FSM {
         guard let input = cursor.character else { return nil }
         return input.isNumber ? 1 : nil
     }
+
+    // MARK: .range
+
+    static func range(_ range: ClosedRange<Unicode.Scalar>, _ isCaseInsensitive: Bool, _ isNegative: Bool) -> FSM {
+        return FSM { cursor in
+            guard let input = cursor.character else { return nil }
+            let isMatch: Bool
+            if isCaseInsensitive, input.isCased {
+                // TODO: this definitely isn't efficient
+                isMatch = range.contains(input.lowercased().unicodeScalars.first!) ||
+                    range.contains(input.uppercased().unicodeScalars.first!)
+             } else {
+                isMatch = input.unicodeScalars.allSatisfy(range.contains)
+             }
+             return (isMatch != isNegative) ? 1 : nil
+        }
+    }
+
+    // MARK: .anyCharacter
 
     /// Matches any character.
     static func anyCharacter(includingNewline: Bool) -> FSM {

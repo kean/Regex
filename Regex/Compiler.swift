@@ -118,7 +118,8 @@ private extension Compiler {
             case let .string(s): return .string(s
                 , isCaseInsensitive: isCaseInsensitive)
             case .anyCharacter: return .anyCharacter(includingNewline: dotMatchesLineSeparators)
-            case let .characterSet(set): return .characterSet(set, isCaseInsensitive: isCaseInsensitive)
+            case let .characterSet(set, isNegative): return .characterSet(set, isCaseInsensitive, isNegative)
+            case let .range(range, isNegative): return .range(range, isCaseInsensitive, isNegative)
             }
 
         default:

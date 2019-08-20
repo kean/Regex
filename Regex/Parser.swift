@@ -103,8 +103,13 @@ private extension Parser {
         case "\\":
             return try parseEscapedCharacter()
         case "[":
-            let (set, range) = try scanner.readCharacterSet()
-            return Match(type: .characterSet(set), source: range)
+            let (group, range) = try scanner.readCharacterGroup()
+            let match: MatchType
+            switch group.kind {
+            case let .range(range): match = .range(range, isNegative: group.isNegative)
+            case let .set(set): match = .characterSet(set, isNegative: group.isNegative)
+            }
+            return Match(type: match, source: range)
         case "$":
             return Anchor(type: .endOfString, source: scanner.read())
         default:

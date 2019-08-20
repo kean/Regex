@@ -81,7 +81,8 @@ enum MatchType {
     case character(Character)
     case string(String)
     case anyCharacter
-    case characterSet(CharacterSet)
+    case range(ClosedRange<Unicode.Scalar>, isNegative: Bool = false)
+    case characterSet(CharacterSet, isNegative: Bool = false)
 }
 
 struct QuantifiedExpression: Composite {
@@ -114,7 +115,8 @@ extension Match: CustomStringConvertible {
         switch type {
         case let .character(character): return "Character(\"\(character)\")"
         case let .string(string): return "String(\"\(string)\")"
-        case let .characterSet(set): return "CharacterSet(\"\(set)\")"
+        case let .characterSet(set, isNegative): return "CharacterSet(\(isNegative ? "^" : "")\"\(set)\")"
+        case let .range(range, isNegative): return "Range(\(isNegative ? "^" : "")\(Character(range.lowerBound))-\(Character(range.upperBound)))"
         case .anyCharacter: return  "AnyCharacter"
         }
     }

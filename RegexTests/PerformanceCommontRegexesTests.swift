@@ -11,7 +11,7 @@ class RegexTests: XCTestCase {
         let regex = try Regex("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$")
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...1500 {
                 _ = regex.isMatch("#1f1f1F")
                 _ = regex.isMatch("#AFAFAF")
                 _ = regex.isMatch("#1AFFa1")
@@ -71,7 +71,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^\d*(\.\d+)?$"#)
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...5000 {
                 _ = regex.isMatch("5.0")
                 _ = regex.isMatch("3")
                 _ = regex.isMatch("0.0")
@@ -89,7 +89,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^-?\d*(\.\d+)?$"#)
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...1500 {
                 _ = regex.isMatch("100")
                 _ = regex.isMatch("10.2")
                 _ = regex.isMatch("0.5")
@@ -164,7 +164,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...200 {
                 _ = regex.isMatch("email@example.com")
                 _ = regex.isMatch("firstname.lastname@example.com")
                 _ = regex.isMatch("email@subdomain.example.com")
@@ -188,7 +188,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^([a-z0-9_\.\+-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...200 {
                 _ = regex.isMatch("email@example.com")
                 _ = regex.isMatch("firstname.lastname@example.com")
                 _ = regex.isMatch("email@subdomain.example.com")
@@ -326,7 +326,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#)
         
         measure {
-            for _ in 0...100 {
+            for _ in 0...500 {
                 _ = regex.isMatch("0.0.0.0")
                 _ = regex.isMatch("9.255.255.255")
                 _ = regex.isMatch("11.0.0.0")
@@ -462,7 +462,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^(0?[1-9]|1[0-2]):[0-5][0-9]$"#)
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...1500 {
                 _ = regex.isMatch("12:00")
                 _ = regex.isMatch("13:00")
                 _ = regex.isMatch("1:00")
@@ -504,7 +504,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"#)
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...1500 {
                 _ = regex.isMatch("12:00")
                 _ = regex.isMatch("13:00")
                 _ = regex.isMatch("1:00")
@@ -528,7 +528,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(#"^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"#)
         
         measure {
-            for _ in 0...1000 {
+            for _ in 0...1500 {
                 _ = regex.isMatch("12:00")
                 _ = regex.isMatch("13:00")
                 _ = regex.isMatch("1:00")
@@ -586,7 +586,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         
         let regex = try Regex(pattern)
         measure {
-            for _ in 0...100 {
+            for _ in 0...150 {
                 _ = regex.matches(in: string)
             }
         }
@@ -640,7 +640,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         let regex = try Regex(pattern, [.caseInsensitive])
         
         measure {
-            for _ in 0...300 {
+            for _ in 0...400 {
                 _ = regex.isMatch("hello")
                 _ = regex.isMatch("Hello")
                 _ = regex.isMatch("-")
