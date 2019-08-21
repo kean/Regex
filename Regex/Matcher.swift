@@ -5,11 +5,24 @@
 import Foundation
 import os.log
 
-// MARK: - Matcher
+// MARK: - Matching
 
-final class Matcher {
-    private let options: Regex.Options
+protocol Matching {
+    /// Returns the next match in the input.
+    func nextMatch() -> Regex.Match?
+}
+
+// MARK: - RegularMatcher
+
+/// Executes the regex using an efficient algorithm where each state of NFA
+/// is evaluated at the same time at given cursor.
+///
+/// Handles large inputs with easy and the amount of memory that it uses is limited
+/// by the number of states in the state machine, it doesn't on the size of input string.
+final class RegularMatcher: Matching {
+    private let string: String
     private let regex: CompiledRegex
+    private let options: Regex.Options
     private let states: [State]
 
     #if DEBUG
@@ -20,90 +33,48 @@ final class Matcher {
     // Capture groups are quite expensive, we can ignore. If we use `isMatch`,
     // we can skip capturing them.
     private let isCapturingGroups: Bool
-
     private let isStartingFromStartIndex: Bool
 
-    init(regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
+    private var cursor: Cursor
+    private var isFinished = false
+
+    init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
+        self.string = string
         self.regex = regex
         self.states = regex.states
         self.options = options
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
+        self.cursor = Cursor(string: string)
     }
 
-    func firstMatch(in string: String) -> Regex.Match? {
-        if regex.isRegular {
-            #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
-            #endif
+    func nextMatch() -> Regex.Match? {
+        guard !isFinished else {
+            return nil
+        }
 
-            return firstMatch(Cursor(string: string)) // Skip forMatch entirely
-        } else {
-            #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Fallback to backtracking") }
-            #endif
+        guard let match = nextMatch(cursor) else {
+            isFinished = true // We failed to find a match, there can't any more matches
+            return nil
+        }
 
-            var match: Regex.Match?
-            forMatchBacktracking(string) {
-                match = $0
-                return false // It's enough to find one match
-            }
+        guard match.endIndex <= cursor.string.endIndex && !isStartingFromStartIndex else {
+            isFinished = true
             return match
         }
-    }
-    
-    /// - parameter closure: Return `false` to stop.
-    func forMatch(in string: String, _ closure: (Regex.Match) -> Bool) {
-        // Print number of iterations performed, this is for debug purporses only but
-        // it is effectively the only thing making Regex non-thread-safe which we ignore.
 
-        #if DEBUG
-        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Started, input: \(string)") }
-        defer {
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Finished") }
-        }
-        #endif
-
-        if regex.isRegular {
-            #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
-            #endif
-
-            forMatch(string, closure)
-        } else {
-            #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Fallback to backtracking") }
-            #endif
-
-            forMatchBacktracking(string, closure)
-        }
-    }
-}
-
-// MARK: - Matcher (Option 1: Parallel NFA)
-
-// An efficient NFA execution (TODO: what guarantees does it give?)
-private extension Matcher {
-    
-    /// - parameter closure: Return `false` to stop.
-    func forMatch(_ string: String, _ closure: (Regex.Match) -> Bool) {
-        // Include end index in the search to make sure matches runs for empty
-        // strings, and also that it find all possible matches.
-        var cursor = Cursor(string: string)
-        while let match = firstMatch(cursor), closure(match) {
-            guard cursor.index < cursor.string.endIndex else {
-                return
-            }
-            guard !isStartingFromStartIndex else {
-                return
-            }
-            if match.fullMatch.isEmpty {
+        if match.fullMatch.isEmpty {
+            if match.endIndex < cursor.string.endIndex {
                 cursor.startAt(cursor.string.index(after: match.endIndex))
             } else {
-                cursor.startAt(match.endIndex)
+                isFinished = true
             }
-            cursor.previousMatchIndex = match.fullMatch.endIndex
+        } else {
+            cursor.startAt(match.endIndex)
         }
+        cursor.previousMatchIndex = match.fullMatch.endIndex
+
+        return match
     }
     
     /// Evaluates the state machine against if finds the first possible match.
@@ -111,7 +82,7 @@ private extension Matcher {
     /// e.g. whether greedy or lazy quantifiers were used.
     ///
     /// - warning: The matcher hasn't been optimized in any way yet
-    func firstMatch(_ cursor: Cursor) -> Regex.Match? {
+    func nextMatch(_ cursor: Cursor) -> Regex.Match? {
         var cursor = cursor
         var retryIndex: String.Index?
         var reachableStates = MicroSet<StateId>(0)
@@ -280,13 +251,76 @@ private extension Matcher {
     }
 }
 
-// MARK: - Matcher (Option 2: Backtracking)
+/// MARK: - Matcher (Option 2: Backtracking)
+///
+/// An backtracking implementation which is only used when specific constructs
+/// like backreferences are used which are non-regular and cannot be implemented
+/// only using NFA (and efficiently executed as NFA).
+final class BacktrackingMatcher: Matching {
+    private let string: String
+    private let regex: CompiledRegex
+    private let options: Regex.Options
+    private let states: [State]
 
-// An backtracking implementation which is only used when specific constructs
-// like backreferences are used which are non-regular and cannot be implemented
-// only using NFA (and efficiently executed as NFA).
-private extension Matcher {
-    
+    #if DEBUG
+    private var symbols: Symbols { regex.symbols }
+    private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.matcher", category: "default") : .disabled
+    #endif
+
+    // Capture groups are quite expensive, we can ignore. If we use `isMatch`,
+    // we can skip capturing them.
+    private let isCapturingGroups: Bool
+    private let isStartingFromStartIndex: Bool
+
+    private var cursor: Cursor
+    private var isFinished = false
+
+    init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
+        self.string = string
+        self.regex = regex
+        self.states = regex.states
+        self.options = options
+        self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
+        self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
+        self.cursor = Cursor(string: string)
+    }
+
+    func nextMatch() -> Regex.Match? {
+        guard !isFinished else {
+            return nil
+        }
+
+        if isStartingFromStartIndex {
+            isFinished = true
+        }
+
+        guard let match = firstMatchBacktracking(cursor, [:], regex.states[0]) else {
+            // We couldn't find a match but `forMatchBacktracking` doesn't
+            // automatically restart on errors unlike `RegularMatcher` so we
+            // have to do that manually. This needs clean up.
+            if cursor.startIndex < cursor.string.endIndex {
+                cursor.startAt(cursor.string.index(after: cursor.startIndex))
+                return nextMatch()
+            } else {
+                isFinished = true
+                return nil
+            }
+        }
+
+        if match.fullMatch.isEmpty {
+            if match.endIndex < cursor.string.endIndex {
+                cursor.startAt(cursor.string.index(after: match.endIndex))
+            } else {
+                isFinished = true
+            }
+        } else {
+            cursor.startAt(match.endIndex)
+        }
+        cursor.previousMatchIndex = match.fullMatch.endIndex
+
+        return match
+    }
+
     /// - parameter closure: Return `false` to stop.
     func forMatchBacktracking(_ string: String, _ closure: (Regex.Match) -> Bool) {
         // Include end index in the search to make sure matches runs for empty
@@ -295,7 +329,7 @@ private extension Matcher {
         while true {
             // TODO: tidy up
             let match = firstMatchBacktracking(cursor, [:], regex.states[0])
-            
+
             guard match == nil || closure(match!) else {
                 return
             }
@@ -308,14 +342,14 @@ private extension Matcher {
             let index = match.map {
                 $0.fullMatch.isEmpty ? cursor.string.index(after: $0.endIndex) : $0.endIndex
                 } ?? cursor.string.index(after: cursor.index)
-            
+
             cursor.startAt(index)
             if let match = match {
                 cursor.previousMatchIndex = match.fullMatch.endIndex
             }
         }
     }
-    
+
     /// Evaluates the state machine against if finds the first possible match.
     /// The type of the match we find is going to depend on the type of pattern,
     /// e.g. whether greedy or lazy quantifiers were used.
@@ -324,7 +358,7 @@ private extension Matcher {
     func firstMatchBacktracking(_ cursor: Cursor, _ groupsStartIndexes: [StateId: String.Index], _ state: State) -> Regex.Match? {
         var cursor = cursor
         var groupsStartIndexes = groupsStartIndexes
-        
+
         // Capture a group if needed
         if !regex.captureGroups.isEmpty {
             if let captureGroup = regex.captureGroups.first(where: { $0.end == state.id }),
@@ -339,7 +373,7 @@ private extension Matcher {
         #if DEBUG
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))") }
         #endif
-        
+
         if state.isEnd { // Found a match
             let match = Regex.Match(cursor, !regex.captureGroups.isEmpty)
             #if DEBUG
@@ -347,32 +381,32 @@ private extension Matcher {
             #endif
             return match
         }
-        
+
         var counter = 0
         for transition in state.transitions {
             counter += 1
-            
+
             if state.transitions.count > 1 {
                 #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(state.transitions.count)") }
                 #endif
             }
-            
+
             guard let consumed = transition.condition(cursor) else {
                 #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \("❌")") }
                 #endif
                 continue
             }
-            
+
             var cursor = cursor
             cursor.advance(by: consumed) // Consume as many characters as need (zero for epsilon transitions)
-            
+
             if let match = firstMatchBacktracking(cursor, groupsStartIndexes, transition.end) {
                 return match
             }
         }
-        
+
         return nil // No possible matches
     }
 }

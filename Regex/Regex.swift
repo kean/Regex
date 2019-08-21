@@ -66,27 +66,39 @@ public final class Regex {
 
     /// Determine whether the regular expression pattern occurs in the input text.
     public func isMatch(_ string: String) -> Bool {
-        return makeMatcher(for: string, ignoreCaptureGroups: true).firstMatch(in: string) != nil
+        let matcher = makeMatcher(for: string, ignoreCaptureGroups: true)
+        return matcher.nextMatch() != nil
     }
 
     /// Returns first match in the given string.
     public func firstMatch(in string: String) -> Match? {
-        return makeMatcher(for: string).firstMatch(in: string)
+        let matcher = makeMatcher(for: string)
+        return matcher.nextMatch()
     }
 
     /// Returns an array containing all the matches in the string.
     public func matches(in string: String) -> [Match] {
+        let matcher = makeMatcher(for: string)
         var matches = [Match]()
-        makeMatcher(for: string).forMatch(in: string) { match in
+        while let match = matcher.nextMatch() {
             matches.append(match)
-            return true // Continue finding matches
         }
         return matches
     }
 
     /// - paramter ignoreCaptureGroups: enables some performance optimizations
-    private func makeMatcher(for string: String, ignoreCaptureGroups: Bool = false) -> Matcher {
-        return Matcher(regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
+    private func makeMatcher(for string: String, ignoreCaptureGroups: Bool = false) -> Matching {
+        if regex.isRegular {
+            #if DEBUG
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
+            #endif
+            return RegularMatcher(string: string, regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
+        } else {
+            #if DEBUG
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use backtracking algorithm") }
+            #endif
+            return BacktrackingMatcher(string: string, regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
+        }
     }
 }
 
