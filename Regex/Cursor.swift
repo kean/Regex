@@ -32,7 +32,7 @@ struct Cursor: CustomStringConvertible {
     mutating func startAt(_ index: String.Index) {
         self.startIndex = index
         self.index = index
-        self.groups = [:]
+        self.groups.removeAll()
     }
 
     mutating func advance(to index: String.Index) {
