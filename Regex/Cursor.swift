@@ -6,12 +6,14 @@ import Foundation
 
 /// Cursor represents the slice in which we are performing the matching and the
 /// current index in this slice.
-struct Cursor: CustomStringConvertible {
+struct Cursor {
     /// The entire input string.
     let string: String
 
     /// The index from which we started the search.
     private(set) var startIndex: String.Index
+
+    var endIndex: String.Index { string.endIndex }
 
     /// The current index of the cursor.
     private(set) var index: String.Index
@@ -28,7 +30,11 @@ struct Cursor: CustomStringConvertible {
         self.groups = [:]
         self.index = string.startIndex
     }
+}
 
+// MARK: - Cursor (Advance)
+
+extension Cursor {
     mutating func startAt(_ index: String.Index) {
         self.startIndex = index
         self.index = index
@@ -41,6 +47,14 @@ struct Cursor: CustomStringConvertible {
 
     mutating func advance(by offset: Int) {
         self.index = string.index(index, offsetBy: offset)
+    }
+}
+
+// MARK: - Cursor (Characters)
+
+extension Cursor {
+    subscript(range: Range<String.Index>) -> Substring {
+        return string[range]
     }
 
     /// Returns the character at the current `index`.
@@ -61,6 +75,18 @@ struct Cursor: CustomStringConvertible {
     func character(offsetBy offset: Int) -> Character {
         string[string.index(index, offsetBy: offset)]
     }
+}
+
+// MARK: - Cursor (Indices)
+
+extension Cursor {
+    func index(_ index: String.Index, offsetBy offset: Int, isLimited: Bool = false) -> String.Index? {
+        return string.index(index, offsetBy: offset, limitedBy: string.endIndex)
+    }
+
+    func index(after index: String.Index) -> String.Index {
+        return string.index(after: index)
+    }
 
     /// Returns `true` if there are no more characters to match.
     var isEmpty: Bool {
@@ -71,9 +97,13 @@ struct Cursor: CustomStringConvertible {
     var isAtLastIndex: Bool {
         index < string.endIndex && string.index(after: index) == string.endIndex
     }
+}
 
+// MARK: - Cursor (CustomStringConvertible)
+
+extension Cursor: CustomStringConvertible {
     var description: String {
-        let char = String(character ?? "∅")
-        return "\(string.offset(for: index)), \(char == "\n" ? "\\n" : char)"
-    }
+          let char = String(character ?? "∅")
+          return "\(string.offset(for: index)), \(char == "\n" ? "\\n" : char)"
+      }
 }

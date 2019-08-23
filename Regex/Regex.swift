@@ -55,7 +55,7 @@ public final class Regex {
             self.regex = try Compiler(ast, options).compile()
             self.options = options
             #if DEBUG
-            if self.log.isEnabled { os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.states[0].description(regex.symbols)) }
+            if self.log.isEnabled { os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.symbols.description(for: regex.states[0])) }
             #endif
         } catch {
             var error = error as! Error
@@ -120,11 +120,11 @@ public extension Regex {
         let endIndex: String.Index
 
         init(_ cursor: Cursor, _ hasCaptureGroups: Bool) {
-            self.fullMatch = cursor.string[cursor.startIndex..<cursor.index]
+            self.fullMatch = cursor[cursor.startIndex..<cursor.index]
             if hasCaptureGroups {
                 self.groups = cursor.groups
                     .sorted(by: { $0.key < $1.key }) // Sort by the index of the group
-                    .map { cursor.string[$0.value] }
+                    .map { cursor[$0.value] }
             } else {
                 self.groups = []
             }

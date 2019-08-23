@@ -8,7 +8,7 @@ import Regex
 class PerformanceNearlyMatchingInputTests: XCTestCase {
 
     // NSRegularExpression: 0.336 seconds
-    // Regex: 0.038 seconds
+    // Regex: 0.031 seconds
     func testNearlyMatchingPatternWithGreedyQuantifier() throws {
         let regex = try Regex("a*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
@@ -21,7 +21,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: didn't finish in a reasonable time
-    // Regex: 0.21 seconds
+    // Regex: 0.24 seconds
     func testNearlyMatchingPatternWithLongInput() throws {
         let regex = try Regex("a*c")
         let string = String(repeating: "a", count: 75_000) + "b"
@@ -32,7 +32,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: 0.106 seconds
-    // Regex: 0.024 seconds
+    // Regex: 0.027 seconds
     func testNearlyMatchingPatternWithNestedGreedyQuantifier2() throws {
         let regex = try Regex("(aa)*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
@@ -45,7 +45,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: didn't finish in a reasonable time
-    // Regex: 0.038 seconds
+    // Regex: 0.028 seconds
     func testNearlyMatchingPatternWithNestedGreedyQuantifier() throws {
         let regex = try Regex("(a*)*c")
         let string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab"
@@ -58,7 +58,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: didn't finish in a reasonable time
-    // Regex: 0.034 seconds
+    // Regex: 0.026 seconds
     func testNearlyMatchingPattern() throws {
         let regex = try Regex("X(.+)+X")
         let string = "=XX========================================="
@@ -86,7 +86,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: 0.036 seconds
-    // Regex: 0.119 seconds
+    // Regex: 0.086 seconds
     func testNearlyMatchingSubstringCreateWithRange() throws {
         let regex = try Regex("a{1000}c")
         let string = String(repeating: "a", count: 5_000) + "b"
@@ -97,7 +97,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
     }
 
     // NSRegularExpression: 0.036 seconds
-    // Regex: 0.119 seconds
+    // Regex: 0.088 seconds
     func testNearlyMatchingSubstringCreateWithRangeAndAlternation() throws {
         let regex = try Regex("(a{1000}|a{800})c")
         let string = String(repeating: "a", count: 3_000) + "b"

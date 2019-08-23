@@ -5,42 +5,42 @@
 import Foundation
 
 final class Compiler {
-    private let ast: AST
     private let options: Regex.Options
+    private let ast: AST
 
-    private var symbols: Symbols
-    private var captureGroups: [IndermediateCaptureGroup] = []
+    // Intermediate state and representations.
+    private var captureGroups: [IRCaptureGroup] = []
     private var backreferences: [Backreference] = []
+    private var map = [IRState: Symbols.Details]()
     private var containsLazyQuantifiers = false
 
     init(_ ast: AST, _ options: Regex.Options) {
         self.ast = ast
         self.options = options
-        #if DEBUG
-        self.symbols = Symbols(ast: ast)
-        #else
-        self.symbols = Symbols()
-        #endif
     }
 
     func compile() throws -> CompiledRegex {
-        let fsm = try compile(ast.root)
-        optimize(fsm)
-
-        let allStates = fsm.allStates()
-        var map = [State: Int]()
-        for (state, index) in zip(allStates, allStates.indices) {
-            state.id = index
-            map[state] = index
-        }
+        let intermediateFSM = try compile(ast.root)
+        let (states, indices) = optimize(intermediateFSM)
 
         let captureGroups = self.captureGroups.map {
-            CaptureGroup(index: $0.index, start: map[$0.start]!, end: map[$0.end]!)
+            CaptureGroup(index: $0.index, start: indices[$0.start]!, end: indices[$0.end]!)
         }
 
         try validateBackreferences()
+
+        #if DEBUG
+        var details = [State.Index: Symbols.Details]()
+        for (key, value) in map {
+            details[indices[key]!] = value
+        }
+        let symbols = Symbols(ast: ast, map: details)
+        #else
+        let symbols = Symbols()
+        #endif
+
         return CompiledRegex(
-            states: allStates,
+            states: states,
             captureGroups: captureGroups,
             isRegular: !containsLazyQuantifiers && backreferences.isEmpty,
             isFromStartOfString: ast.isFromStartOfString,
@@ -50,31 +50,31 @@ final class Compiler {
 }
 
 private extension Compiler {
-    func compile(_ unit: Unit) throws -> FSM {
+    func compile(_ unit: Unit) throws -> IRFSM {
         let fsm = try _compile(unit)
         #if DEBUG
         if Regex.isDebugModeEnabled {
-            if symbols.map[fsm.start] == nil {
-                symbols.map[fsm.start] = Symbols.Details(unit: unit, isEnd: false)
+            if map[fsm.start] == nil {
+                map[fsm.start] = Symbols.Details(unit: unit, isEnd: false)
             }
-            if symbols.map[fsm.end] == nil {
-                symbols.map[fsm.end] = Symbols.Details(unit: unit, isEnd: true)
+            if map[fsm.end] == nil {
+                map[fsm.end] = Symbols.Details(unit: unit, isEnd: true)
             }
         }
         #endif
         return fsm
     }
 
-    func _compile(_ unit: Unit) throws -> FSM {
+    func _compile(_ unit: Unit) throws -> IRFSM {
         switch unit {
         case let expression as Expression:
             return .concatenate(try expression.children.map(compile))
 
         case let group as Group:
             let fsms = try group.children.map(compile)
-            let fms = FSM.group(.concatenate(fsms))
+            let fms = IRFSM.group(.concatenate(fsms))
             if group.isCapturing { // Remember the group that we just compiled.
-                captureGroups.append(IndermediateCaptureGroup(index: group.index, start: fms.start, end: fms.end))
+                captureGroups.append(IRCaptureGroup(index: group.index, start: fms.start, end: fms.end))
             }
             return fms
 
@@ -127,24 +127,24 @@ private extension Compiler {
         }
     }
 
-    func compile(_ unit: Unit, _ range: ClosedRange<Int>, _ isLazy: Bool) throws -> FSM {
+    func compile(_ unit: Unit, _ range: ClosedRange<Int>, _ isLazy: Bool) throws -> IRFSM {
         let prefix = try compileRangePrefix(unit, range)
-        let suffix: FSM
+        let suffix: IRFSM
         if range.upperBound == Int.max {
             suffix = .zeroOrMore(try compile(unit), isLazy)
         } else {
             // Compile the optional matches into `x(x(x(x)?)?)?`. We use this
             // specific form with grouping to make sure that matcher can cache
             // the results during backtracking.
-            suffix = try range.dropLast().reduce(FSM.empty) { result, _ in
+            suffix = try range.dropLast().reduce(IRFSM.empty) { result, _ in
                 let expression = try compile(unit)
                 return .zeroOrOne(.group(.concatenate(expression, result)), isLazy)
             }
         }
-        return FSM.concatenate(prefix, suffix)
+        return IRFSM.concatenate(prefix, suffix)
     }
 
-    func compileRangePrefix(_ unit: Unit, _ range: ClosedRange<Int>) throws -> FSM {
+    func compileRangePrefix(_ unit: Unit, _ range: ClosedRange<Int>) throws -> IRFSM {
         func getString() -> String? {
             guard let match = unit as? Match else {
                 return nil
@@ -163,8 +163,11 @@ private extension Compiler {
         }
 
         // [Optimization] compile a{4} as if it was .string("aaaa")
+        guard range.lowerBound > 0 else {
+            return .empty
+        }
         let s = String(repeating: string, count: (0..<range.lowerBound).count)
-        return FSM.string(s, isCaseInsensitive: options.contains(.caseInsensitive))
+        return IRFSM.string(s, isCaseInsensitive: options.contains(.caseInsensitive))
     }
 
     func validateBackreferences() throws {
@@ -178,20 +181,50 @@ private extension Compiler {
 }
 
 private extension Compiler {
-    func optimize(_ fsm: FSM) {
+    func optimize(_ fsm: IRFSM) -> (states: [State], indices: [IRState: State.Index]) {
         let captureGroupState = Set(captureGroups.flatMap { [$0.start, $0.end] })
 
+        // [Optimization] Remove "technical" epsilon transition
         for state in fsm.allStates() {
             state.transitions = state.transitions.map {
                 // [Optimization] Remove "technical" states
                 if !captureGroupState.contains($0.end) &&
                     $0.end.transitions.count == 1 &&
                     $0.end.transitions[0].isUnconditionalEpsilon {
-                    return Transition($0.end.transitions[0].end, $0.condition)
+                    return RITransition($0.end.transitions[0].end, $0.condition)
                 }
                 return $0
             }
         }
+
+        // [Optimization] Convert intermediate (RI*) FSM representation into a
+        // version optimized for execution which strickly uses only value types
+        // and also has State<->Index mapping in both directions to allow us
+        // to use arrays to store some additional information about the states
+        // instead of dictionaries.
+
+        // Assign indices to each state
+        let allStates = fsm.allStates()
+        var indices = [IRState: Int]()
+        for (state, index) in zip(allStates, allStates.indices) {
+            indices[state] = index
+        }
+
+        // Map intermediate states (`IRState`) to `State`.
+        let states = allStates.map { state in
+            State(
+                index: indices[state]!,
+                transitions: state.transitions.map {
+                    Transition(indices[$0.end]!, $0.condition)
+                }
+            )
+        }
+
+        for state in allStates {
+            state.transitions.removeAll() // break retain cycles
+        }
+
+        return (states, indices)
     }
 }
 
@@ -220,41 +253,37 @@ final class CompiledRegex {
         self.isFromStartOfString = isFromStartOfString
         self.symbols = symbols
     }
-
-    deinit {
-        states.forEach { $0.transitions.removeAll() }
-    }
-}
-
-// An intermediate representation which we use until we assign state IDs.
-private struct IndermediateCaptureGroup {
-    let index: Int
-    let start: State
-    let end: State
 }
 
 struct CaptureGroup {
     let index: Int
-    let start: StateId
-    let end: StateId
+    let start: State.Index
+    let end: State.Index
 }
 
 // MARK: - Symbols
+
+// An intermediate representation which we use until we assign state IDs.
+private struct IRCaptureGroup {
+    let index: Int
+    let start: IRState
+    let end: IRState
+}
 
 /// Mapping between states of the finite state machine and the nodes for which
 /// they were produced.
 struct Symbols {
     #if DEBUG
     let ast: AST
-    fileprivate(set) var map = [State: Details]()
+    fileprivate(set) var map = [State.Index: Details]()
+    #endif
 
     struct Details {
         let unit: Unit
         let isEnd: Bool
     }
-    #endif
 
-    func description(for state: State) -> String {
+    func description(for state: State.Index) -> String {
         #if DEBUG
         let details = map[state]
 
@@ -266,5 +295,9 @@ struct Symbols {
         #else
         return "\(state) [<symbol missing>]"
         #endif
+    }
+
+    func description(for state: State) -> String {
+        return description(for: state.index)
     }
 }
