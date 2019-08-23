@@ -93,10 +93,6 @@ final class RegularMatcher: Matching {
         var retryIndex: String.Index?
         var encountered = [Bool](repeating: false, count: regex.states.count)
 
-        reachableStates = MicroSet(0)
-        potentialMatch = nil
-        reachableUntil.removeAll()
-
         while !reachableStates.isEmpty {
 
             /// Uses breadth-first-search to find states reachable from the current
