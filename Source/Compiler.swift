@@ -80,7 +80,7 @@ private extension Compiler {
         case let group as Group:
             let fsms = try group.children.map(compile)
             let fms = FSM.group(.concatenate(fsms))
-            if group.isCapturing { // Remember the group that we just compiled.
+            if group.isCapturing { // Remember the computed groups
                 captureGroups.append(IRCaptureGroup(index: group.index, start: fms.start, end: fms.end))
             }
             return fms
@@ -140,9 +140,8 @@ private extension Compiler {
         if range.upperBound == Int.max {
             suffix = .zeroOrMore(try compile(unit), isLazy)
         } else {
-            // Compile the optional matches into `x(x(x(x)?)?)?`. We use this
-            // specific form with grouping to make sure that matcher can cache
-            // the results during backtracking.
+            // Compile the optional matches into `x(x(x(x)?)?)?`. This special
+            // form makes sure that matcher can cache the results during backtracking.
             suffix = try range.dropLast().reduce(FSM.empty) { result, _ in
                 let expression = try compile(unit)
                 return .zeroOrOne(.group(.concatenate(expression, result)), isLazy)
@@ -240,7 +239,7 @@ struct CaptureGroup {
 
 // MARK: - Symbols
 
-// An intermediate representation which we use until we assign state IDs.
+// An intermediate representation used until assigning state indexes.
 private struct IRCaptureGroup {
     let index: Int
     let start: State

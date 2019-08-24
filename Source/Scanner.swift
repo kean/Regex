@@ -131,7 +131,7 @@ final class Scanner {
         return (int, startIndex..<i)
     }
 
-    /// We encountered `[`, read a character group, e.g. [abc], [^ab]
+    /// Encountered `[`, read a character group, e.g. [abc], [^ab]
     func readCharacterGroup() throws -> (CharacterGroup, Range<Int>) {
         let openingBracketIndex = i
         i += 1
@@ -224,9 +224,9 @@ final class Scanner {
         }
     }
 
-    // We encounted '{', read a range for range quantifier, e.g. {3}, {3,}
+    // Encounted '{', read a range for range quantifier, e.g. {3}, {3,}
     func readRangeQuantifier() throws -> ClosedRange<Int> {
-        // Read until we find a closing bracket
+        // Read until a closing bracket
         let openingBracketIndex = i-1
 
         guard let rangeSubstring = read(until: "}") else {
@@ -310,7 +310,7 @@ struct CharacterGroup {
     enum Kind {
         /// A range of unicode scalars. Can be compiled into a more efficient
         /// representation than a character set.
-        /// TODO: we could potentially also compile multiple ranges like that into
+        /// TODO: could potentially also compile multiple ranges like that into
         /// a (sorted) array of ranges? Maybe that's what character set does more
         /// efficiently already, not sure.
         case range(ClosedRange<Unicode.Scalar>)

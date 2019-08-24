@@ -27,7 +27,7 @@ final class Parser {
     /// Parses the pattern with which the parser was initialized with and
     /// constrats an AST (abstract syntax tree).
     func parse() throws -> AST {
-        // We don't compile it, assume Matcher will take care of it
+        // Handled by Matcher
         let startOfString = parseStartOfStringAnchor() != nil
 
         let ast = AST(

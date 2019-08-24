@@ -19,6 +19,16 @@
 		</dict>
 		<key>PerformanceNearlyMatchingInputTests</key>
 		<dict>
+			<key>testMultipleMatches()</key>
+			<dict>
+				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
+				<dict>
+					<key>baselineAverage</key>
+					<real>0.049303</real>
+					<key>baselineIntegrationDisplayName</key>
+					<string>Local Baseline</string>
+				</dict>
+			</dict>
 			<key>testNearlyMatchingPattern()</key>
 			<dict>
 				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>

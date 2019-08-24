@@ -67,11 +67,6 @@ struct Transition {
 
 // MARK: - Condition
 
-// We use a protocol instead of closures because closures always incur ARC overhead:
-//
-//     strong_retain %641 : $@callee_guaranteed (@guaranteed Cursor) -> Optional<Int> // id: %650
-//
-// By using protocols we can use value types instead.
 protocol Condition {
     func canPerformTransition(_ cursor: Cursor) -> ConditionResult
 }

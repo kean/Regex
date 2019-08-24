@@ -20,6 +20,15 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
         }
     }
 
+    func testMultipleMatches() throws {
+        let regex = try Regex("a")
+        let string = String(repeating: "a", count: 100_000)
+
+        measure {
+            let _ = regex.matches(in: string)
+        }
+    }
+
     // NSRegularExpression: didn't finish in a reasonable time
     // Regex: 0.24 seconds
     func testNearlyMatchingPatternWithLongInput() throws {

@@ -4,8 +4,7 @@
 
 import Foundation
 
-/// Cursor represents the slice in which we are performing the matching and the
-/// current index in this slice.
+/// Cursor represents the input string and the current position in the string.
 struct Cursor {
     /// The entire input string.
     let string: String
