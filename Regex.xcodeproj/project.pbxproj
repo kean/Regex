@@ -12,7 +12,7 @@
 		0CA617C72301E438009ED2C9 /* AST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C62301E438009ED2C9 /* AST.swift */; };
 		0CA617C923028B7C009ED2C9 /* Matcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C823028B7C009ED2C9 /* Matcher.swift */; };
 		0CB3055122FED02D0083B406 /* libRegex.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CB3053E22FED01C0083B406 /* libRegex.a */; };
-		0CB3055E22FED05D0083B406 /* IRFSM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3055822FED05D0083B406 /* IRFSM.swift */; };
+		0CB3055E22FED05D0083B406 /* FSM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3055822FED05D0083B406 /* FSM.swift */; };
 		0CB3055F22FED05D0083B406 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3055922FED05D0083B406 /* Extensions.swift */; };
 		0CB3056022FED05D0083B406 /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3055A22FED05D0083B406 /* Cursor.swift */; };
 		0CB3056222FED05D0083B406 /* Regex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3055C22FED05D0083B406 /* Regex.swift */; };
@@ -35,7 +35,7 @@
 		FF3C36492301877600BD9513 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C36482301877600BD9513 /* Parser.swift */; };
 		FF3C364B23018A4500BD9513 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364A23018A4500BD9513 /* Scanner.swift */; };
 		FF3C364D23018C6900BD9513 /* Compiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364C23018C6900BD9513 /* Compiler.swift */; };
-		FF65FB0E230EC3B800B1BAF7 /* FSM.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF65FB0D230EC3B800B1BAF7 /* FSM.swift */; };
+		FF65FB0E230EC3B800B1BAF7 /* State.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF65FB0D230EC3B800B1BAF7 /* State.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,7 +77,7 @@
 		0CB3053E22FED01C0083B406 /* libRegex.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRegex.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CB3054C22FED02D0083B406 /* RegexTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RegexTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CB3055022FED02D0083B406 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0CB3055822FED05D0083B406 /* IRFSM.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IRFSM.swift; sourceTree = "<group>"; };
+		0CB3055822FED05D0083B406 /* FSM.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FSM.swift; sourceTree = "<group>"; };
 		0CB3055922FED05D0083B406 /* Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		0CB3055A22FED05D0083B406 /* Cursor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Cursor.swift; sourceTree = "<group>"; };
 		0CB3055C22FED05D0083B406 /* Regex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Regex.swift; sourceTree = "<group>"; };
@@ -100,7 +100,7 @@
 		FF3C36482301877600BD9513 /* Parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		FF3C364A23018A4500BD9513 /* Scanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanner.swift; sourceTree = "<group>"; };
 		FF3C364C23018C6900BD9513 /* Compiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compiler.swift; sourceTree = "<group>"; };
-		FF65FB0D230EC3B800B1BAF7 /* FSM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSM.swift; sourceTree = "<group>"; };
+		FF65FB0D230EC3B800B1BAF7 /* State.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = State.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -134,8 +134,8 @@
 			isa = PBXGroup;
 			children = (
 				0CB3057822FED0DC0083B406 /* README.md */,
-				0CB3054022FED01C0083B406 /* Regex */,
-				0CB3054D22FED02D0083B406 /* RegexTests */,
+				0CB3054022FED01C0083B406 /* Source */,
+				0CB3054D22FED02D0083B406 /* Tests */,
 				0CB3053F22FED01C0083B406 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -150,7 +150,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		0CB3054022FED01C0083B406 /* Regex */ = {
+		0CB3054022FED01C0083B406 /* Source */ = {
 			isa = PBXGroup;
 			children = (
 				0CB3055C22FED05D0083B406 /* Regex.swift */,
@@ -159,15 +159,15 @@
 				FF3C36482301877600BD9513 /* Parser.swift */,
 				FF3C364A23018A4500BD9513 /* Scanner.swift */,
 				0CA617C62301E438009ED2C9 /* AST.swift */,
-				FF65FB0D230EC3B800B1BAF7 /* FSM.swift */,
-				0CB3055822FED05D0083B406 /* IRFSM.swift */,
+				0CB3055822FED05D0083B406 /* FSM.swift */,
+				FF65FB0D230EC3B800B1BAF7 /* State.swift */,
 				0CB3055A22FED05D0083B406 /* Cursor.swift */,
 				0CB3055922FED05D0083B406 /* Extensions.swift */,
 			);
-			path = Regex;
+			path = Source;
 			sourceTree = "<group>";
 		};
-		0CB3054D22FED02D0083B406 /* RegexTests */ = {
+		0CB3054D22FED02D0083B406 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
 				0CB3055022FED02D0083B406 /* Info.plist */,
@@ -190,7 +190,7 @@
 				0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */,
 				0CDBED8023093388009E1793 /* PerformanceCommontRegexesTests.swift */,
 			);
-			path = RegexTests;
+			path = Tests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -324,12 +324,12 @@
 			files = (
 				0CB3056022FED05D0083B406 /* Cursor.swift in Sources */,
 				FF3C364D23018C6900BD9513 /* Compiler.swift in Sources */,
-				FF65FB0E230EC3B800B1BAF7 /* FSM.swift in Sources */,
+				FF65FB0E230EC3B800B1BAF7 /* State.swift in Sources */,
 				0CB3055F22FED05D0083B406 /* Extensions.swift in Sources */,
 				0CA617C72301E438009ED2C9 /* AST.swift in Sources */,
 				FF3C364B23018A4500BD9513 /* Scanner.swift in Sources */,
 				FF3C36492301877600BD9513 /* Parser.swift in Sources */,
-				0CB3055E22FED05D0083B406 /* IRFSM.swift in Sources */,
+				0CB3055E22FED05D0083B406 /* FSM.swift in Sources */,
 				0CA617C923028B7C009ED2C9 /* Matcher.swift in Sources */,
 				0CB3056222FED05D0083B406 /* Regex.swift in Sources */,
 			);
@@ -377,7 +377,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				INFOPLIST_FILE = RegexTests/Info.plist;
+				INFOPLIST_FILE = Tests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -395,7 +395,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				INFOPLIST_FILE = RegexTests/Info.plist;
+				INFOPLIST_FILE = Tests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -570,7 +570,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				INFOPLIST_FILE = RegexTests/Info.plist;
+				INFOPLIST_FILE = Tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -590,7 +590,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				INFOPLIST_FILE = RegexTests/Info.plist;
+				INFOPLIST_FILE = Tests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

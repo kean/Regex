@@ -23,7 +23,7 @@ final class RegularMatcher: Matching {
     private let string: String
     private let regex: CompiledRegex
     private let options: Regex.Options
-    private let states: [State]
+    private let states: ContiguousArray<State>
 
     #if DEBUG
     private var symbols: Symbols { regex.symbols }
@@ -89,9 +89,9 @@ final class RegularMatcher: Matching {
         var reachableUntil = [State.Index: String.Index]() // some transitions jump multiple indices
         var potentialMatch: Cursor?
         var groupsStartIndexes = [State.Index: String.Index]()
-        var stack = [State.Index]()
+        var stack = ContiguousArray<State.Index>()
         var retryIndex: String.Index?
-        var encountered = [Bool](repeating: false, count: regex.states.count)
+        var encountered = ContiguousArray<Bool>(repeating: false, count: regex.states.count)
 
         while !reachableStates.isEmpty {
 
@@ -175,7 +175,7 @@ final class RegularMatcher: Matching {
                     }
 
                     for transition in states[state].transitions {
-                        switch transition.condition.canTransition(cursor) {
+                        switch transition.condition.canPerformTransition(cursor) {
                         case .rejected:
                             #if DEBUG
                             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: End state NOT reachable \(symbols.description(for: transition.end))") }
@@ -187,16 +187,16 @@ final class RegularMatcher: Matching {
                             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: End state reachable via epsilon \(symbols.description(for: transition.end))") }
                             #endif
 
-                            stack.append(transition.end) // Continue walking the graph
+                            stack.append(transition.end.index) // Continue walking the graph
                         case let .accepted(count):
                             #if DEBUG
                             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: End state reachable \(symbols.description(for: transition.end))") }
                             #endif
 
-                            newReachableStates.insert(transition.end)
+                            newReachableStates.insert(transition.end.index)
                             // The state is going to be reachable until we reach index T+consumed
                             if count > 1 {
-                                reachableUntil[transition.end] = cursor.index(cursor.index, offsetBy: count, isLimited: true)
+                                reachableUntil[transition.end.index] = cursor.index(cursor.index, offsetBy: count, isLimited: true)
                             }
                         }
                     }
@@ -275,7 +275,15 @@ final class BacktrackingMatcher: Matching {
     private let string: String
     private let regex: CompiledRegex
     private let options: Regex.Options
-    private let states: [State]
+
+    // Indexing `ContiguousArray` doesn't introduce strong_retain calls unlike
+    // indexing `Array` which does. It might be a temporary limitation of ARC
+    // optimizer https://github.com/apple/swift/blob/master/docs/ARCOptimization.rst
+    //
+    //   %1249 = index_addr %1248 : $*State, %753 : $Builtin.Word // user: %1250
+    //   %1250 = load %1249 : $*State                  // users: %1251, %1252
+    //   strong_retain %1250 : $State                  // id: %1251
+    private let states: ContiguousArray<State>
 
     #if DEBUG
     private var symbols: Symbols { regex.symbols }
@@ -309,7 +317,7 @@ final class BacktrackingMatcher: Matching {
             isFinished = true
         }
 
-        guard let match = firstMatchBacktracking(cursor, [:], regex.states[0]) else {
+        guard let match = firstMatchBacktracking(cursor, [:], 0) else {
             // We couldn't find a match but `forMatchBacktracking` doesn't
             // automatically restart on errors unlike `RegularMatcher` so we
             // have to do that manually. This needs clean up.
@@ -343,7 +351,7 @@ final class BacktrackingMatcher: Matching {
         var cursor = Cursor(string: string)
         while true {
             // TODO: tidy up
-            let match = firstMatchBacktracking(cursor, [:], regex.states[0])
+            let match = firstMatchBacktracking(cursor, [:], 0)
 
             guard match == nil || closure(match!) else {
                 return
@@ -370,18 +378,18 @@ final class BacktrackingMatcher: Matching {
     /// e.g. whether greedy or lazy quantifiers were used.
     ///
     /// - warning: The matcher hasn't been optimized in any way yet
-    func firstMatchBacktracking(_ cursor: Cursor, _ groupsStartIndexes: [State.Index: String.Index], _ state: State) -> Regex.Match? {
+    func firstMatchBacktracking(_ cursor: Cursor, _ groupsStartIndexes: [State.Index: String.Index], _ state: State.Index) -> Regex.Match? {
         var cursor = cursor
         var groupsStartIndexes = groupsStartIndexes
 
         // Capture a group if needed
         if !regex.captureGroups.isEmpty {
-            if let captureGroup = regex.captureGroups.first(where: { $0.end == state.index }),
+            if let captureGroup = regex.captureGroups.first(where: { $0.end == state }),
                 let startIndex = groupsStartIndexes[captureGroup.start] {
                 let groupIndex = captureGroup.index
                 cursor.groups[groupIndex] = startIndex..<cursor.index
             } else {
-                groupsStartIndexes[state.index] = cursor.index
+                groupsStartIndexes[state] = cursor.index
             }
         }
 
@@ -389,7 +397,7 @@ final class BacktrackingMatcher: Matching {
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))") }
         #endif
 
-        if state.isEnd { // Found a match
+        if states[state].isEnd { // Found a match
             let match = Regex.Match(cursor, !regex.captureGroups.isEmpty)
             #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match) ✅") }
@@ -398,18 +406,18 @@ final class BacktrackingMatcher: Matching {
         }
 
         var counter = 0
-        for transition in state.transitions {
+        for transition in states[state].transitions {
             counter += 1
 
-            if state.transitions.count > 1 {
-                #if DEBUG
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(state.transitions.count)") }
-                #endif
+            #if DEBUG
+            if states[state].transitions.count > 1 {
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(states[state].transitions.count)") }
             }
+            #endif
 
             var cursor = cursor
 
-            switch transition.condition.canTransition(cursor) {
+            switch transition.condition.canPerformTransition(cursor) {
             case .rejected:
                 #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \("❌")") }
@@ -422,7 +430,7 @@ final class BacktrackingMatcher: Matching {
                 cursor.advance(by: count) // Consume as many characters as need (zero for epsilon transitions)
             }
 
-            if let match = firstMatchBacktracking(cursor, groupsStartIndexes, states[transition.end]) {
+            if let match = firstMatchBacktracking(cursor, groupsStartIndexes, states[transition.end.index].index) {
                 return match
             }
         }

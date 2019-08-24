@@ -4,108 +4,48 @@
 
 import Foundation
 
-// MARK: - IRFSM
+// MARK: - FSM
 
 /// A convenience API for creating finite state machines (FSM) which represent
-/// regular expressions. This is an intermediate representation which is more
-/// convenient for creating and combining the state machines, but not
-/// executing them. In order to execute the machine, we create an optimized
-/// representation (`FSM`).
-struct IRFSM {
-    let start: IRState
-    let end: IRState
+/// regular expressions.
+struct FSM {
+    let start: State
+    let end: State
 
-    init(start: IRState = IRState(), end: IRState = IRState()) {
+    init(start: State = State(), end: State = State()) {
         self.start = start
         self.end = end
     }
 
     init(condition: Condition) {
-        self = IRFSM()
+        self = FSM()
         start.transitions = [.init(end, condition)]
     }
 
     /// Creates an empty state machine.
-    static var empty: IRFSM {
-        let fsm = IRFSM()
+    static var empty: FSM {
+        let fsm = FSM()
         fsm.start.transitions = [.epsilon(fsm.end)]
         return fsm
     }
 }
 
-// MARK: - RIState
+// MARK: - FSM (Character Classes)
 
-/// An intermediate representation of a state of a state machine. This representation
-/// is more convenient for creating and combining the state machines, but not
-/// executing them.
-final class IRState: Hashable {
-    var transitions = [RITransition]()
-
-    var isEnd: Bool {
-        return transitions.isEmpty
-    }
-
-    // MARK: Hashable
-
-    func hash(into hasher: inout Hasher) {
-        ObjectIdentifier(self).hash(into: &hasher)
-    }
-
-    static func == (lhs: IRState, rhs: IRState) -> Bool {
-        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
-    }
-}
-
-// MARK: - RITransition
-
-/// A transition between two states of the state machine.
-struct RITransition {
-    /// A state into which the transition is performed.
-    let end: IRState
-
-    /// Determines whether the transition is possible in the given context.
-    /// Returns `nil` if not possible, otherwise returns number of elements to consume.
-    let condition: Condition
-
-    var isUnconditionalEpsilon: Bool {
-        guard let epsilon = condition as? Epsilon else {
-            return false
-        }
-        return epsilon.predicate == nil
-    }
-
-    init(_ end: IRState, _ condition: Condition) {
-        self.end = end
-        self.condition = condition
-    }
-
-    /// Creates a transition which doesn't consume characters.
-    static func epsilon(_ end: IRState, _ condition: @escaping (Cursor) -> Bool) -> RITransition {
-        return RITransition(end, Epsilon(condition))
-    }
-
-    /// Creates a unconditional transition which doesn't consume characters.
-    static func epsilon(_ end: IRState) -> RITransition {
-        return RITransition(end, Epsilon())
-    }
-}
-
-// MARK: - IRFSM (Character Classes)
-
-extension IRFSM {
+extension FSM {
 
     // MARK: .character
 
     /// Matches the given character.
-    static func character(_ c: Character, isCaseInsensitive: Bool) -> IRFSM {
-        IRFSM(condition: MatchCharacter(character: c, isCaseInsensitive: isCaseInsensitive))
+    static func character(_ c: Character, isCaseInsensitive: Bool) -> FSM {
+        FSM(condition: MatchCharacter(character: c, isCaseInsensitive: isCaseInsensitive))
     }
 
     private struct MatchCharacter: Condition {
         let character: Character
         let isCaseInsensitive: Bool
 
-        func canTransition(_ cursor: Cursor) -> ConditionResult {
+        func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
             guard let input = cursor.character else { return .rejected }
             let isEqual: Bool
             if isCaseInsensitive {
@@ -121,9 +61,9 @@ extension IRFSM {
 
     /// Matches the given string. In general is going to be much faster than
     /// checking the individual characters (fast substring search).
-    static func string(_ s: String, isCaseInsensitive: Bool) -> IRFSM {
+    static func string(_ s: String, isCaseInsensitive: Bool) -> FSM {
         assert(!s.isEmpty)
-        return IRFSM(condition: MatchString(string: s, count: s.count, isCaseInsensitive: isCaseInsensitive))
+        return FSM(condition: MatchString(string: s, count: s.count, isCaseInsensitive: isCaseInsensitive))
     }
 
     private struct MatchString: Condition {
@@ -131,7 +71,7 @@ extension IRFSM {
         let count: Int
         let isCaseInsensitive: Bool
 
-        func canTransition(_ cursor: Cursor) -> ConditionResult {
+        func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
             guard let ub = cursor.string.index(cursor.index, offsetBy: count, limitedBy: cursor.string.endIndex) else {
                 return .rejected
             }
@@ -154,11 +94,11 @@ extension IRFSM {
     // MARK: .characterSet
 
     /// Matches the given character set.
-    static func characterSet(_ set: CharacterSet, _ isCaseInsensitive: Bool, _ isNegative: Bool) -> IRFSM {
+    static func characterSet(_ set: CharacterSet, _ isCaseInsensitive: Bool, _ isNegative: Bool) -> FSM {
         if set == .decimalDigits {
-            return IRFSM(condition: MatchAnyNumber())
+            return FSM(condition: MatchAnyNumber())
         }
-        return IRFSM(condition: MatchCharacterSet(set: set, isCaseInsensitive: isCaseInsensitive, isNegative: isNegative))
+        return FSM(condition: MatchCharacterSet(set: set, isCaseInsensitive: isCaseInsensitive, isNegative: isNegative))
     }
 
     private struct MatchCharacterSet: Condition {
@@ -166,7 +106,7 @@ extension IRFSM {
         let isCaseInsensitive: Bool
         let isNegative: Bool
 
-        func canTransition(_ cursor: Cursor) -> ConditionResult {
+        func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
             guard let input = cursor.character else { return .rejected }
             let isMatch: Bool
             if isCaseInsensitive, input.isCased {
@@ -179,7 +119,7 @@ extension IRFSM {
     }
 
     private struct MatchAnyNumber: Condition {
-        func canTransition(_ cursor: Cursor) -> ConditionResult {
+        func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
             guard let input = cursor.character else { return .rejected }
             return input.isNumber ? .accepted() : .rejected
         }
@@ -187,8 +127,8 @@ extension IRFSM {
 
     // MARK: .range
 
-    static func range(_ range: ClosedRange<Unicode.Scalar>, _ isCaseInsensitive: Bool, _ isNegative: Bool) -> IRFSM {
-        return IRFSM(condition: MatchUnicodeScalarRange(range: range, isCaseInsensitive: isCaseInsensitive, isNegative: isNegative))
+    static func range(_ range: ClosedRange<Unicode.Scalar>, _ isCaseInsensitive: Bool, _ isNegative: Bool) -> FSM {
+        return FSM(condition: MatchUnicodeScalarRange(range: range, isCaseInsensitive: isCaseInsensitive, isNegative: isNegative))
     }
 
     private struct MatchUnicodeScalarRange: Condition {
@@ -196,7 +136,7 @@ extension IRFSM {
         let isCaseInsensitive: Bool
         let isNegative: Bool
 
-        func canTransition(_ cursor: Cursor) -> ConditionResult {
+        func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
             guard let input = cursor.character else { return .rejected }
             let isMatch: Bool
             if isCaseInsensitive, input.isCased {
@@ -213,26 +153,26 @@ extension IRFSM {
     // MARK: .anyCharacter
 
     /// Matches any character.
-    static func anyCharacter(includingNewline: Bool) -> IRFSM {
-        IRFSM(condition: MatchAnyCharacter(includingNewline: includingNewline))
+    static func anyCharacter(includingNewline: Bool) -> FSM {
+        FSM(condition: MatchAnyCharacter(includingNewline: includingNewline))
     }
 
     private struct MatchAnyCharacter: Condition {
         let includingNewline: Bool
 
-        func canTransition(_ cursor: Cursor) -> ConditionResult {
+        func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
             guard !cursor.isEmpty else { return .rejected }
             return (includingNewline || cursor.string[cursor.index] != "\n") ? .accepted() : .rejected
         }
     }
 }
 
-// MARK: - IRFSM (Quantifiers)
+// MARK: - FSM (Quantifiers)
 
-extension IRFSM {
+extension FSM {
     /// Matches the given FSM zero or more times.
-    static func zeroOrMore(_ child: IRFSM, _ isLazy: Bool) -> IRFSM {
-        let quantifier = IRFSM()
+    static func zeroOrMore(_ child: FSM, _ isLazy: Bool) -> FSM {
+        let quantifier = FSM()
 
         quantifier.start.transitions = [
             .epsilon(child.start), // Optimizer will take care of it
@@ -250,8 +190,8 @@ extension IRFSM {
     }
 
     /// Matches the given FSM one or more times.
-    static func oneOrMore(_ child: IRFSM, _ isLazy: Bool) -> IRFSM {
-        let quantifier = IRFSM()
+    static func oneOrMore(_ child: FSM, _ isLazy: Bool) -> FSM {
+        let quantifier = FSM()
         quantifier.start.transitions = [
             .epsilon(child.start) // Execute at least once
         ]
@@ -266,8 +206,8 @@ extension IRFSM {
     }
 
     /// Matches the given FSM either none or one time.
-    static func zeroOrOne(_ child: IRFSM, _ isLazy: Bool) -> IRFSM {
-        let quantifier = IRFSM()
+    static func zeroOrOne(_ child: FSM, _ isLazy: Bool) -> FSM {
+        let quantifier = FSM()
         quantifier.start.transitions = [
             .epsilon(child.start), // Loop (greedy)
             .epsilon(quantifier.end) // Skip
@@ -282,18 +222,18 @@ extension IRFSM {
     }
 }
 
-// MARK: - IRFSM (Anchors)
+// MARK: - FSM (Anchors)
 
-extension IRFSM {
+extension FSM {
     /// Matches the beginning of the line.
-    static var startOfString: IRFSM {
+    static var startOfString: FSM {
         anchor { cursor in
             cursor.startIndex == cursor.string.startIndex || cursor.isEmpty || cursor.character == "\n"
         }
     }
 
     /// Matches the beginning of the string (ignores `.multiline` option).
-    static var startOfStringOnly: IRFSM {
+    static var startOfStringOnly: FSM {
         anchor { cursor in
             cursor.startIndex == cursor.string.startIndex
         }
@@ -301,27 +241,27 @@ extension IRFSM {
 
     /// Matches the end of the string or `\n` at the end of the string
     /// (end of the line in `.multiline` mode).
-    static var endOfString: IRFSM {
+    static var endOfString: FSM {
         anchor { cursor in
             cursor.isEmpty || cursor.character == "\n"
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string.
-    static var endOfStringOnly: IRFSM {
+    static var endOfStringOnly: FSM {
         anchor { cursor in
             cursor.isEmpty || (cursor.isAtLastIndex && cursor.character == "\n")
         }
     }
 
     /// Matches the end of the string or `\n` at the end of the string (ignores `.multiline` option).
-    static var endOfStringOnlyNotNewline: IRFSM {
+    static var endOfStringOnlyNotNewline: FSM {
         anchor { cursor in cursor.isEmpty }
     }
 
     /// Match must occur at the point where the previous match ended. Ensures
     /// that all matches are contiguous.
-    static var previousMatchEnd: IRFSM {
+    static var previousMatchEnd: FSM {
         anchor { cursor in
             if cursor.index == cursor.string.startIndex {
                 return true // There couldn't be any matches before the start index
@@ -334,17 +274,17 @@ extension IRFSM {
     }
 
     /// The match must occur on a word boundary.
-    static var wordBoundary: IRFSM {
+    static var wordBoundary: FSM {
         anchor { cursor in cursor.isAtWordBoundary }
     }
 
     /// The match must occur on a non-word boundary.
-    static var nonWordBoundary: IRFSM {
+    static var nonWordBoundary: FSM {
         anchor { cursor in !cursor.isAtWordBoundary }
     }
 
-    private static func anchor(_ condition: @escaping (Cursor) -> Bool) -> IRFSM {
-        let anchor = IRFSM()
+    private static func anchor(_ condition: @escaping (Cursor) -> Bool) -> FSM {
+        let anchor = FSM()
         anchor.start.transitions = [
             .epsilon(anchor.end, condition)
         ]
@@ -369,22 +309,22 @@ private extension Cursor {
     }
 }
 
-// MARK: - IRFSM (Group)
+// MARK: - FSM (Group)
 
-extension IRFSM {
-    static func group(_ child: IRFSM) -> IRFSM {
-        let group = IRFSM()
+extension FSM {
+    static func group(_ child: FSM) -> FSM {
+        let group = FSM()
         group.start.transitions = [.epsilon(child.start)]
         child.end.transitions = [.epsilon(group.end)]
         return group
     }
 }
 
-// MARK: - IRFSM (Backreferences)
+// MARK: - FSM (Backreferences)
 
-extension IRFSM {
-    static func backreference(_ groupIndex: Int) -> IRFSM {
-        let backreference = IRFSM()
+extension FSM {
+    static func backreference(_ groupIndex: Int) -> FSM {
+        let backreference = FSM()
         backreference.start.transitions = [
             .init(backreference.end, Backreference(groupIndex: groupIndex))
         ]
@@ -394,7 +334,7 @@ extension IRFSM {
     private struct Backreference: Condition {
         let groupIndex: Int
 
-        func canTransition(_ cursor: Cursor) -> ConditionResult {
+        func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
             guard let groupRange = cursor.groups[groupIndex] else {
                 return .rejected
             }
@@ -407,29 +347,29 @@ extension IRFSM {
     }
 }
 
-// MARK: - IRFSM (Operations)
+// MARK: - FSM (Operations)
 
-extension IRFSM {
+extension FSM {
 
     /// Concatenates the given state machines so that they are executed one by
     /// one in a row.
-    static func concatenate<S>(_ machines: S) -> IRFSM
-        where S: Collection, S.Element == IRFSM {
+    static func concatenate<S>(_ machines: S) -> FSM
+        where S: Collection, S.Element == FSM {
             guard let first = machines.first else { return .empty }
-            return machines.dropFirst().reduce(first, IRFSM.concatenate)
+            return machines.dropFirst().reduce(first, FSM.concatenate)
     }
 
-    static func concatenate(_ lhs: IRFSM, _ rhs: IRFSM) -> IRFSM {
+    static func concatenate(_ lhs: FSM, _ rhs: FSM) -> FSM {
         precondition(lhs.end.transitions.isEmpty, "Invalid state of \(lhs)")
         precondition(rhs.end.transitions.isEmpty, "Invalid state of \(rhs)")
 
         lhs.end.transitions = [.epsilon(rhs.start)]
-        return IRFSM(start: lhs.start, end: rhs.end)
+        return FSM(start: lhs.start, end: rhs.end)
     }
 
-    static func alternate<S>(_ machines: S) -> IRFSM
-        where S: Sequence, S.Element == IRFSM {
-            let alternation = IRFSM()
+    static func alternate<S>(_ machines: S) -> FSM
+        where S: Sequence, S.Element == FSM {
+            let alternation = FSM()
 
             for fsm in machines {
                 precondition(fsm.end.transitions.isEmpty, "Invalid state of \(fsm)")
@@ -441,17 +381,17 @@ extension IRFSM {
             return alternation
     }
 
-    static func alternate(_ lhs: IRFSM, _ rhs: IRFSM) -> IRFSM {
+    static func alternate(_ lhs: FSM, _ rhs: FSM) -> FSM {
         return alternate([lhs, rhs])
     }
 }
 
-// MARK: - IRFSM (Symbols)
+// MARK: - FSM (Symbols)
 
-extension IRFSM {
+extension FSM {
     /// Enumerates all the state in the state machine using breadth-first search.
-    func allStates() -> [IRState] {
-        var states = [IRState]()
+    func allStates() -> [State] {
+        var states = [State]()
         start.visit { state, _ in
             states.append(state)
         }
@@ -459,11 +399,11 @@ extension IRFSM {
     }
 }
 
-extension IRState {
-    func visit(_ closure: (IRState, Int) -> Void) {
+extension State {
+    func visit(_ closure: (State, Int) -> Void) {
         // Go throught the graph of states using breadh-first search.
-        var encountered = Set<IRState>()
-        var queue = [(IRState, Int)]()
+        var encountered = Set<State>()
+        var queue = [(State, Int)]()
         queue.append((self, 0))
         encountered.insert(self)
 

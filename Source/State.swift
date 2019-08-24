@@ -6,18 +6,26 @@ import Foundation
 
 // MARK: - State
 
-/// An intermediate representation of a state of a state machine. This representation
-/// is more convenient for creating and combining the state machines, but not
-/// executing them.
-struct State: CustomStringConvertible {
+/// A state of a state machine.
+final class State: Hashable {
     typealias Index = Int
 
-    let index: Index
-    let transitions: [Transition]
+    var index: Index = 0
+    var transitions = [Transition]()
     var isEnd: Bool { transitions.isEmpty }
 
-    // MARK: CustomStringConvertible
+    // MARK: Hashable
 
+    func hash(into hasher: inout Hasher) {
+        ObjectIdentifier(self).hash(into: &hasher)
+    }
+
+    static func == (lhs: State, rhs: State) -> Bool {
+        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+    }
+}
+
+extension State: CustomStringConvertible {
     var description: String {
         return "State(\(index)"
     }
@@ -28,15 +36,32 @@ struct State: CustomStringConvertible {
 /// A transition between two states of the state machine.
 struct Transition {
     /// A state into which the transition is performed.
-    let end: State.Index
+    let end: State
 
     /// Determines whether the transition is possible in the given context.
     /// Returns `nil` if not possible, otherwise returns number of elements to consume.
     let condition: Condition
 
-    init(_ end: State.Index, _ condition: Condition) {
+    var isUnconditionalEpsilon: Bool {
+        guard let epsilon = condition as? Epsilon else {
+            return false
+        }
+        return epsilon.predicate == nil
+    }
+
+    init(_ end: State, _ condition: Condition) {
         self.end = end
         self.condition = condition
+    }
+
+    /// Creates a transition which doesn't consume characters.
+    static func epsilon(_ end: State, _ condition: @escaping (Cursor) -> Bool) -> Transition {
+        return Transition(end, Epsilon(condition))
+    }
+
+    /// Creates a unconditional transition which doesn't consume characters.
+    static func epsilon(_ end: State) -> Transition {
+        return Transition(end, Epsilon())
     }
 }
 
@@ -48,7 +73,7 @@ struct Transition {
 //
 // By using protocols we can use value types instead.
 protocol Condition {
-    func canTransition(_ cursor: Cursor) -> ConditionResult
+    func canPerformTransition(_ cursor: Cursor) -> ConditionResult
 }
 
 enum ConditionResult {
@@ -69,7 +94,7 @@ struct Epsilon: Condition {
         self.predicate = predicate
     }
 
-    func canTransition(_ cursor: Cursor) -> ConditionResult {
+    func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
         if let predicate = predicate {
             return predicate(cursor) ? .epsilon : .rejected
         }
