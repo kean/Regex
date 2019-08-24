@@ -191,7 +191,7 @@ private extension Compiler {
         let captureGroupState = Set(captureGroups.flatMap { [$0.start, $0.end] })
 
         for state in fsm.allStates() {
-            state.transitions = state.transitions.map {
+            state.transitions = ContiguousArray(state.transitions.map {
                 // [Optimization] Remove "technical" states
                 if !captureGroupState.contains($0.end) &&
                     $0.end.transitions.count == 1 &&
@@ -199,7 +199,7 @@ private extension Compiler {
                     return Transition($0.end.transitions[0].end, $0.condition)
                 }
                 return $0
-            }
+            })
         }
     }
 }
@@ -211,7 +211,7 @@ final class CompiledRegex {
     let states: ContiguousArray<State>
 
     /// All the capture groups with their indexes.
-    let captureGroups: [CaptureGroup]
+    let captureGroups: ContiguousArray<CaptureGroup>
 
     /// `true` if the regex doesn't contain any of the features which can't be
     /// simulated solely by NFA and require backtracking.
@@ -224,7 +224,7 @@ final class CompiledRegex {
 
     init(states: [State], captureGroups: [CaptureGroup], isRegular: Bool, isFromStartOfString: Bool, symbols: Symbols) {
         self.states = ContiguousArray(states)
-        self.captureGroups = captureGroups
+        self.captureGroups = ContiguousArray(captureGroups)
         self.isRegular = isRegular
         self.isFromStartOfString = isFromStartOfString
         self.symbols = symbols

@@ -72,10 +72,10 @@ extension FSM {
         let isCaseInsensitive: Bool
 
         func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
-            guard let ub = cursor.string.index(cursor.index, offsetBy: count, limitedBy: cursor.string.endIndex) else {
+            guard let ub = cursor.index(cursor.index, offsetBy: count, isLimited: true) else {
                 return .rejected
             }
-            let input = cursor.string[cursor.index..<ub]
+            let input = cursor[cursor.index..<ub]
 
             if isCaseInsensitive {
                 // TODO: test this
@@ -162,7 +162,7 @@ extension FSM {
 
         func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
             guard !cursor.isEmpty else { return .rejected }
-            return (includingNewline || cursor.string[cursor.index] != "\n") ? .accepted() : .rejected
+            return (includingNewline || cursor[cursor.index] != "\n") ? .accepted() : .rejected
         }
     }
 }

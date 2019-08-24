@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0C15CFCB23082A8800CCA38D /* libRegex.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CB3053E22FED01C0083B406 /* libRegex.a */; };
+		0CA229C523113689006304C5 /* PerformanceCommontRegexesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED8023093388009E1793 /* PerformanceCommontRegexesTests.swift */; };
 		0CA617C523009AF9009ED2C9 /* BackreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C423009AF9009ED2C9 /* BackreferencesTests.swift */; };
 		0CA617C72301E438009ED2C9 /* AST.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C62301E438009ED2C9 /* AST.swift */; };
 		0CA617C923028B7C009ED2C9 /* Matcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA617C823028B7C009ED2C9 /* Matcher.swift */; };
@@ -30,7 +31,6 @@
 		0CB3057C22FF08ED0083B406 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057B22FF08ED0083B406 /* Extensions.swift */; };
 		0CB3057E22FF19920083B406 /* RegexSpecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB3057D22FF19920083B406 /* RegexSpecTests.swift */; };
 		0CB7D1DD230DC61A00992CF4 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C15CFB52305E3D600CCA38D /* PerformanceTests.swift */; };
-		0CCC097023099EFE0060CC17 /* PerformanceCommontRegexesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED8023093388009E1793 /* PerformanceCommontRegexesTests.swift */; };
 		0CDBED7423087A60009E1793 /* OptimizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CDBED7323087A60009E1793 /* OptimizationTests.swift */; };
 		FF3C36492301877600BD9513 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C36482301877600BD9513 /* Parser.swift */; };
 		FF3C364B23018A4500BD9513 /* Scanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF3C364A23018A4500BD9513 /* Scanner.swift */; };
@@ -313,8 +313,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0CA229C523113689006304C5 /* PerformanceCommontRegexesTests.swift in Sources */,
 				0CB7D1DD230DC61A00992CF4 /* PerformanceTests.swift in Sources */,
-				0CCC097023099EFE0060CC17 /* PerformanceCommontRegexesTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

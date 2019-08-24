@@ -18,12 +18,7 @@ public final class Regex {
 
     /// Returns the number of capture groups in the regular expression.
     public var numberOfCaptureGroups: Int {
-        return captureGroups.count
-    }
-
-    /// An array of capture groups in an order in which they appear in the pattern.
-    private var captureGroups: [CaptureGroup] {
-        return regex.captureGroups
+        return regex.captureGroups.count
     }
 
     /// Enable debug mode to enable logging.

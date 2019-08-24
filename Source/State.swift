@@ -11,7 +11,7 @@ final class State: Hashable {
     typealias Index = Int
 
     var index: Index = 0
-    var transitions = [Transition]()
+    var transitions = ContiguousArray<Transition>()
     var isEnd: Bool { transitions.isEmpty }
 
     // MARK: Hashable

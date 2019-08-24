@@ -12,7 +12,7 @@ struct Cursor {
     /// The index from which we started the search.
     private(set) var startIndex: String.Index
 
-    var endIndex: String.Index { string.endIndex }
+    let endIndex: String.Index
 
     /// The current index of the cursor.
     private(set) var index: String.Index
@@ -26,6 +26,7 @@ struct Cursor {
     init(string: String) {
         self.string = string
         self.startIndex = string.startIndex
+        self.endIndex = string.endIndex
         self.groups = [:]
         self.index = string.startIndex
     }
@@ -53,7 +54,11 @@ extension Cursor {
 
 extension Cursor {
     subscript(range: Range<String.Index>) -> Substring {
-        return string[range]
+        string[range]
+    }
+
+    subscript(index: String.Index) -> Character {
+        string[index]
     }
 
     /// Returns the character at the current `index`.

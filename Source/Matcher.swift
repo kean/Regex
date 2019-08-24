@@ -54,7 +54,7 @@ final class RegularMatcher: Matching {
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
         self.cursor = Cursor(string: string)
-        self.encountered = ContiguousArray<Bool>(repeating: false, count: regex.states.count)
+        self.encountered = ContiguousArray(repeating: false, count: regex.states.count)
     }
 
     func nextMatch() -> Regex.Match? {
