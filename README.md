@@ -119,6 +119,10 @@ All quantifiers are **greedy** by default, they try to match as many occurrences
 - Character class subtraction, e.g. `[a-z-[b-f]]`
 - Named blocks, e.g. `\p{IsGreek}`
 
+# Grammar
+
+See `Grammar.ebnf` for a formal description of the language using [EBNF](https://en.wikipedia.org/wiki/Extended_Backus–Naur_form) notation. See `Grammar.xhtml` for a visualization (railroad diagram) of the grammar generated thanks to [https://www.bottlecaps.de/rr/ui](https://www.bottlecaps.de/rr/ui). 
+
 # References
 
 - [Regular Expression Language Reference](https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference)

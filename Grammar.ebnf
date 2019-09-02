@@ -1,0 +1,69 @@
+Regex ::= BegginingOfStringAnchor? Expression
+
+Expression ::= ExpressionItem+
+
+ExpressionItem ::= Match | Group | Backreference | Alternation
+
+
+/* Grouping Constructs 
+------------------------------------------------------------------*/
+
+Group ::= "(" GroupNonCapturingModifier? Expression ")"
+GroupNonCapturingModifier ::= "?:" 
+
+/* Alternations
+------------------------------------------------------------------*/
+
+Alternation ::= Expression "|" Expression 
+
+/* Character Classes
+------------------------------------------------------------------*/
+
+CharacterClass ::= "[" CharacterClassItem+ "]"
+CharacterClassItem ::= Match
+
+Match ::= MatchAnyCharacter | MatchCharacterClass | MatchAnyCharacterFromUnicodeCategory
+
+MatchAnyCharacter ::= "."
+
+MatchCharacterClass ::= MatchAnyWordCharacter | MatchAnyWordCharacterInverted | MatchAnyDecimalDigit | MatchAnyDecimalDigitInverted
+MatchAnyWordCharacter ::= "\w"
+MatchAnyWordCharacterInverted ::= "\W"
+MatchAnyDecimalDigit ::= "\d"
+MatchAnyDecimalDigitInverted ::= "\D"
+
+MatchAnyCharacterFromUnicodeCategory ::= "\p{" UnicodeCategoryName "}"
+UnicodeCategoryName ::= Letters
+
+/* Quantifiers 
+------------------------------------------------------------------*/
+
+QuantifiedExpression ::= Expression Quantifier
+Quantifier ::= QuantifierType LazyModifier?
+QuantifierType ::= ZeroOrMoreQuantifier | OneOrMoreQuantifier | ZeroOrOneQuantifier | RangeQuantifier
+LazyModifier ::= "?"
+
+ZeroOrMoreQuantifier ::= "*"
+OneOrMoreQuantifier ::= "+"
+ZeroOrOneQuantifier ::= "?"
+
+RangeQuantifier ::= "{" RangeQuantifierLowerBound ( "," RangeQuantifierUpperBound? )? "}"
+RangeQuantifierLowerBound ::= Integer
+RangeQuantifierUpperBound ::= Integer
+
+/* Backreferences
+------------------------------------------------------------------*/
+
+Backreference ::= "\" Integer
+
+/* Anchors
+------------------------------------------------------------------*/
+
+BegginingOfStringAnchor ::= "^"
+
+/* Misc
+------------------------------------------------------------------*/
+
+Integer ::= [0-9]+
+Letters ::= [a-zA-Z]+
+Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]
