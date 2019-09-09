@@ -1,46 +1,80 @@
-Regex ::= BegginingOfStringAnchor? Expression
+Regex ::= StartOfStringAnchor? Expression
 
 Expression ::= ExpressionItem+
 
-ExpressionItem ::= Match | Group | Backreference | Alternation
-
+ExpressionItem
+	::= Match
+	  | Group
+	  | Backreference
+	  | Alternation
+	  | QuantifiedExpression
 
 /* Grouping Constructs 
 ------------------------------------------------------------------*/
 
 Group ::= "(" GroupNonCapturingModifier? Expression ")"
-GroupNonCapturingModifier ::= "?:" 
+GroupNonCapturingModifier ::= "?:"
 
 /* Alternations
 ------------------------------------------------------------------*/
 
 Alternation ::= Expression "|" Expression 
 
-/* Character Classes
+/* Match
 ------------------------------------------------------------------*/
 
-CharacterClass ::= "[" CharacterClassItem+ "]"
-CharacterClassItem ::= Match
-
-Match ::= MatchAnyCharacter | MatchCharacterClass | MatchAnyCharacterFromUnicodeCategory
+Match
+	::= MatchAnyCharacter
+	  | MatchCharacterClass
+	  | MatchCharacter
 
 MatchAnyCharacter ::= "."
 
-MatchCharacterClass ::= MatchAnyWordCharacter | MatchAnyWordCharacterInverted | MatchAnyDecimalDigit | MatchAnyDecimalDigitInverted
-MatchAnyWordCharacter ::= "\w"
-MatchAnyWordCharacterInverted ::= "\W"
-MatchAnyDecimalDigit ::= "\d"
-MatchAnyDecimalDigitInverted ::= "\D"
+MatchCharacterClass
+	::= CharacterGroup
+	  | CharacterClass
+	  | CharacterClassFromUnicodeCategory
 
-MatchAnyCharacterFromUnicodeCategory ::= "\p{" UnicodeCategoryName "}"
+MatchCharacter ::= Char
+
+/* Character Classes
+------------------------------------------------------------------*/
+
+CharacterGroup ::= "[" CharacterGroupNegativeModifier? CharacterGroupItem+ "]"
+
+CharacterGroupNegativeModifier ::= "^"
+CharacterGroupItem
+	::= CharacterClass
+	  | CharacterClassFromUnicodeCategory
+	  | CharacterRange
+
+CharacterClass
+	::= CharacterClassAnyWord
+	  | CharacterClassAnyWordInverted
+	  | CharacterClassAnyDecimalDigit
+	  | CharacterClassAnyDecimalDigitInverted
+
+CharacterClassAnyWord ::= "\w"
+CharacterClassAnyWordInverted ::= "\W"
+CharacterClassAnyDecimalDigit ::= "\d"
+CharacterClassAnyDecimalDigitInverted ::= "\D"
+
+CharacterClassFromUnicodeCategory ::= "\p{" UnicodeCategoryName "}"
 UnicodeCategoryName ::= Letters
+
+CharacterRange ::= Char ("-" Char)?
 
 /* Quantifiers 
 ------------------------------------------------------------------*/
 
 QuantifiedExpression ::= Expression Quantifier
 Quantifier ::= QuantifierType LazyModifier?
-QuantifierType ::= ZeroOrMoreQuantifier | OneOrMoreQuantifier | ZeroOrOneQuantifier | RangeQuantifier
+QuantifierType
+	::= ZeroOrMoreQuantifier
+	  | OneOrMoreQuantifier
+	  | ZeroOrOneQuantifier
+	  | RangeQuantifier
+
 LazyModifier ::= "?"
 
 ZeroOrMoreQuantifier ::= "*"
@@ -59,7 +93,7 @@ Backreference ::= "\" Integer
 /* Anchors
 ------------------------------------------------------------------*/
 
-BegginingOfStringAnchor ::= "^"
+StartOfStringAnchor ::= "^"
 
 /* Misc
 ------------------------------------------------------------------*/

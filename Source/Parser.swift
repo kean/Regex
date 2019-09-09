@@ -56,39 +56,37 @@ private extension Parser {
 
     /// The entry point for parsing an expression, can be called recursively.
     func parseExpression() throws -> Unit {
-        var children: [[Unit]] = [[]] // Each sub-array represents an alternation
-
-        func add(_ unit: Unit) {
-            children[children.endIndex-1].append(unit)
-        }
+        var units = [Unit]()
 
         // Appplies quantifier to the last expression.
         func apply(_ quantifier: Quantifier) throws {
-            guard let last = children[children.endIndex-1].popLast() else {
+            guard let last = units.popLast() else {
                 throw Regex.Error("The preceeding token is not quantifiable", 0)
             }
             let isLazy = scanner.read("?") != nil
             let source = last.source.lowerBound..<scanner.i
-            add(QuantifiedExpression(type: quantifier, isLazy: isLazy, expression: last, source: source))
+            units.append(QuantifiedExpression(type: quantifier, isLazy: isLazy, expression: last, source: source))
         }
 
         while let c = scanner.peak(), c != ")" {
             switch c {
-            case "(": add(try parseGroup())
-            case "|": scanner.read(); children.append([]) // Start a new path in alternation
+            case "(": units.append(try parseGroup())
+            case "|":
+                scanner.read()
+                let lhs = try expression(units) // Existing left side of alternation
+                let rhs = try parseExpression() // Parse right side
+                let alternation = Alternation(children: [lhs, rhs], source: .merge(lhs.source, rhs.source))
+                units = [alternation]
             case "*", "+", "?", "{": try apply(try parseQuantifier(c))
-            default: add(try parseTerminal())
+            default: units.append(try parseTerminal())
             }
         }
 
-        let expressions = try children.map(expression) // Flatten the children
-        switch expressions.count {
-        case 0: throw Regex.Error("Pattern must not be empty", 0)
-        case 1: return expressions[0] // No alternation
-        default:
-            let source = Range.merge(expressions.first!.source, expressions.last!.source)
-            return Alternation(children: expressions, source: source)
+        guard !units.isEmpty else {
+            throw Regex.Error("Pattern must not be empty", 0)
         }
+
+        return try expression(units) // Flatten the children
     }
 
     static let terminalKeywords = CharacterSet(charactersIn: ".\\[$")
@@ -273,8 +271,12 @@ private extension Parser {
     }
 
     func optimize(_ alternation: Alternation) -> Alternation {
+        // Flatten alternations to make AST prettier
+        let children = alternation.children.flatMap { child -> [Unit] in
+            (child as? Alternation)?.children ?? [child]
+        }
         return Alternation(
-            children: alternation.children.map(optimize),
+            children: children.map(optimize),
             source: alternation.source
         )
     }

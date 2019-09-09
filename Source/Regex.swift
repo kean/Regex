@@ -18,7 +18,7 @@ public final class Regex {
 
     /// Returns the number of capture groups in the regular expression.
     public var numberOfCaptureGroups: Int {
-        return regex.captureGroups.count
+        regex.captureGroups.count
     }
 
     /// Enable debug mode to enable logging.

@@ -39,7 +39,9 @@ final class Compiler {
         #if DEBUG
         var details = [State.Index: Symbols.Details]()
         for (key, value) in map {
-            details[indices[key]!] = value
+            if let index = indices[key] {
+                details[index] = value
+            }
         }
         let symbols = Symbols(ast: ast, map: details)
         #else

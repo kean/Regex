@@ -21,14 +21,12 @@ final class State: Hashable {
     }
 
     static func == (lhs: State, rhs: State) -> Bool {
-        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+        ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
     }
 }
 
 extension State: CustomStringConvertible {
-    var description: String {
-        return "State(\(index)"
-    }
+    var description: String { "State(\(index))" }
 }
 
 // MARK: - Transition

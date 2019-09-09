@@ -380,10 +380,6 @@ extension FSM {
 
             return alternation
     }
-
-    static func alternate(_ lhs: FSM, _ rhs: FSM) -> FSM {
-        return alternate([lhs, rhs])
-    }
 }
 
 // MARK: - FSM (Symbols)
