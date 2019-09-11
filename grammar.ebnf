@@ -7,12 +7,11 @@ ExpressionItem
 	  | Group
 	  | Backreference
 	  | Alternation
-	  | QuantifiedExpression
 
 /* Grouping Constructs 
 ------------------------------------------------------------------*/
 
-Group ::= "(" GroupNonCapturingModifier? Expression ")"
+Group ::= "(" GroupNonCapturingModifier? Expression ")" Quantifier?
 GroupNonCapturingModifier ::= "?:"
 
 /* Alternations
@@ -23,7 +22,9 @@ Alternation ::= Expression "|" Expression
 /* Match
 ------------------------------------------------------------------*/
 
-Match
+Match ::= MatchItem Quantifier?
+
+MatchItem
 	::= MatchAnyCharacter
 	  | MatchCharacterClass
 	  | MatchCharacter
@@ -67,7 +68,6 @@ CharacterRange ::= Char ("-" Char)?
 /* Quantifiers 
 ------------------------------------------------------------------*/
 
-QuantifiedExpression ::= Expression Quantifier
 Quantifier ::= QuantifierType LazyModifier?
 QuantifierType
 	::= ZeroOrMoreQuantifier

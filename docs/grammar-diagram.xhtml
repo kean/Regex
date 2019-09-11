@@ -5,13 +5,13 @@
       <style type="text/css">
     ::-moz-selection
     {
-      color: #EAEBFF;
-      background: #00010E;
+      color: #FFFCF0;
+      background: #0F0C00;
     }
     ::selection
     {
-      color: #EAEBFF;
-      background: #00010E;
+      color: #FFFCF0;
+      background: #0F0C00;
     }      
     .ebnf a, .grammar a
     {
@@ -19,50 +19,50 @@
     }
     .ebnf a:hover, .grammar a:hover
     {
-      color: #000004;
+      color: #050400;
       text-decoration: underline;
     }    
     .signature
     {
-      color: #02087C;
+      color: #806600;
       font-size: 11px;
       text-align: right;
     }
     body
     {
       font: normal 12px Verdana, sans-serif;
-      color: #00010E;
-      background: #EAEBFF;
+      color: #0F0C00;
+      background: #FFFCF0;
     }
     a:link, a:visited
     {
-      color: #00010E;
+      color: #0F0C00;
     }
     a:link.signature, a:visited.signature
     {
-      color: #02087C;
+      color: #806600;
     }
     a.button, #tabs li a
     {
       padding: 0.25em 0.5em;
-      border: 1px solid #02087C;
-      background: #C2C4EF;
-      color: #02087C;
+      border: 1px solid #806600;
+      background: #F1E8C6;
+      color: #806600;
       text-decoration: none;
       font-weight: bold;
     }
     a.button:hover, #tabs li a:hover
     {
-      color: #000004;
-      background: #CCCFFE;
-      border-color: #000004;       
+      color: #050400;
+      background: #FFF6D1;
+      border-color: #050400;       
     }     
     #tabs
     {
       padding: 3px 10px;
       margin-left: 0;
       margin-top: 58px;
-      border-bottom: 1px solid #00010E;
+      border-bottom: 1px solid #0F0C00;
     }  
     #tabs li
     {
@@ -72,14 +72,14 @@
     }
     #tabs li a
     {     
-      border-bottom: 1px solid #00010E;
+      border-bottom: 1px solid #0F0C00;
     }
     #tabs li a.active
     {
-      color: #00010E;
-      background: #EAEBFF;
-      border-color: #00010E;
-      border-bottom: 1px solid #EAEBFF;
+      color: #0F0C00;
+      background: #FFFCF0;
+      border-color: #0F0C00;
+      border-bottom: 1px solid #FFFCF0;
       outline: none;
     }
     #divs div
@@ -93,9 +93,9 @@
     }
     #text
     {
-      border-color: #02087C;
-      background: #F4F5FF;
-      color: #000004;
+      border-color: #806600;
+      background: #FFFEFA;
+      color: #050400;
     }
     .small
     {
@@ -120,18 +120,18 @@
     div.download
     {
       display: none;
-      background: #EAEBFF;
+      background: #FFFCF0;
       position: absolute;
       right: 34px;
       top: 94px;
       padding: 10px;
-      border: 1px dotted #00010E;
+      border: 1px dotted #0F0C00;
     }
     #divs div.ebnf, .ebnf code
     {
       display: block;
       padding: 10px;
-      background: #CCCFFE;
+      background: #FFF6D1;
       width: 992px;
     }
     #divs div.grammar
@@ -140,7 +140,7 @@
       padding-left: 16px;
       padding-top: 2px;
       padding-bottom: 2px;
-      background: #CCCFFE;
+      background: #FFF6D1;
     }
     pre
     {
@@ -165,14 +165,14 @@
     }
     table.palette
     {
-      border-top: 1px solid #000004;
-      border-right: 1px solid #000004;
+      border-top: 1px solid #050400;
+      border-right: 1px solid #050400;
       margin-bottom: 4px
     }
     td.palette
     {
-      border-bottom: 1px solid #000004;
-      border-left: 1px solid #000004;
+      border-bottom: 1px solid #050400;
+      border-left: 1px solid #050400;
     }
     a.palette
     {
@@ -191,30 +191,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs></svg></head>
    <body>
@@ -222,30 +222,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -265,30 +265,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 33 1 29 1 37"/>
@@ -313,30 +313,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -374,30 +374,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -427,30 +427,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -477,30 +477,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -529,30 +529,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -582,30 +582,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -627,30 +627,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 33 1 29 1 37"/>
@@ -681,30 +681,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -734,30 +734,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -793,30 +793,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -845,30 +845,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -890,30 +890,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -940,30 +940,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -988,30 +988,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -1036,30 +1036,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -1093,30 +1093,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -1149,30 +1149,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -1194,30 +1194,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -1239,30 +1239,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
@@ -1287,30 +1287,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 33 1 29 1 37"/>
@@ -1334,30 +1334,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 33 1 29 1 37"/>
@@ -1382,30 +1382,30 @@
          <defs>
             <style type="text/css">
     @namespace "http://www.w3.org/2000/svg";
-    .line                 {fill: none; stroke: #010331;}
-    .bold-line            {stroke: #E1E2FE; shape-rendering: crispEdges; stroke-width: 2; }
-    .thin-line            {stroke: #01021E; shape-rendering: crispEdges}
-    .filled               {fill: #010331; stroke: none;}
+    .line                 {fill: none; stroke: #332900;}
+    .bold-line            {stroke: #141000; shape-rendering: crispEdges; stroke-width: 2; }
+    .thin-line            {stroke: #1F1800; shape-rendering: crispEdges}
+    .filled               {fill: #332900; stroke: none;}
     text.terminal         {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #141000;
                             font-weight: bold;
                           }
     text.nonterminal      {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #E1E2FE;
+                            fill: #1A1400;
                             font-weight: normal;
                           }
     text.regexp           {font-family: Verdana, Sans-serif;
                             font-size: 12px;
-                            fill: #01021E;
+                            fill: #1F1800;
                             font-weight: normal;
                           }
-    rect, circle, polygon {fill: #010331; stroke: #010331;}
-    rect.terminal         {fill: #1A25FB; stroke: #010331;}
-    rect.nonterminal      {fill: #5D65FC; stroke: #010331;}
+    rect, circle, polygon {fill: #332900; stroke: #332900;}
+    rect.terminal         {fill: #FFDB4D; stroke: #332900;}
+    rect.nonterminal      {fill: #FFEC9E; stroke: #332900;}
     rect.text             {fill: none; stroke: none;}    
-    polygon.regexp        {fill: #7F85FD; stroke: #010331;}
+    polygon.regexp        {fill: #FFF4C7; stroke: #332900;}
   </style>
          </defs>
          <polygon points="9 17 1 13 1 21"/>
