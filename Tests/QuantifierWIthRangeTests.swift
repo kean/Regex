@@ -70,73 +70,50 @@ class QuantifierWithRangeTests: XCTestCase {
 
     // MARK: - Validations
 
-    func testThrowsMissingClosingBracket() throws {
-        XCTAssertThrowsError(try Regex("a{3")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier missing closing bracket")
-        }
+    func testMissingClosingBracketInterpetedLiterally() throws {
+        let regex = try Regex("a{3")
+        XCTAssertTrue(regex.isMatch("a{3"))
     }
 
-    func testThrowsBoundMustBeNoNegative() throws {
-        XCTAssertThrowsError(try Regex("a{-3}")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier must be more than zero")
-        }
+    func testBoundMustBeNoNegativeInterpetedLiterally() throws {
+        let regex = try Regex("a{-3}")
+        XCTAssertTrue(regex.isMatch("a{-3}"))
     }
 
-    func testThrowsBoundMustBeNoNegative2() throws {
-        XCTAssertThrowsError(try Regex("a{0}")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier must be more than zero")
-        }
+    func testMissingLowerBoundInterpetedLiterally() throws {
+        let regex = try Regex("a{,3}")
+        XCTAssertTrue(regex.isMatch("a{,3}"))
     }
 
-    func testThrowsMissingLowerBound() throws {
-        XCTAssertThrowsError(try Regex("a{,3}")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier missing lower bound")
-        }
+    func testLowerBoundMustBeNoNegativeInterpetedLiterally() throws {
+        let regex = try Regex("a{-1,2}")
+        XCTAssertTrue(regex.isMatch("a{-1,2}"))
     }
 
-    func testThrowsLowerBoundMustBeNoNegative() throws {
-        XCTAssertThrowsError(try Regex("a{-1,2}")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier lower bound must be non-negative")
-        }
+    func testMissingRangeInterpetedLiterally() throws {
+        let regex = try Regex("a{}")
+        XCTAssertTrue(regex.isMatch("a{}"))
+    }
+
+    func testInvalidBound2InterpetedLiterally() throws {
+        let regex = try Regex("a{b}")
+        XCTAssertTrue(regex.isMatch("a{b}"))
+    }
+
+    func testInvalidLowerBoundInterpetedLiterally() throws {
+        let regex = try Regex("a{b,2}")
+        XCTAssertTrue(regex.isMatch("a{b,2}"))
+    }
+
+    func testInvalidUpperBoundInterpetedLiterally() throws {
+        let regex = try Regex("a{2,b}")
+        XCTAssertTrue(regex.isMatch("a{2,b}"))
     }
 
     func testThrowsUpperBoundGreaterThanLower() throws {
         XCTAssertThrowsError(try Regex("a{3,2}")) { error in
             guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier upper bound must be greater than or equal than lower bound")
-        }
-    }
-
-    func testThrowsMissingRange() throws {
-        XCTAssertThrowsError(try Regex("a{}")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier missing range")
-        }
-    }
-
-    func testThrowsInvalidBound2() throws {
-        XCTAssertThrowsError(try Regex("a{b}")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier has invalid bound")
-        }
-    }
-
-    func testThrowsInvalidLowerBound() throws {
-        XCTAssertThrowsError(try Regex("a{b,2}")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier has invalid lower bound")
-        }
-    }
-
-    func testThrowsInvalidUpperBound() throws {
-        XCTAssertThrowsError(try Regex("a{2,b}")) { error in
-            guard let error = (error as? Regex.Error) else { return }
-            XCTAssertEqual(error.message, "Range quantifier has invalid upper bound")
+            XCTAssertEqual(error.message, "Invalid range quantifier. Upper bound must be greater than or equal than lower bound")
         }
     }
 }

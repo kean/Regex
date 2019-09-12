@@ -46,8 +46,19 @@ public final class Regex {
 
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
-            let ast = try Parser(pattern).parse()
-            self.regex = try Compiler(ast, options).compile()
+            let ast = try Regex.parse(pattern)
+
+            #if DEBUG
+            if log.isEnabled { os_log(.default, log: self.log, "AST: \n%{PUBLIC}@", ast.description) }
+            #endif
+
+            let optimizedAst = Optimizer().optimize(ast)
+
+            #if DEBUG
+            if log.isEnabled { os_log(.default, log: self.log, "AST (Optimized): \n%{PUBLIC}@", optimizedAst.description) }
+            #endif
+
+            self.regex = try Compiler(optimizedAst, options).compile()
             self.options = options
             #if DEBUG
             if self.log.isEnabled { os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.symbols.description(for: regex.states[0])) }
@@ -56,6 +67,19 @@ public final class Regex {
             var error = error as! Error
             error.pattern = pattern // Attach additional context
             throw error
+        }
+    }
+
+    private static func parse(_ pattern: String) throws -> AST {
+        do {
+            let parser = Parsers.regex
+            guard let ast = try parser.parse(pattern) else {
+                throw ParserError("Unexpected error")
+            }
+            return ast
+        } catch {
+            // TODO: attach an index where error occured
+            throw Regex.Error((error as! ParserError).message, 0)
         }
     }
 
@@ -148,6 +172,9 @@ extension Regex {
         public var patternWithHighlightedError: String {
             let i = pattern.index(pattern.startIndex, offsetBy: index)
             var s = pattern
+            guard s.indices.contains(i) else {
+                return ""
+            }
             s.replaceSubrange(i...i, with: "\(s[i])💥")
             return s
         }
