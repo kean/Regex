@@ -1,23 +1,21 @@
 Regex ::= StartOfStringAnchor? Expression
 
-Expression ::= ExpressionItem+
+Expression ::= Subexpression ("|" Expression)?
 
-ExpressionItem
+/* Anything that can be on one side of the alternation. */
+Subexpression ::= SubexpressionItem+
+SubexpressionItem
 	::= Match
 	  | Group
+	  | Anchor
 	  | Backreference
-	  | Alternation
+	
 
 /* Grouping Constructs 
 ------------------------------------------------------------------*/
 
 Group ::= "(" GroupNonCapturingModifier? Expression ")" Quantifier?
 GroupNonCapturingModifier ::= "?:"
-
-/* Alternations
-------------------------------------------------------------------*/
-
-Alternation ::= Expression "|" Expression 
 
 /* Match
 ------------------------------------------------------------------*/
@@ -48,6 +46,7 @@ CharacterGroupItem
 	::= CharacterClass
 	  | CharacterClassFromUnicodeCategory
 	  | CharacterRange
+	  | Char /* excluding ] */
 
 CharacterClass
 	::= CharacterClassAnyWord
@@ -94,6 +93,23 @@ Backreference ::= "\" Integer
 ------------------------------------------------------------------*/
 
 StartOfStringAnchor ::= "^"
+
+Anchor
+	::= AnchorWordBoundary
+	  | AnchorNonWordBoundary
+	  | AnchorStartOfStringOnly
+	  | AnchorEndOfStringOnlyNotNewline
+	  | AnchorEndOfStringOnly
+	  | AnchorPreviousMatchEnd
+	  | AnchorEndOfString
+
+AnchorWordBoundary ::= "\b"
+AnchorNonWordBoundary ::= "\B"
+AnchorStartOfStringOnly ::= "\A"
+AnchorEndOfStringOnlyNotNewline ::= "\z"
+AnchorEndOfStringOnly ::= "\Z"
+AnchorPreviousMatchEnd ::= "\G"
+AnchorEndOfString ::= "$"
 
 /* Misc
 ------------------------------------------------------------------*/
