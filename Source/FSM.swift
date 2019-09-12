@@ -37,7 +37,7 @@ extension FSM {
     // MARK: .character
 
     /// Matches the given character.
-    static func character(_ c: Character, isCaseInsensitive: Bool) -> FSM {
+    static func character(_ c: Character, _ isCaseInsensitive: Bool) -> FSM {
         FSM(condition: MatchCharacter(character: c, isCaseInsensitive: isCaseInsensitive))
     }
 
@@ -61,7 +61,7 @@ extension FSM {
 
     /// Matches the given string. In general is going to be much faster than
     /// checking the individual characters (fast substring search).
-    static func string(_ s: String, isCaseInsensitive: Bool) -> FSM {
+    static func string(_ s: String, _ isCaseInsensitive: Bool) -> FSM {
         assert(!s.isEmpty)
         return FSM(condition: MatchString(string: s, count: s.count, isCaseInsensitive: isCaseInsensitive))
     }
@@ -88,6 +88,29 @@ extension FSM {
                 }
             }
             return .accepted(count: count)
+        }
+    }
+
+    // MARK: .group
+
+    static func characterGroup(_ group: CharacterGroup, _ isCaseInsensitive: Bool) -> FSM {
+        precondition(group.items.count > 0)
+
+        if group.items.count == 1, case let .range(range) = group.items[0] {
+            return .range(range, isCaseInsensitive, group.isInverted)
+        } else {
+            let set = makeCharacterSet(from: group.items)
+            return .characterSet(set, isCaseInsensitive, group.isInverted)
+        }
+    }
+
+    private static func makeCharacterSet(from items: [CharacterGroup.Item]) -> CharacterSet {
+        items.reduce(into: CharacterSet()) { set, item in
+            switch item {
+            case let .character(char): set.insert(char)
+            case let .range(range): set.insert(charactersIn: range)
+            case let .set(otherSet): set.formUnion(otherSet)
+            }
         }
     }
 

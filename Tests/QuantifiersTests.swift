@@ -15,7 +15,10 @@ class QuantifierZeroOrMoreTests: XCTestCase {
     }
 
     func testThrowsThePrecedingTokenIsNotQuantifiableErrorWhenTwoInARow() {
-        XCTAssertNoThrow(try Regex("a**"))
+        XCTAssertThrowsError(try Regex("a**")) { error in
+            guard let error = (error as? Regex.Error) else { return }
+            XCTAssertEqual(error.message, "The preceeding token is not quantifiable")
+        }
     }
 
     func testAppliedToLiteralCharacter() throws {

@@ -14,7 +14,7 @@ class OptimizationsTests: XCTestCase {
         XCTAssertTrue(regex.matches(in: string).isEmpty)
     }
 
-    func testNearlyMatching() throws {
+    func testNearlyMatpching() throws {
         let regex = try Regex("a{10}c")
         let string = String(repeating: "a", count: 15) + "c" + String(repeating: "a", count: 100) + "b"
 

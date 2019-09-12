@@ -36,16 +36,6 @@ extension Character {
     }
 }
 
-// MARK: - Range
-
-extension Range where Bound == Int {
-    /// Returns the range which contains the indexes from both ranges and
-    /// everything in between.
-    static func merge(_ lhs: Range, _ rhs: Range) -> Range {
-        return (Swift.min(lhs.lowerBound, rhs.lowerBound))..<(Swift.max(lhs.upperBound, rhs.upperBound))
-    }
-}
-
 // MARK: - String
 
 extension String {
