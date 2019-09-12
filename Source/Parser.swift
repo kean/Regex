@@ -3,285 +3,258 @@
 // Copyright (c) 2019 Alexander Grebenyuk (github.com/kean).
 
 import Foundation
-import os.log
 
-/// A bottom-up parser for regular expressions.
-final class Parser {
-    private let pattern: String
-    private let scanner: Scanner
-    private var groupIndex = 1
-    private var nextGroupIndex: Int {
-        defer { groupIndex += 1 }
-        return groupIndex
-    }
+// A simple parser combinators implementation. See Grammar.swift for the actual
+// regex grammar.
 
-    #if DEBUG
-    private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.parser", category: "default") : .disabled
-    #endif
+// MARK: - Parser
 
-    init(_ pattern: String) {
-        self.pattern = pattern
-        self.scanner = Scanner(pattern)
-    }
+struct Parser<A> {
+    private let run: (_ string: inout Substring) throws -> A?
 
-    /// Parses the pattern with which the parser was initialized with and
-    /// constrats an AST (abstract syntax tree).
-    func parse() throws -> AST {
-        // Handled by Matcher
-        let startOfString = parseStartOfStringAnchor() != nil
-
-        let ast = AST(
-            root: optimize(try parseExpression()),
-            isFromStartOfString: startOfString,
-            pattern: pattern
-        )
-
-        guard scanner.peak() == nil else {
-            throw Regex.Error("Unmatched closing parentheses", 0)
-        }
-
-        #if DEBUG
-        if log.isEnabled { os_log(.default, log: self.log, "AST: \n%{PUBLIC}@", ast.description) }
-        #endif
-
-        return ast
+    init(_ parse: @escaping (_ string: inout Substring) throws -> A?) {
+        self.run = parse
     }
 }
 
-// MARK: - Parser (Parse)
-
-private extension Parser {
-
-    // MARK: Expressions
-
-    /// The entry point for parsing an expression, can be called recursively.
-    func parseExpression() throws -> Unit {
-        var units = [Unit]()
-
-        // Appplies quantifier to the last expression.
-        func apply(_ quantifier: Quantifier) throws {
-            guard let last = units.popLast() else {
-                throw Regex.Error("The preceeding token is not quantifiable", 0)
+extension Parser {
+    /// Parses the given string. Automatically rollbacks to the point before
+    /// parsing started if error is encountered.
+    func parse(_ string: inout Substring) throws -> A? {
+        let stash = string
+        do {
+            guard let match = try run(&string) else {
+                string = stash
+                return nil
             }
-            let isLazy = scanner.read("?") != nil
-            let source = last.source.lowerBound..<scanner.i
-            units.append(QuantifiedExpression(type: quantifier, isLazy: isLazy, expression: last, source: source))
+            return match
+        } catch {
+            string = stash // Rollback to the index before parsing started
+            throw error
         }
+    }
 
-        while let c = scanner.peak(), c != ")" {
-            switch c {
-            case "(": units.append(try parseGroup())
-            case "|":
-                scanner.read()
-                let lhs = try expression(units) // Existing left side of alternation
-                let rhs = try parseExpression() // Parse right side
-                let alternation = Alternation(children: [lhs, rhs], source: .merge(lhs.source, rhs.source))
-                units = [alternation]
-            case "*", "+", "?", "{": try apply(try parseQuantifier(c))
-            default: units.append(try parseTerminal())
+    func parse(_ string: String) throws -> A? {
+        var substring = string[...]
+        let output = try run(&substring)
+        return output
+    }
+}
+
+struct ParserError: Error, LocalizedError {
+    let message: String
+
+    init(_ message: String) {
+        self.message = message
+    }
+
+    public var errorDescription: String? {
+        return "\(message)"
+    }
+}
+
+// MARK: - Parser (Predifined)
+
+struct Parsers {}
+
+extension Parsers {
+    static func literal(_ p: String) -> Parser<Void> {
+        return Parser<Void> { str in
+            guard str.hasPrefix(p) else {
+                return nil
+            }
+            str.removeFirst(p.count)
+            return ()
+        }
+    }
+
+    static let char = Parser<Character> { str in
+        guard let first = str.first else {
+            return nil
+        }
+        str.removeFirst()
+        return first
+    }
+
+    static func char(while predicate: @escaping (Character) -> Bool) -> Parser<Character> {
+        char.map { predicate($0) ? $0 : nil }
+    }
+
+    static func char(excluding set: CharacterSet) -> Parser<Character> {
+        char(while: { !set.contains($0) })
+    }
+
+    static func char(excluding string: String) -> Parser<Character> {
+        char(excluding: CharacterSet(charactersIn: string))
+    }
+
+    static func string(excluding: String) -> Parser<String> {
+        let set = CharacterSet(charactersIn: excluding)
+        return char(excluding: set).zeroOrMore.map { $0.isEmpty ? nil : String($0) }
+    }
+
+    static let int = zip(literal("-").optional, number)
+        .map { minus, digits in minus == nil ? digits : -digits }
+
+    /// Parsers a natural number or zero. Valid inputs: "0", "1", "10".
+    static let number = Parser<Int> { str in
+        let digits = CharacterSet.decimalDigits
+        let prefix = str.prefix(while: digits.contains)
+        guard let match = Int(prefix) else {
+            return nil
+        }
+        str.removeFirst(prefix.count)
+        return match
+    }
+}
+
+extension Parser: ExpressibleByStringLiteral, ExpressibleByUnicodeScalarLiteral, ExpressibleByExtendedGraphemeClusterLiteral where A == Void {
+    // Unfortunately had to add these explicitly supposably because of the
+    // conditional conformance limitations.
+    typealias ExtendedGraphemeClusterLiteralType = StringLiteralType
+    typealias UnicodeScalarLiteralType = StringLiteralType
+    typealias StringLiteralType = String
+
+    init(stringLiteral value: String) {
+        self = Parsers.literal(value)
+    }
+}
+
+// MARK: - Parser (Combinators)
+
+func zip<A, B>(_ a: Parser<A>, _ b: Parser<B>) -> Parser<(A, B)> {
+    return Parser<(A, B)> { str -> (A, B)? in
+        guard let matchA = try a.parse(&str), let matchB = try b.parse(&str) else {
+            return nil
+        }
+        return (matchA, matchB)
+    }
+}
+
+func zip<A, B, C>(
+    _ a: Parser<A>,
+    _ b: Parser<B>,
+    _ c: Parser<C>
+) -> Parser<(A, B, C)> {
+    zip(a, zip(b, c))
+        .map { a, bc in (a, bc.0, bc.1) }
+}
+
+func zip<A, B, C, D>(
+    _ a: Parser<A>,
+    _ b: Parser<B>,
+    _ c: Parser<C>,
+    _ d: Parser<D>
+) -> Parser<(A, B, C, D)> {
+    zip(a, zip(b, c, d))
+        .map { a, bcd in (a, bcd.0, bcd.1, bcd.2) }
+}
+
+func oneOf<A>(_ parsers: Parser<A>...) -> Parser<A> {
+    precondition(!parsers.isEmpty)
+    return Parser<A> { str -> A? in
+        for parser in parsers {
+            if let match = try parser.parse(&str) {
+                return match
             }
         }
+        return nil
+    }
+}
 
-        guard !units.isEmpty else {
-            throw Regex.Error("Pattern must not be empty", 0)
+extension Parser {
+    func map<B>(_ transform: @escaping (A) throws -> B?) -> Parser<B> {
+        flatMap { match in
+            Parser<B> { _ in try transform(match) }
         }
-
-        return try expression(units) // Flatten the children
     }
 
-    static let terminalKeywords = CharacterSet(charactersIn: ".\\[$")
-
-    /// Parses a terminal part of the expression, e.g. a simple character match,
-    /// or an anchor, anything that doesn't contain subexpressions.
-    func parseTerminal() throws -> Terminal {
-        let c = try scanner.peak(orThrow: "Pattern must not be empty")
-        switch c {
-        case ".":
-            return Match(type: .anyCharacter, source: scanner.read())
-        case "\\":
-            return try parseEscapedCharacter()
-        case "[":
-            let (group, range) = try scanner.readCharacterGroup()
-            let match: MatchType
-            switch group.kind {
-            case let .range(range): match = .range(range, isNegative: group.isNegative)
-            case let .set(set): match = .characterSet(set, isNegative: group.isNegative)
+    func flatMap<B>(_ transform: @escaping (A) -> Parser<B>) -> Parser<B> {
+        Parser<B> { str -> B? in
+            guard let matchA = try self.parse(&str) else {
+                return nil
             }
-            return Match(type: match, source: range)
-        case "$":
-            return Anchor(type: .endOfString, source: scanner.read())
-        default:
-            return Match(type: .character(c), source: scanner.read())
-        }
-    }
-
-    // MARK: Groups
-
-    /// Parses a group, can be called recursively.
-    func parseGroup() throws -> Group {
-        let groupIndex = nextGroupIndex
-        let start = try scanner.read("(", orThrow: "Unmatched closing parantheses")
-        let isCapturing = scanner.read("?:") == nil
-        let expression = try parseExpression()
-        let end = try scanner.read(")", orThrow: "Unmatched opening parentheses")
-        return Group(index: groupIndex, isCapturing: isCapturing, children: [expression], source: .merge(start, end))
-    }
-
-    // MARK: Quantifiers
-
-    func parseQuantifier(_ c: Character) throws -> Quantifier {
-        scanner.read()
-        switch c {
-        case "*": return .zeroOrMore
-        case "+": return .oneOrMore
-        case "?": return .zeroOrOne
-        case "{": return try parseRangeQuantifier()
-        default: fatalError("Invalid token")
-        }
-    }
-
-    func parseRangeQuantifier() throws -> Quantifier {
-        let range = try scanner.readRangeQuantifier()
-        return Quantifier.range(range)
-    }
-
-    // MARK: Character Escapes
-
-    func parseEscapedCharacter() throws -> Terminal {
-        let start = scanner.read() // Consume escape
-
-        guard let c = scanner.peak() else {
-            throw Regex.Error("Pattern may not end with a trailing backslash", 0)
-        }
-
-        if let (index, range) = scanner.readInt() {
-            return Backreference(index: index, source: .merge(start, range))
-        }
-
-        if let anchor = anchor(for: c) {
-            return Anchor(type: anchor, source: .merge(start, scanner.read()))
-        }
-
-        // TODO: tidy up
-        scanner.read()
-        if let set = try scanner.readCharacterClassSpecialCharacter(c) {
-            return Match(type: .characterSet(set), source: .merge(start, scanner.i..<scanner.i))
-        }
-        scanner.undoRead()
-
-        return Match(type: .character(c), source: .merge(start, scanner.read()))
-    }
-
-    func anchor(for c: Character) -> AnchorType? {
-        switch c {
-        case "b": return .wordBoundary
-        case "B": return .nonWordBoundary
-        case "A": return .startOfStringOnly
-        case "Z": return .endOfStringOnly
-        case "z": return .endOfStringOnlyNotNewline
-        case "G": return .previousMatchEnd
-        default: return nil
-        }
-    }
-
-    // MARK: Options
-
-    func parseStartOfStringAnchor() -> Anchor? {
-        guard let source = scanner.read("^") else { return nil }
-        return Anchor(type: .startOfString, source: source)
-    }
-
-    // MARK: Helpers
-
-    /// Creates an node which represents an expression. If there is only one
-    /// child, returns a child itself to avoid additional overhead.
-    func expression(_ children: [Unit]) throws -> Unit {
-        switch children.count {
-        case 0: throw Regex.Error("Pattern must not be empty", 0)
-        case 1: return children[0]
-        default:
-            let source = Range.merge(children.first!.source, children.last!.source)
-            return Expression(children: children, source: source)
+            let parserB = transform(matchA)
+            return try parserB.parse(&str)
         }
     }
 }
 
-// MARK: - Parser (Optimize)
+// MARK: - Parser (Error Handling)
 
-private extension Parser {
-
-    func optimize(_ unit: Unit) -> Unit {
-        switch unit {
-        case let expression as Expression:
-            return optimize(expression)
-        case let group as Group:
-            return optimize(group)
-        case let alternation as Alternation:
-            return optimize(alternation)
-        case let quantifier as QuantifiedExpression:
-            return optimize(quantifier)
-        default:
-            return unit
-        }
-    }
-
-    func optimize(_ expression: Expression) -> Unit {
-        var input = Array(expression.children.reversed())
-        var output = [Unit]()
-
-        while let unit = input.popLast() {
-            switch unit {
-            // [Optimization] Collapse multiple string into a single string
-            case let match as Match:
-                guard case let .character(c) = match.type else {
-                    output.append(match)
-                    continue
-                }
-
-                var range = match.source
-                var chars = [c]
-                while let match = input.last as? Match, case let .character(c) = match.type {
-                    input.removeLast()
-                    chars.append(c)
-                    range = range.lowerBound..<match.source.upperBound
-                }
-                if chars.count > 1 {
-                    output.append(Match(type: .string(String(chars)), source: range))
-                } else {
-                    output.append(Match(type: .character(chars[0]), source: range))
-                }
-            default:
-                output.append(optimize(unit))
+extension Parser {
+    func mapError(_ transform: @escaping (ParserError) -> ParserError) -> Parser {
+        Parser { str -> A? in
+            do {
+                return try self.parse(&str)
+            } catch {
+                throw transform(error as! ParserError)
             }
         }
-        if output.count > 1 {
-            return Expression(children: output, source: expression.source)
-        } else {
-            return output[0]
+    }
+
+    func mapErrorMessage(_ transform: @escaping (String) -> String) -> Parser {
+        return mapError { ParserError(transform($0.message)) }
+    }
+
+    func error(_ message: String) -> Parser {
+        return mapErrorMessage { "\(message) \($0)" }
+    }
+}
+
+// MARK: - Parser (Quantifiers)
+
+extension Parser {
+
+    func required(_ message: String) -> Parser {
+        Parser { str -> A? in
+            guard let match = try self.parse(&str) else {
+                throw ParserError(message)
+            }
+            return match
         }
     }
 
-    func optimize(_ group: Group) -> Group {
-        return Group(
-            index: group.index,
-            isCapturing: group.isCapturing,
-            children: group.children.map(optimize),
-            source: group.source
-        )
-    }
-
-    func optimize(_ alternation: Alternation) -> Alternation {
-        // Flatten alternations to make AST prettier
-        let children = alternation.children.flatMap { child -> [Unit] in
-            (child as? Alternation)?.children ?? [child]
+    /// Matches the given parser zero or one times.
+    #warning("TODO: remove?")
+    var optional: Parser<A?> {
+        Parser<A?> { str -> A?? in
+            try self.parse(&str)
         }
-        return Alternation(
-            children: children.map(optimize),
-            source: alternation.source
-        )
     }
 
-    func optimize(_ quantifier: QuantifiedExpression) -> QuantifiedExpression {
-        return QuantifiedExpression(type: quantifier.type, isLazy: quantifier.isLazy, expression: optimize(quantifier.expression), source: quantifier.source)
+    /// Matches the given parser zero or more times.
+    var zeroOrMore: Parser<[A]> {
+        Parser<[A]> { str -> [A]? in
+            var matches = [A]()
+            while let match = try self.parse(&str) {
+                matches.append(match)
+            }
+            return matches
+        }
+    }
+
+    /// Matches the given parser one or more times.
+    var oneOrMore: Parser<[A]> {
+        zeroOrMore.map { $0.isEmpty ? nil : $0 }
+    }
+}
+
+// MARK: - Parser (Misc)
+
+extension Parsers {
+
+    /// Succeeds when input is empty.
+    static let end = Parser<Void> { str in str.isEmpty ? () : nil }
+
+    /// Always succeeds without consuming any input.
+    static let always = Parser<Void> { _ in () }
+
+    /// Delays the creation of parser. Use it to break dependency cycles when
+    /// creating recursive parsers.
+    static func lazy<A>(_ closure: @autoclosure @escaping () -> Parser<A>) -> Parser<A> {
+        Parser { str in
+            try closure().parse(&str)
+        }
     }
 }

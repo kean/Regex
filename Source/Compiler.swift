@@ -79,13 +79,15 @@ private extension Compiler {
         case let expression as Expression:
             return .concatenate(try expression.children.map(compile))
 
+        // TODO: split into separate methods
         case let group as Group:
+            // TODO: tidy up
             let fsms = try group.children.map(compile)
-            let fms = FSM.group(.concatenate(fsms))
+            let fsm = FSM.group(.concatenate(fsms))
             if group.isCapturing { // Remember the computed groups
-                captureGroups.append(IRCaptureGroup(index: group.index, start: fms.start, end: fms.end))
+                captureGroups.append(IRCaptureGroup(index: group.index!, start: fsm.start, end: fsm.end))
             }
-            return fms
+            return fsm
 
         case let backreference as Backreference:
             backreferences.append(backreference)
@@ -95,7 +97,7 @@ private extension Compiler {
             return .alternate(try alternation.children.map(compile))
 
         case let anchor as Anchor:
-            switch anchor.type {
+            switch anchor {
             case .startOfString: return options.contains(.multiline) ? .startOfString : .startOfStringOnly
             case .startOfStringOnly: return .startOfStringOnly
             case .endOfString: return options.contains(.multiline) ? .endOfString : .endOfStringOnly
@@ -106,13 +108,14 @@ private extension Compiler {
             case .previousMatchEnd: return .previousMatchEnd
             }
 
-        case let quantifier as QuantifiedExpression:
-            let expression = quantifier.expression
-            let isLazy = quantifier.isLazy
+        case let quantifiedExpression as QuantifiedExpression:
+            #warning("TODO: remove")
+            let expression = quantifiedExpression.expression
+            let isLazy = quantifiedExpression.quantifier.isLazy
             if isLazy {
                 containsLazyQuantifiers = true
             }
-            switch quantifier.type {
+            switch quantifiedExpression.quantifier.type {
             case .zeroOrMore: return .zeroOrMore(try compile(expression), isLazy)
             case .oneOrMore: return .oneOrMore(try compile(expression), isLazy)
             case .zeroOrOne: return .zeroOrOne(try compile(expression), isLazy)
@@ -123,12 +126,12 @@ private extension Compiler {
             let isCaseInsensitive = options.contains(.caseInsensitive)
             let dotMatchesLineSeparators = options.contains(.dotMatchesLineSeparators)
             switch match.type {
-            case let .character(c): return .character(c, isCaseInsensitive: isCaseInsensitive)
+            case let .character(c): return .character(c, isCaseInsensitive)
             case let .string(s): return .string(s
-                , isCaseInsensitive: isCaseInsensitive)
+                , isCaseInsensitive)
             case .anyCharacter: return .anyCharacter(includingNewline: dotMatchesLineSeparators)
-            case let .characterSet(set, isNegative): return .characterSet(set, isCaseInsensitive, isNegative)
-            case let .range(range, isNegative): return .range(range, isCaseInsensitive, isNegative)
+            case let .set(set): return .characterSet(set, isCaseInsensitive, false)
+            case let .group(group): return .characterGroup(group, isCaseInsensitive)
             }
 
         default:
@@ -136,23 +139,41 @@ private extension Compiler {
         }
     }
 
-    func compile(_ unit: Unit, _ range: ClosedRange<Int>, _ isLazy: Bool) throws -> FSM {
+    func compile(_ unit: Unit, _ quantifier: Quantifier) throws -> FSM {
+        let isLazy = quantifier.isLazy
+        if isLazy {
+            containsLazyQuantifiers = true
+        }
+        switch quantifier.type {
+        case .zeroOrMore: return .zeroOrMore(try compile(unit), isLazy)
+        case .oneOrMore: return .oneOrMore(try compile(unit), isLazy)
+        case .zeroOrOne: return .zeroOrOne(try compile(unit), isLazy)
+        case let .range(range): return try compile(unit, range, isLazy)
+        }
+    }
+
+    func compile(_ unit: Unit, _ range: RangeQuantifier, _ isLazy: Bool) throws -> FSM {
         let prefix = try compileRangePrefix(unit, range)
         let suffix: FSM
-        if range.upperBound == Int.max {
-            suffix = .zeroOrMore(try compile(unit), isLazy)
-        } else {
+        if let upperBound  = range.upperBound {
+            guard upperBound >= range.lowerBound else {
+                throw Regex.Error("Invalid range quantifier. Upper bound must be greater than or equal than lower bound", unit.source.lowerBound)
+            }
+
             // Compile the optional matches into `x(x(x(x)?)?)?`. This special
             // form makes sure that matcher can cache the results during backtracking.
-            suffix = try range.dropLast().reduce(FSM.empty) { result, _ in
+            let count = upperBound - range.lowerBound
+            suffix = try (0..<count).reduce(FSM.empty) { result, _ in
                 let expression = try compile(unit)
                 return .zeroOrOne(.group(.concatenate(expression, result)), isLazy)
             }
+        } else {
+            suffix = .zeroOrMore(try compile(unit), isLazy)
         }
         return FSM.concatenate(prefix, suffix)
     }
 
-    func compileRangePrefix(_ unit: Unit, _ range: ClosedRange<Int>) throws -> FSM {
+    func compileRangePrefix(_ unit: Unit, _ range: RangeQuantifier) throws -> FSM {
         func getString() -> String? {
             guard let match = unit as? Match else {
                 return nil
@@ -175,7 +196,7 @@ private extension Compiler {
             return .empty
         }
         let s = String(repeating: string, count: (0..<range.lowerBound).count)
-        return FSM.string(s, isCaseInsensitive: options.contains(.caseInsensitive))
+        return FSM.string(s, options.contains(.caseInsensitive))
     }
 
     func validateBackreferences() throws {

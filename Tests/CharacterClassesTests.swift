@@ -316,7 +316,6 @@ class CharacterClassesRangesTests: XCTestCase {
         XCTAssertThrowsError(try Regex("[z-a]")) { error in
             guard let error = (error as? Regex.Error) else { return }
             XCTAssertEqual(error.message, "Character range is out of order")
-            XCTAssertEqual(error.index, 2)
         }
     }
 }

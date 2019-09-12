@@ -47,8 +47,8 @@ final class Scanner {
     /// of the these characters.
     @discardableResult
     func read(_ count: Int = 1) -> Range<Int> {
-        defer { i += 1}
-        return i..<i+1
+        defer { i += count}
+        return i..<i+count
     }
 
     /// Reads the given string from the pattern and throws the given error if
@@ -132,7 +132,7 @@ final class Scanner {
     }
 
     /// Encountered `[`, read a character group, e.g. [abc], [^ab]
-    func readCharacterGroup() throws -> (CharacterGroup, Range<Int>) {
+    func readCharacterGroup() throws -> (OldCharacterGroup, Range<Int>) {
         let openingBracketIndex = i
         i += 1
 
@@ -150,7 +150,7 @@ final class Scanner {
         while let c = readCharacter() {
             switch c {
             case "]":
-                let group = CharacterGroup(isNegative: isNegative, kind: .set(set))
+                let group = OldCharacterGroup(isNegative: isNegative, kind: .set(set))
                 return (group, openingBracketIndex..<i)
             case "\\":
                 guard let c = readCharacter() else {
@@ -168,7 +168,7 @@ final class Scanner {
                 if let range = try readCharacterRange(startingWith: c) {
                     if peak() == "]", set.isEmpty { // group ended early
                         i += 1
-                        let group = CharacterGroup(isNegative: isNegative, kind: .range(range))
+                        let group = OldCharacterGroup(isNegative: isNegative, kind: .range(range))
                         return (group, openingBracketIndex..<i)
                     }
                     set.insert(charactersIn: range)
@@ -176,7 +176,7 @@ final class Scanner {
                     if let scalar = c.unicodeScalars.first, c.unicodeScalars.count == 1 {
                         if peak() == "]", set.isEmpty { // group ended early
                             i += 1
-                            let group = CharacterGroup(isNegative: isNegative, kind: .range(scalar...scalar))
+                            let group = OldCharacterGroup(isNegative: isNegative, kind: .range(scalar...scalar))
                             return (group, openingBracketIndex..<i)
                         }
                     }
@@ -224,57 +224,6 @@ final class Scanner {
         }
     }
 
-    // Encounted '{', read a range for range quantifier, e.g. {3}, {3,}
-    func readRangeQuantifier() throws -> ClosedRange<Int> {
-        // Read until a closing bracket
-        let openingBracketIndex = i-1
-
-        guard let rangeSubstring = read(until: "}") else {
-            throw Regex.Error("Range quantifier missing closing bracket", openingBracketIndex)
-        }
-
-        guard !rangeSubstring.isEmpty else {
-            throw Regex.Error("Range quantifier missing range", openingBracketIndex)
-        }
-
-        let components = rangeSubstring.split(separator: ",", omittingEmptySubsequences: false)
-
-        switch components.count {
-        case 0:
-            throw Regex.Error("Range quantifier missing range", openingBracketIndex)
-        case 1:
-            guard let bound = Int(String(components[0])) else {
-                throw Regex.Error("Range quantifier has invalid bound", openingBracketIndex)
-            }
-            guard bound > 0 else {
-                throw Regex.Error("Range quantifier must be more than zero", openingBracketIndex)
-            }
-            return bound...bound
-        case 2:
-            guard !components[0].isEmpty else {
-                throw Regex.Error("Range quantifier missing lower bound", openingBracketIndex)
-            }
-            guard let lowerBound = Int(String(components[0])) else {
-                throw Regex.Error("Range quantifier has invalid lower bound", openingBracketIndex)
-            }
-            guard lowerBound >= 0 else {
-                throw Regex.Error("Range quantifier lower bound must be non-negative", openingBracketIndex)
-            }
-            if components[1].isEmpty {
-                return lowerBound...Int.max
-            }
-            guard let upperBound = Int(String(components[1])) else {
-                throw Regex.Error("Range quantifier has invalid upper bound", openingBracketIndex)
-            }
-            guard upperBound >= lowerBound else {
-                throw Regex.Error("Range quantifier upper bound must be greater than or equal than lower bound", openingBracketIndex)
-            }
-            return lowerBound...upperBound
-        default:
-            throw Regex.Error("Range quantifier has invalid bound", openingBracketIndex)
-        }
-    }
-
     /// Reads a character range in a form "a-z", "A-Z", etc. Character range must be provided
     /// in a valid order.
     func readCharacterRange(startingWith lowerBound: Character) throws -> ClosedRange<Unicode.Scalar>? {
@@ -303,7 +252,7 @@ final class Scanner {
     }
 }
 
-struct CharacterGroup {
+struct OldCharacterGroup {
     let isNegative: Bool
     let kind: Kind
 

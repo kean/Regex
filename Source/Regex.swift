@@ -46,7 +46,7 @@ public final class Regex {
 
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
-            let ast = try Parser(pattern).parse()
+            let ast = try OldParser(pattern).parse()
             self.regex = try Compiler(ast, options).compile()
             self.options = options
             #if DEBUG
@@ -148,6 +148,9 @@ extension Regex {
         public var patternWithHighlightedError: String {
             let i = pattern.index(pattern.startIndex, offsetBy: index)
             var s = pattern
+            guard s.indices.contains(i) else {
+                return ""
+            }
             s.replaceSubrange(i...i, with: "\(s[i])💥")
             return s
         }

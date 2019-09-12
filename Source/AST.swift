@@ -17,6 +17,7 @@ protocol Composite: Unit {
     var children: [Unit] { get }
 }
 
+// TODO: remove Traceable and simplify the AST structure.
 /// Can be traced backed to the source in the pattern.
 protocol Traceable {
     var source: Range<Int> { get }
@@ -24,6 +25,7 @@ protocol Traceable {
 
 // MARK: - AST (Components)
 
+#warning("rename?")
 struct AST {
     let root: Unit
     let isFromStartOfString: Bool
@@ -37,7 +39,7 @@ struct Expression: Composite {
 
 // "(ab)"
 struct Group: Composite {
-    let index: Int
+    let index: Int?
     let isCapturing: Bool
     let children: [Unit]
     let source: Range<Int>
@@ -55,13 +57,8 @@ struct Backreference: Terminal {
     let source: Range<Int>
 }
 
-// "$", "\b", etc
-struct Anchor: Terminal {
-    let type: AnchorType
-    let source: Range<Int>
-}
-
-enum AnchorType {
+// "\b", "\G" etc
+enum Anchor: Terminal {
     case startOfString
     case endOfString
     case wordBoundary
@@ -70,6 +67,8 @@ enum AnchorType {
     case endOfStringOnly
     case endOfStringOnlyNotNewline
     case previousMatchEnd
+
+    var source: Range<Int> { 0..<0 }
 }
 
 struct Match: Terminal {
@@ -81,25 +80,47 @@ enum MatchType {
     case character(Character)
     case string(String)
     case anyCharacter
-    case range(ClosedRange<Unicode.Scalar>, isNegative: Bool = false)
-    case characterSet(CharacterSet, isNegative: Bool = false)
+    case set(CharacterSet)
+    case group(CharacterGroup)
+}
+
+struct CharacterGroup: Terminal {
+    let isInverted: Bool
+    let items: [Item]
+
+    var source: Range<Int> { 0..<0 }
+
+    enum Item: Equatable {
+        case character(Character)
+        case range(ClosedRange<Unicode.Scalar>)
+        case set(CharacterSet)
+    }
 }
 
 struct QuantifiedExpression: Composite {
-    let type: Quantifier
-    let isLazy: Bool
+    let quantifier: Quantifier
     let expression: Unit
     let source: Range<Int>
 
     var children: [Unit] { return [expression] }
 }
 
+struct Quantifier: Equatable {
+    let type: QuantifierType
+    let isLazy: Bool
+}
+
 // "a*", "a?", etc
-enum Quantifier {
+enum QuantifierType: Equatable {
     case zeroOrMore
     case oneOrMore
     case zeroOrOne
-    case range(ClosedRange<Int>)
+    case range(RangeQuantifier)
+}
+
+struct RangeQuantifier: Equatable {
+    let lowerBound: Int
+    let upperBound: Int?
 }
 
 // MARK: - AST (Description)
@@ -115,20 +136,23 @@ extension Match: CustomStringConvertible {
         switch type {
         case let .character(character): return "Character(\"\(character)\")"
         case let .string(string): return "String(\"\(string)\")"
-        case let .characterSet(set, isNegative): return "CharacterSet(\(isNegative ? "^" : "")\"\(set)\")"
-        case let .range(range, isNegative): return "Range(\(isNegative ? "^" : "")\(Character(range.lowerBound))-\(Character(range.upperBound)))"
         case .anyCharacter: return  "AnyCharacter"
+        case let .set(set): return "CharacterSet(\(set))"
+        case let .group(group): return "\(group)"
         }
+    }
+}
+
+extension CharacterGroup {
+    var description: String {
+        return "CharacterGroup(isInverted: \(isInverted), items: \(items))"
     }
 }
 
 extension Group: CustomStringConvertible {
     var description: String {
-        if isCapturing {
-            return "Group(index: \(index))"
-        } else {
-            return "Group(index: \(index), isCapturing: false)"
-        }
+        // TODO: improve description
+        return "Group(index: \(String(describing: index)), isCapturing: \(isCapturing)"
     }
 }
 
@@ -140,7 +164,7 @@ extension Alternation: CustomStringConvertible {
 
 extension Anchor: CustomStringConvertible {
     var description: String {
-        return "Anchor.\(type)"
+        return "Anchor.\(self)"
     }
 }
 
@@ -152,7 +176,7 @@ extension Backreference: CustomStringConvertible {
 
 extension QuantifiedExpression: CustomStringConvertible {
     var description: String {
-        return "Quantifier.\(type)" + (isLazy ? "(isLazy: true)" : "")
+        return "Quantifier.\(quantifier.type)" + (quantifier.isLazy ? "(isLazy: true)" : "")
     }
 }
 
