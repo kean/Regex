@@ -6,17 +6,15 @@ import Foundation
 
 extension Parsers {
     static let regex: Parser<AST> = zip(
-        startOfStringAnchor.optional,
+        literal("^").optional,
         expression,
         oneOf(
             end, // Parsed the entire string, we are good
-            literal(")").map { throw ParserError("Unmatched closing parentheses") } // Make sure no umnatches parantheses are left
+            literal(")").zeroOrThrow("Unmatched closing parentheses") // Make sure no umnatchesd parantheses are left
         )
     ).map { anchor, expression, _ in
         return AST(root: expression, isFromStartOfString: anchor != nil)
     }
-
-    private static let startOfStringAnchor = literal("^")
 
     // MARK: - Expression
 
@@ -28,7 +26,7 @@ extension Parsers {
         return Alternation(children: [lhs, rhs.1])
     }
 
-    // Tricks the compile into allowing us to define expression recursively (see `lazy`)
+    // Tricks the compiler into allowing us to define expression recursively (see `lazy`)
     private static let _expression: Parser<Unit> = lazy(expression)
 
     /// Parses anything that can be on a side of the alternation.
@@ -37,8 +35,19 @@ extension Parsers {
         anchor.map { $0 as Unit },
         backreference.map { $0 as Unit },
         quantified(match.map { $0 as Unit }),
-        literal(from: Keywords.quantifiers).map { throw ParserError("The preceeding token is not quantifiable") }
+        literal(from: Keywords.quantifiers).zeroOrThrow("The preceeding token is not quantifiable")
     ).oneOrMore.orThrow("Pattern must not be empty").map(flatten)
+
+    // MARK: - Group
+
+    static let group: Parser<Group> = zip(
+        "(",
+        literal("?:").optional,
+        expression,
+        literal(")").orThrow("Unmatched opening parentheses")
+    ).map { _, nonCapturingModifier, expression, _ in
+        Group(index: nil, isCapturing: nonCapturingModifier == nil, children: [expression])
+    }
 
     // MARK: - Match
 
@@ -53,10 +62,10 @@ extension Parsers {
     )
 
     static let matchAnyCharacter = literal(".").map { Match.anyCharacter }
-    static let matchCharacterGroup: Parser<Match> = characterGroup.map(Match.group)
-    static let matchCharacterSet: Parser<Match> = characterSet.map(Match.set)
-    static let matchEscapedCharacter: Parser<Match> = escapedCharacter.map(Match.character)
-    static let matchCharacter: Parser<Match> = char(excluding: ")|" + Keywords.quantifiers).map(Match.character)
+    static let matchCharacterGroup = characterGroup.map(Match.group)
+    static let matchCharacterSet = characterSet.map(Match.set)
+    static let matchEscapedCharacter = escapedCharacter.map(Match.character)
+    static let matchCharacter = char(excluding: ")|" + Keywords.quantifiers).map(Match.character)
 
     // MARK: - Character Classes
 
@@ -71,7 +80,7 @@ extension Parsers {
     }
 
     static let characterGroupItem: Parser<CharacterGroup.Item> = oneOf(
-        literal("/").map { throw ParserError("An unescaped delimiter must be escaped with a backslash") },
+        literal("/").zeroOrThrow("An unescaped delimiter must be escaped with a backslash"),
         characterSet.map(CharacterGroup.Item.set),
         characterRange.map(CharacterGroup.Item.range),
         escapedCharacter.map(CharacterGroup.Item.character),
@@ -84,14 +93,14 @@ extension Parsers {
         "-",
         char(excluding: "]")
     ).map { lhs, _, rhs in
-            guard let lb = Unicode.Scalar(String(lhs)), let ub = Unicode.Scalar(String(rhs)) else {
-                throw ParserError("Unsupported characters in character range")
-            }
-            guard ub >= lb else {
-                throw ParserError("Character range is out of order")
-            }
-            return lb...ub
+        guard let lb = Unicode.Scalar(String(lhs)), let ub = Unicode.Scalar(String(rhs)) else {
+            throw ParserError("Unsupported characters in character range")
         }
+        guard ub >= lb else {
+            throw ParserError("Character range is out of order")
+        }
+        return lb...ub
+    }
 
     static let characterSet = oneOf(characterClass, characterClassFromUnicodeCategory)
 
@@ -128,17 +137,6 @@ extension Parsers {
         default: throw ParserError("Unsupported unicode category '\(category)'")
         }
         return type == "p" ? set : set.inverted
-    }
-
-    // MARK: - Group
-
-    static let group: Parser<Group> = zip(
-        "(",
-        literal("?:").optional,
-        expression,
-        literal(")").orThrow("Unmatched opening parentheses")
-    ).map { _, nonCapturingModifier, expression, _ in
-        Group(index: nil, isCapturing: nonCapturingModifier == nil, children: [expression])
     }
 
     // MARK: - Quantifiers
