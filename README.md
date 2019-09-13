@@ -20,10 +20,10 @@ Use `isMatch(_:)` method to check if the regular expression patterns occurs in t
 regex.isMatch("<h1>Title</h1>")
 ```
 
-Retrieve one or all occurrences text that matches the regular expression by calling `matched(in:)` method. Each match contains a range in the input string.
+Retrieve one or all occurrences text that matches the regular expression by calling `matches(in:)` method. Each match contains a range in the input string.
 
 ```swift
-for match in regex.matches("<h1>Title</h1>\n<p>Text</p>") {
+for match in regex.matches(in: "<h1>Title</h1>\n<p>Text</p>") {
     print(match.value)
     // Prints ["<h1>", "</h1>", "<p>", "</p>"]
 }
