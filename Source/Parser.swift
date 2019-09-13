@@ -60,7 +60,7 @@ struct Parsers {}
 extension Parsers {
     /// Matches the given string.
     static func literal(_ p: String) -> Parser<Void> {
-        return Parser<Void> { str in
+        Parser<Void> { str in
             guard str.hasPrefix(p) else {
                 return nil
             }
@@ -71,7 +71,7 @@ extension Parsers {
 
     /// Matches any character contained in the given string.
     static func literal(from string: String) -> Parser<Void> {
-        char(where: string.contains).map { _ in () }
+        char.filter(string.contains).map { _ in () }
     }
 
     /// Matches any single character.
@@ -85,17 +85,12 @@ extension Parsers {
 
     /// Matches the given character.
     static func char(_ c: Character) -> Parser<Character> {
-        char(where: { $0 == c })
-    }
-
-    /// Matches a character if it satisfies the given predicate.
-    static func char(where predicate: @escaping (Character) -> Bool) -> Parser<Character> {
-        char.map { predicate($0) ? $0 : nil }
+        char.filter { $0 == c }
     }
 
     /// Matches a character if the given string doesn't contain it.
     static func char(excluding string: String) -> Parser<Character> {
-        char(where: { !string.contains($0) })
+        char.filter { !string.contains($0) }
     }
 
     /// Matches characters while the given string doesn't contain them.
@@ -107,7 +102,7 @@ extension Parsers {
     static let number = digit.oneOrMore.map { Int(String($0)) }
 
     /// Matches a single digit.
-    static let digit: Parser<Character> = char(where: CharacterSet.decimalDigits.contains)
+    static let digit: Parser<Character> = char.filter(CharacterSet.decimalDigits.contains)
 }
 
 extension Parser: ExpressibleByStringLiteral, ExpressibleByUnicodeScalarLiteral, ExpressibleByExtendedGraphemeClusterLiteral where A == Void {
@@ -193,21 +188,15 @@ extension Parser {
             return try parserB.parse(&str)
         }
     }
+
+    func filter(_ predicate: @escaping (A) -> Bool) -> Parser<A> {
+        map { predicate($0) ? $0 : nil }
+    }
 }
 
 // MARK: - Parser (Quantifiers)
 
 extension Parser {
-
-    /// Throws an error with the given message if the parser fails to produce a match.
-    func required(_ message: String) -> Parser {
-        Parser { str -> A? in
-            guard let match = try self.parse(&str) else {
-                throw ParserError(message)
-            }
-            return match
-        }
-    }
 
     /// Matches the given parser zero or one times. Parser<A> -> Parser<A?> tranformation.
     var optional: Parser<A?> {
@@ -230,6 +219,31 @@ extension Parser {
     /// Matches the given parser one or more times.
     var oneOrMore: Parser<[A]> {
         zeroOrMore.map { $0.isEmpty ? nil : $0 }
+    }
+
+    /// Matches of the parser produces no matches (inverts the parser).
+    var zero: Parser<Void> {
+        map { _ in nil }
+    }
+}
+
+// MARK: - Parser (Error Reporting)
+
+extension Parser {
+
+    /// Throws an error with the given message if the parser fails to produce a match.
+    func orThrow(_ message: String) -> Parser {
+        Parser { str -> A? in
+            guard let match = try self.parse(&str) else {
+                throw ParserError(message)
+            }
+            return match
+        }
+    }
+
+    /// Matches if the parser produces no matches. Throws an error otherwise.
+    func zeroOrThrow<B>(_ message: String) -> Parser<B> { // automatically casts to whatever type
+        map { _ in throw ParserError(message) }
     }
 }
 
