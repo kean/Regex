@@ -6,11 +6,11 @@ import Foundation
 
 extension Parsers {
     static let regex: Parser<AST> = zip(
-        literal("^").optional,
+        string("^").optional,
         expression,
         oneOf(
             end, // Parsed the entire string, we are good
-            literal(")").zeroOrThrow("Unmatched closing parentheses") // Make sure no umnatchesd parantheses are left
+            string(")").zeroOrThrow("Unmatched closing parentheses") // Make sure no umnatchesd parantheses are left
         )
     ).map { anchor, expression, _ in
         return AST(root: expression, isFromStartOfString: anchor != nil)
@@ -35,16 +35,16 @@ extension Parsers {
         anchor.map { $0 as Unit },
         backreference.map { $0 as Unit },
         quantified(match.map { $0 as Unit }),
-        literal(from: Keywords.quantifiers).zeroOrThrow("The preceeding token is not quantifiable")
+        char(from: Keywords.quantifiers).zeroOrThrow("The preceeding token is not quantifiable")
     ).oneOrMore.orThrow("Pattern must not be empty").map(flatten)
 
     // MARK: - Group
 
     static let group: Parser<Group> = zip(
         "(",
-        literal("?:").optional,
+        string("?:").optional,
         expression,
-        literal(")").orThrow("Unmatched opening parentheses")
+        string(")").orThrow("Unmatched opening parentheses")
     ).map { _, nonCapturingModifier, expression, _ in
         Group(index: nil, isCapturing: nonCapturingModifier == nil, children: [expression])
     }
@@ -61,7 +61,7 @@ extension Parsers {
         matchCharacter
     )
 
-    static let matchAnyCharacter = literal(".").map { Match.anyCharacter }
+    static let matchAnyCharacter = string(".").map { Match.anyCharacter }
     static let matchCharacterGroup = characterGroup.map(Match.group)
     static let matchCharacterSet = characterSet.map(Match.set)
     static let matchEscapedCharacter = escapedCharacter.map(Match.character)
@@ -72,15 +72,15 @@ extension Parsers {
     /// Matches a character group, e.g. "[a-z]", "[abc]", etc.
     static let characterGroup: Parser<CharacterGroup> = zip(
         "[",
-        literal("^").optional,
+        string("^").optional,
         characterGroupItem.oneOrMore.orThrow("Character group is empty"),
-        literal("]").orThrow("Character group missing closing bracket")
+        string("]").orThrow("Character group missing closing bracket")
     ).map { _, invert, items, _ in
         CharacterGroup(isInverted: invert != nil, items: items)
     }
 
     static let characterGroupItem: Parser<CharacterGroup.Item> = oneOf(
-        literal("/").zeroOrThrow("An unescaped delimiter must be escaped with a backslash"),
+        string("/").zeroOrThrow("An unescaped delimiter must be escaped with a backslash"),
         characterSet.map(CharacterGroup.Item.set),
         characterRange.map(CharacterGroup.Item.range),
         escapedCharacter.map(CharacterGroup.Item.character),
@@ -122,10 +122,10 @@ extension Parsers {
     /// A unicode category, e.g. "\p{P}" - all punctuation characters.
     static let characterClassFromUnicodeCategory: Parser<CharacterSet> = zip(
         "\\",
-        oneOf(char("p"), char("P")),
-        literal("{").orThrow("Missing unicode category name"),
+        char(from: "pP"),
+        string("{").orThrow("Missing unicode category name"),
         string(excluding: "}").orThrow("Missing unicode category name"),
-        literal("}").orThrow("Missing closing brace")
+        string("}").orThrow("Missing closing brace")
     ).map { _, type, _, category, _ in
         let set: CharacterSet
         switch category {
@@ -142,16 +142,16 @@ extension Parsers {
     // MARK: - Quantifiers
 
     static let quantifier: Parser<Quantifier> = zip(
-        quantifierType, literal("?").optional
+        quantifierType, string("?").optional
     ).map { type, lazy in
         Quantifier(type: type, isLazy: lazy != nil)
     }
 
     /// Parses quantifier type, e.g. zero or more, range quantifier.
     static let quantifierType: Parser<QuantifierType> = oneOf(
-        literal("*").map { .zeroOrMore },
-        literal("+").map { .oneOrMore },
-        literal("?").map { .zeroOrOne },
+        string("*").map { .zeroOrMore },
+        string("+").map { .oneOrMore },
+        string("?").map { .zeroOrOne },
         rangeQuantifier.map(QuantifierType.range)
     )
 
@@ -174,7 +174,7 @@ extension Parsers {
 
     static let anchor: Parser<Anchor> = oneOf(
         escapedAnchor,
-        literal("$").map { .endOfString }
+        string("$").map { .endOfString }
     )
 
     private static let escapedAnchor: Parser<Anchor> = zip("\\", char).map { _, char in

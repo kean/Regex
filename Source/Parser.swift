@@ -4,18 +4,23 @@
 
 import Foundation
 
-// A simple parser combinators implementation. See Grammar.swift for the actual
-// regex grammar.
+// A simple parser combinators implementation. "Combinators" mean higher-order
+// functions that take one or more parsers as input and produce new parsers like
+// output.
+//
+// See Grammar.swift for the actual regex grammar.
 
 // MARK: - Parser
 
 struct Parser<A> {
+    /// Parses the given string. Returns the matched element `A` and the
+    /// remaining substring if the match is succesful. Returns `nil` otherwise.
     let parse: (_ string: Substring) throws -> (A, Substring)?
 }
 
 extension Parser {
     func parse(_ string: String) throws -> A? {
-        return try parse(string[...])?.0
+        try parse(string[...])?.0
     }
 }
 
@@ -27,7 +32,7 @@ struct ParserError: Error, LocalizedError {
     }
 
     public var errorDescription: String? {
-        return "\(message)"
+        "\(message)"
     }
 }
 
@@ -37,16 +42,10 @@ struct Parsers {}
 
 extension Parsers {
     /// Matches the given string.
-    static func literal(_ p: String) -> Parser<Void> {
-        Parser<Void> { str in
-            guard str.hasPrefix(p) else { return nil }
-            return ((), str.dropFirst(p.count))
+    static func string(_ p: String) -> Parser<Void> {
+        Parser { str in
+            str.hasPrefix(p) ? ((), str.dropFirst(p.count)) : nil
         }
-    }
-
-    /// Matches any character contained in the given string.
-    static func literal(from string: String) -> Parser<Void> {
-        char.filter(string.contains).map { _ in () }
     }
 
     /// Matches any single character.
@@ -55,14 +54,14 @@ extension Parsers {
         return (first, str.dropFirst())
     }
 
-    /// Matches the given character.
-    static func char(_ c: Character) -> Parser<Character> {
-        char.filter { $0 == c }
-    }
-
     /// Matches a character if the given string doesn't contain it.
     static func char(excluding string: String) -> Parser<Character> {
         char.filter { !string.contains($0) }
+    }
+
+    /// Matches any character contained in the given string.
+    static func char(from string: String) -> Parser<Character> {
+        char.filter(string.contains)
     }
 
     /// Matches characters while the given string doesn't contain them.
@@ -85,7 +84,7 @@ extension Parser: ExpressibleByStringLiteral, ExpressibleByUnicodeScalarLiteral,
     typealias StringLiteralType = String
 
     init(stringLiteral value: String) {
-        self = Parsers.literal(value)
+        self = Parsers.string(value)
     }
 }
 
