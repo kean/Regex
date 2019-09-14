@@ -10,34 +10,12 @@ import Foundation
 // MARK: - Parser
 
 struct Parser<A> {
-    private let run: (_ string: inout Substring) throws -> A?
-
-    init(_ parse: @escaping (_ string: inout Substring) throws -> A?) {
-        self.run = parse
-    }
+    let parse: (_ string: Substring) throws -> (A, Substring)?
 }
 
 extension Parser {
-    /// Parses the given string. Automatically rollbacks to the point before
-    /// parsing started if error is encountered.
-    func parse(_ string: inout Substring) throws -> A? {
-        let stash = string
-        do {
-            guard let match = try run(&string) else {
-                string = stash
-                return nil
-            }
-            return match
-        } catch {
-            string = stash // Rollback to the index before parsing started
-            throw error
-        }
-    }
-
     func parse(_ string: String) throws -> A? {
-        var substring = string[...]
-        let output = try run(&substring)
-        return output
+        return try parse(string[...])?.0
     }
 }
 
@@ -61,11 +39,8 @@ extension Parsers {
     /// Matches the given string.
     static func literal(_ p: String) -> Parser<Void> {
         Parser<Void> { str in
-            guard str.hasPrefix(p) else {
-                return nil
-            }
-            str.removeFirst(p.count)
-            return ()
+            guard str.hasPrefix(p) else { return nil }
+            return ((), str.dropFirst(p.count))
         }
     }
 
@@ -76,11 +51,8 @@ extension Parsers {
 
     /// Matches any single character.
     static let char = Parser<Character> { str in
-        guard let first = str.first else {
-            return nil
-        }
-        str.removeFirst()
-        return first
+        guard let first = str.first else { return nil }
+        return (first, str.dropFirst())
     }
 
     /// Matches the given character.
@@ -121,11 +93,12 @@ extension Parser: ExpressibleByStringLiteral, ExpressibleByUnicodeScalarLiteral,
 
 /// Matches only if both of the given parsers produced a result.
 func zip<A, B>(_ a: Parser<A>, _ b: Parser<B>) -> Parser<(A, B)> {
-    return Parser<(A, B)> { str -> (A, B)? in
-        guard let matchA = try a.parse(&str), let matchB = try b.parse(&str) else {
-            return nil
+    return Parser<(A, B)> { str -> ((A, B), Substring)? in
+        guard let (matchA, strA) = try a.parse(str),
+            let (matchB, strB) = try b.parse(strA) else {
+                return nil
         }
-        return (matchA, matchB)
+        return ((matchA, matchB), strB)
     }
 }
 
@@ -162,9 +135,9 @@ func zip<A, B, C, D, E>(
 /// Returns the first match or `nil` if no matches are found.
 func oneOf<A>(_ parsers: Parser<A>...) -> Parser<A> {
     precondition(!parsers.isEmpty)
-    return Parser<A> { str -> A? in
+    return Parser<A> { str -> (A, Substring)? in
         for parser in parsers {
-            if let match = try parser.parse(&str) {
+            if let match = try parser.parse(str) {
                 return match
             }
         }
@@ -175,17 +148,17 @@ func oneOf<A>(_ parsers: Parser<A>...) -> Parser<A> {
 extension Parser {
     func map<B>(_ transform: @escaping (A) throws -> B?) -> Parser<B> {
         flatMap { match in
-            Parser<B> { _ in try transform(match) }
+            Parser<B> { str in (try transform(match)).map { ($0, str) } }
         }
     }
 
     func flatMap<B>(_ transform: @escaping (A) -> Parser<B>) -> Parser<B> {
-        Parser<B> { str -> B? in
-            guard let matchA = try self.parse(&str) else {
+        Parser<B> { str -> (B, Substring)? in
+            guard let (matchA, strA) = try self.parse(str) else {
                 return nil
             }
             let parserB = transform(matchA)
-            return try parserB.parse(&str)
+            return try parserB.parse(strA)
         }
     }
 
@@ -200,19 +173,24 @@ extension Parser {
 
     /// Matches the given parser zero or one times. Parser<A> -> Parser<A?> tranformation.
     var optional: Parser<A?> {
-        Parser<A?> { str -> A?? in // yes, double-optional, zip unwraps it
-            try self.parse(&str)
+        Parser<A?> { str -> (A?, Substring)? in // yes, double-optional, zip unwraps it
+            guard let match = try self.parse(str) else {
+                return (nil, str) // Return empty match without consuming any characters
+            }
+            return match
         }
     }
 
     /// Matches the given parser zero or more times.
     var zeroOrMore: Parser<[A]> {
-        Parser<[A]> { str -> [A]? in
+        Parser<[A]> { str -> ([A], Substring)? in
+            var str = str
             var matches = [A]()
-            while let match = try self.parse(&str) {
+            while let (match, newStr) = try self.parse(str) {
                 matches.append(match)
+                str = newStr
             }
-            return matches
+            return (matches, str)
         }
     }
 
@@ -233,8 +211,8 @@ extension Parser {
 
     /// Throws an error with the given message if the parser fails to produce a match.
     func orThrow(_ message: String) -> Parser {
-        Parser { str -> A? in
-            guard let match = try self.parse(&str) else {
+        Parser { str -> (A, Substring)? in
+            guard let match = try self.parse(str) else {
                 throw ParserError(message)
             }
             return match
@@ -252,13 +230,13 @@ extension Parser {
 extension Parsers {
 
     /// Succeeds when input is empty.
-    static let end = Parser<Void> { str in str.isEmpty ? () : nil }
+    static let end = Parser<Void> { str in str.isEmpty ? ((), str) : nil }
 
     /// Delays the creation of parser. Use it to break dependency cycles when
     /// creating recursive parsers.
     static func lazy<A>(_ closure: @autoclosure @escaping () -> Parser<A>) -> Parser<A> {
         Parser { str in
-            try closure().parse(&str)
+            try closure().parse(str)
         }
     }
 }

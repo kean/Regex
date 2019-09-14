@@ -116,3 +116,13 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
         }
     }
 }
+
+class PerformanceParsingTests: XCTestCase {
+    func testParsing() {
+        measure {
+            for _ in 0...500 {
+                let _ = try! Regex(#"^[-]?[0-9]+[,.]?[0-9]*([\/][0-9]+[,.]?[0-9]*)*$"#)
+            }
+        }
+    }
+}
