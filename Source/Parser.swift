@@ -151,17 +151,6 @@ extension Parser {
 // MARK: - Parser (Quantifiers)
 
 extension Parser {
-
-    /// Matches the given parser zero or one times. Parser<A> -> Parser<A?> tranformation.
-    var optional: Parser<A?> {
-        Parser<A?> { str -> (A?, Substring)? in // yes, double-optional, zip unwraps it
-            guard let match = try self.parse(str) else {
-                return (nil, str) // Return empty match without consuming any characters
-            }
-            return match
-        }
-    }
-
     /// Matches the given parser zero or more times.
     var zeroOrMore: Parser<[A]> {
         Parser<[A]> { str -> ([A], Substring)? in
@@ -186,6 +175,26 @@ extension Parser {
     }
 }
 
+// MARK: - Parser (Optional)
+
+func optional<A>(_ parser: Parser<A>) -> Parser<A?> {
+    Parser<A?> { str -> (A?, Substring)? in // yes, double-optional, zip unwraps it
+          guard let match = try parser.parse(str) else {
+              return (nil, str) // Return empty match without consuming any characters
+          }
+          return match
+      }
+}
+
+func optional(_ parser: Parser<Void>) -> Parser<Bool> {
+    Parser<Bool> { str -> (Bool, Substring)? in
+        guard let match = try parser.parse(str) else {
+            return (false, str) // Return empty match without consuming any characters
+        }
+        return (true, match.1)
+    }
+}
+
 // MARK: - Parser (Error Reporting)
 
 extension Parser {
@@ -201,7 +210,7 @@ extension Parser {
     }
 
     /// Matches if the parser produces no matches. Throws an error otherwise.
-    func zeroOrThrow<B>(_ message: String) -> Parser<B> { // automatically casts to whatever type
+    func zeroOrThrow<B>(_ message: String) -> Parser<B> {  // automatically cast
         map { _ in throw ParserError(message) }
     }
 }
@@ -220,4 +229,27 @@ extension Parsers {
             try closure().parse(str)
         }
     }
+}
+
+// MARK: - Parser (Operators)
+
+infix operator *> : CombinatorPrecedence
+infix operator <* : CombinatorPrecedence
+infix operator <*> : CombinatorPrecedence
+
+func *> <A, B>(_ lhs: Parser<A>, _ rhs: Parser<B>) -> Parser<B> {
+    zip(lhs, rhs).map { $0.1 }
+}
+
+func <* <A, B>(_ lhs: Parser<A>, _ rhs: Parser<B>) -> Parser<A> {
+    zip(lhs, rhs).map { $0.0 }
+}
+
+func <*> <A, B>(_ lhs: Parser<A>, _ rhs: Parser<B>) -> Parser<(A, B)> {
+    zip(lhs, rhs)
+}
+
+precedencegroup CombinatorPrecedence {
+    associativity: left
+    higherThan: DefaultPrecedence
 }

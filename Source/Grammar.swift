@@ -5,32 +5,30 @@
 import Foundation
 
 extension Parsers {
-    static let regex: Parser<AST> = zip(
-        string("^").optional,
-        expression,
-        oneOf(
-            end, // Parsed the entire string, we are good
-            string(")").zeroOrThrow("Unmatched closing parentheses") // Make sure no umnatchesd parantheses are left
-        )
-    ).map { anchor, expression, _ in
-        return AST(root: expression, isFromStartOfString: anchor != nil)
-    }
+
+    static let regex = (optional("^") <*> expression <* endOfPattern).map(AST.init)
+
+    static let endOfPattern = oneOf(
+        end, // Parsed the entire string, we are good
+        string(")").zero.orThrow("Unmatched closing parentheses") // Make sure no unmatched parentheses left!
+    )
 
     // MARK: - Expression
 
-    static let expression: Parser<Unit> = zip(
-        subexpression,
-        zip("|", _expression).optional // Recursively parse the right side of the alternation
-    ).map { lhs, rhs in
-        guard let rhs = rhs else { return lhs } // No alternation matched
-        return Alternation(children: [lhs, rhs.1])
+    /// The entry point for parsing any regex expression. The right side is
+    /// defined recursively.
+    static let expression = (subexpression <*> optional("|" *> _expression)).map(makeExpression)
+
+    static func makeExpression(_ lhs: Unit, _ rhs: Unit?) -> Unit {
+        guard let rhs = rhs else { return lhs }
+        return Alternation(children: [lhs, rhs]) // Optimizer later transforms tree into array
     }
 
-    // Tricks the compiler into allowing us to define expression recursively (see `lazy`)
-    private static let _expression: Parser<Unit> = lazy(expression)
+    /// Wraps `expression` parser into a closure to allow us to define `expression` recursively
+    static let _expression: Parser<Unit> = lazy(expression)
 
     /// Parses anything that can be on a side of the alternation.
-    private static let subexpression: Parser<Unit> = oneOf(
+    static let subexpression: Parser<Unit> = oneOf(
         quantified(lazy(group).map { $0 as Unit }),
         anchor.map { $0 as Unit },
         backreference.map { $0 as Unit },
@@ -40,46 +38,34 @@ extension Parsers {
 
     // MARK: - Group
 
-    static let group: Parser<Group> = zip(
-        "(",
-        string("?:").optional,
-        expression,
-        string(")").orThrow("Unmatched opening parentheses")
-    ).map { _, nonCapturingModifier, expression, _ in
-        Group(index: nil, isCapturing: nonCapturingModifier == nil, children: [expression])
+    static let group = ("(" *> optional("?:") <*> expression <* string(")").orThrow("Unmatched opening parentheses")).map(makeGroup)
+
+    static func makeGroup(isNonCapturing: Bool, expression: Unit) -> Group {
+        Group(index: nil, isCapturing: !isNonCapturing, children: [expression])
     }
 
     // MARK: - Match
 
-    // Any subexpression that is used for matching against the input string, e.g.
-    // "a" - matches a character, "[a-z]" – matches a character group, etc.
-    static let match: Parser<Match> = oneOf(
-        matchAnyCharacter,
-        matchCharacterGroup,
-        matchCharacterSet,
-        matchEscapedCharacter,
-        matchCharacter
+    /// Any subexpression that is used for matching against the input string, e.g.
+    /// "a" - matches a character, "[a-z]" – matches a character group, etc.
+    static let match = oneOf(
+        string(".").map { Match.anyCharacter },
+        characterGroup.map(Match.group),
+        characterSet.map(Match.set),
+        escapedCharacter.map(Match.character),
+        char(excluding: ")|" + Keywords.quantifiers).map(Match.character)
     )
-
-    static let matchAnyCharacter = string(".").map { Match.anyCharacter }
-    static let matchCharacterGroup = characterGroup.map(Match.group)
-    static let matchCharacterSet = characterSet.map(Match.set)
-    static let matchEscapedCharacter = escapedCharacter.map(Match.character)
-    static let matchCharacter = char(excluding: ")|" + Keywords.quantifiers).map(Match.character)
 
     // MARK: - Character Classes
 
     /// Matches a character group, e.g. "[a-z]", "[abc]", etc.
-    static let characterGroup: Parser<CharacterGroup> = zip(
-        "[",
-        string("^").optional,
-        characterGroupItem.oneOrMore.orThrow("Character group is empty"),
+    static let characterGroup = (
+        "[" *> optional("^") <*>
+        characterGroupItem.oneOrMore.orThrow("Character group is empty") <*
         string("]").orThrow("Character group missing closing bracket")
-    ).map { _, invert, items, _ in
-        CharacterGroup(isInverted: invert != nil, items: items)
-    }
+    ).map(CharacterGroup.init)
 
-    static let characterGroupItem: Parser<CharacterGroup.Item> = oneOf(
+    static let characterGroupItem = oneOf(
         string("/").zeroOrThrow("An unescaped delimiter must be escaped with a backslash"),
         characterSet.map(CharacterGroup.Item.set),
         characterRange.map(CharacterGroup.Item.range),
@@ -88,11 +74,9 @@ extension Parsers {
     )
 
     /// Character range, e.g. "a-z".
-    static let characterRange: Parser<ClosedRange<Unicode.Scalar>> = zip(
-        char(excluding: "]"),
-        "-",
-        char(excluding: "]")
-    ).map { lhs, _, rhs in
+    static let characterRange = (char(excluding: "]") <* "-" <*> char(excluding: "]")).map(makeCharacterRange)
+
+    static func makeCharacterRange(_ lhs: Character, _ rhs: Character) throws -> ClosedRange<Unicode.Scalar> {
         guard let lb = Unicode.Scalar(String(lhs)), let ub = Unicode.Scalar(String(rhs)) else {
             throw ParserError("Unsupported characters in character range")
         }
@@ -105,9 +89,9 @@ extension Parsers {
     static let characterSet = oneOf(characterClass, characterClassFromUnicodeCategory)
 
     /// Predefined characters classes, e.g. "\d" - digits.
-    static let characterClass: Parser<CharacterSet> = zip(
-        "\\", char
-    ).map { _, char in
+    static let characterClass = ("\\" *> char).map(makeCharacterClass)
+
+    static func makeCharacterClass(_ char: Character) -> CharacterSet? {
         switch char {
         case "d": return CharacterSet.decimalDigits
         case "D": return CharacterSet.decimalDigits.inverted
@@ -120,32 +104,31 @@ extension Parsers {
     }
 
     /// A unicode category, e.g. "\p{P}" - all punctuation characters.
-    static let characterClassFromUnicodeCategory: Parser<CharacterSet> = zip(
-        "\\",
-        char(from: "pP"),
-        string("{").orThrow("Missing unicode category name"),
-        string(excluding: "}").orThrow("Missing unicode category name"),
+    static let characterClassFromUnicodeCategory: Parser<CharacterSet> =
+        ("\\" *> char(from: "pP") <*> unicodeCategory)
+            .map { type, category in type == "p" ? category : category.inverted }
+
+    static let unicodeCategory = (
+        string("{").orThrow("Missing unicode category name") *>
+        string(excluding: "}").orThrow("Missing unicode category name") <*
         string("}").orThrow("Missing closing brace")
-    ).map { _, type, _, category, _ in
-        let set: CharacterSet
-        switch category {
-        case "P": set = .punctuationCharacters
-        case "Lt": set = .capitalizedLetters
-        case "Ll": set = .lowercaseLetters
-        case "N": set = .nonBaseCharacters
-        case "S": set = .symbols
-        default: throw ParserError("Unsupported unicode category '\(category)'")
+    ).map(makeUnicodeCategory)
+
+    static func makeUnicodeCategory(_ name: String) throws -> CharacterSet? {
+        switch name {
+        case "P": return .punctuationCharacters
+        case "Lt": return .capitalizedLetters
+        case "Ll": return .lowercaseLetters
+        case "N": return .nonBaseCharacters
+        case "S": return .symbols
+        default: throw ParserError("Unsupported unicode category '\(name)'")
         }
-        return type == "p" ? set : set.inverted
     }
 
     // MARK: - Quantifiers
 
-    static let quantifier: Parser<Quantifier> = zip(
-        quantifierType, string("?").optional
-    ).map { type, lazy in
-        Quantifier(type: type, isLazy: lazy != nil)
-    }
+    // Parses the quantifier, e.g. "*", "*?", "{2,4}".
+    static let quantifier = (quantifierType <*> optional("?")).map(Quantifier.init)
 
     /// Parses quantifier type, e.g. zero or more, range quantifier.
     static let quantifierType: Parser<QuantifierType> = oneOf(
@@ -155,30 +138,29 @@ extension Parsers {
         rangeQuantifier.map(QuantifierType.range)
     )
 
-    /// Parsers range quantifier, e.g. "{2,4}", "{2}", "{4,}".
-    static let rangeQuantifier: Parser<RangeQuantifier> = zip(
-        "{", number, zip(",", number.optional).optional, "}"
-    ).map { _, lhs, rhs, _ in
-        RangeQuantifier(lowerBound: lhs, upperBound: rhs == nil ? lhs : rhs?.1)
+    /// Parses range quantifier, e.g. "{2,4}", "{2}", "{4,}".
+    static let rangeQuantifier = ("{" *> number <*> optional("," *> optional(number)) <* "}").map(makeRangeQuantifier)
+
+    static func makeRangeQuantifier(_ lhs: Int, _ rhs: Int??) -> RangeQuantifier {
+        RangeQuantifier(lowerBound: lhs, upperBound: rhs == nil ? lhs : rhs!)
     }
 
     /// Wrap the parser to allow the parsed expression to be quantified.
     static func quantified(_ parser: Parser<Unit>) -> Parser<Unit> {
-        zip(parser, quantifier.optional).map { expression, quantifier in
+        (parser <*> optional(quantifier)).map { expression, quantifier in
             guard let quantifier = quantifier else { return expression }
-            return QuantifiedExpression(quantifier: quantifier, expression: expression)
+            return QuantifiedExpression(expression: expression, quantifier: quantifier)
         }
     }
 
     // MARK: - Anchors
 
-    static let anchor: Parser<Anchor> = oneOf(
-        escapedAnchor,
-        string("$").map { .endOfString }
-    )
+    static let anchor = oneOf(escapedAnchor, string("$").map { .endOfString })
 
-    private static let escapedAnchor: Parser<Anchor> = zip("\\", char).map { _, char in
-        switch char {
+    static let escapedAnchor = ("\\" *> char).map(makeAnchor)
+
+    static func makeAnchor(_ name: Character) -> Anchor? {
+        switch name {
         case "b": return .wordBoundary
         case "B": return .nonWordBoundary
         case "A": return .startOfStringOnly
@@ -191,22 +173,15 @@ extension Parsers {
 
     // MARK: - Backreference
 
-    static let backreference: Parser<Backreference> = zip(
-        "\\", number
-    ).map { _, index in
-        Backreference(index: index)
-    }
+    static let backreference = ("\\" *> number).map(Backreference.init)
 
     // MARK: - Misc
 
-    static let escapedCharacter = zip(
-        "\\",
-        char.orThrow("Pattern may not end with a trailing backslash")
-    ).map { _, char in char }
+    static let escapedCharacter = "\\" *> char.orThrow("Pattern may not end with a trailing backslash")
 
     /// Creates a unit which represents an expression. If there is only one
     /// child, returns a child itself to avoid additional overhead.
-    private static func flatten(_ children: [Unit]) -> Unit? {
+    static func flatten(_ children: [Unit]) -> Unit? {
         switch children.count {
         case 0: return nil
         case 1: return children[0]

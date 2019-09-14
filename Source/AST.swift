@@ -17,8 +17,8 @@ protocol Composite {
 // MARK: - AST (Components)
 
 struct AST {
-    let root: Unit
     let isFromStartOfString: Bool
+    let root: Unit
 }
 
 // "(ab)"
@@ -74,8 +74,8 @@ struct CharacterGroup: Unit {
 }
 
 struct QuantifiedExpression: Unit, Composite {
-    let quantifier: Quantifier
     let expression: Unit
+    let quantifier: Quantifier
 
     var children: [Unit] { return [expression] }
 }

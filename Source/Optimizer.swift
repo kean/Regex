@@ -12,7 +12,7 @@ final class Optimizer {
     }
 
     func optimize(_ ast: AST) -> AST {
-        return AST(root: optimize(ast.root), isFromStartOfString: ast.isFromStartOfString)
+        return AST(isFromStartOfString: ast.isFromStartOfString, root: optimize(ast.root))
     }
 
     func optimize(_ unit: Unit) -> Unit {
@@ -72,6 +72,6 @@ final class Optimizer {
     }
 
     func optimize(_ expression: QuantifiedExpression) -> QuantifiedExpression {
-        return QuantifiedExpression(quantifier: expression.quantifier, expression: optimize(expression.expression))
+        return QuantifiedExpression(expression: optimize(expression.expression), quantifier: expression.quantifier)
     }
 }
