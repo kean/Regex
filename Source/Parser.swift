@@ -50,8 +50,7 @@ extension Parsers {
 
     /// Matches any single character.
     static let char = Parser<Character> { str in
-        guard let first = str.first else { return nil }
-        return (first, str.dropFirst())
+        str.isEmpty ? nil : (str.first!, str.dropFirst())
     }
 
     /// Matches a character if the given string doesn't contain it.
@@ -73,7 +72,7 @@ extension Parsers {
     static let number = digit.oneOrMore.map { Int(String($0)) }
 
     /// Matches a single digit.
-    static let digit: Parser<Character> = char.filter(CharacterSet.decimalDigits.contains)
+    static let digit = char.filter(CharacterSet.decimalDigits.contains)
 }
 
 extension Parser: ExpressibleByStringLiteral, ExpressibleByUnicodeScalarLiteral, ExpressibleByExtendedGraphemeClusterLiteral where A == Void {
@@ -129,17 +128,17 @@ func oneOf<A>(_ parsers: Parser<A>...) -> Parser<A> {
 extension Parser {
     func map<B>(_ transform: @escaping (A) throws -> B?) -> Parser<B> {
         flatMap { match in
-            Parser<B> { str in (try transform(match)).map { ($0, str) } }
+            Parser<B> { str in
+                guard let value = try transform(match) else { return nil }
+                return (value, str)
+            }
         }
     }
 
-    func flatMap<B>(_ transform: @escaping (A) -> Parser<B>) -> Parser<B> {
-        Parser<B> { str -> (B, Substring)? in
-            guard let (matchA, strA) = try self.parse(str) else {
-                return nil
-            }
-            let parserB = transform(matchA)
-            return try parserB.parse(strA)
+    func flatMap<B>(_ transform: @escaping (A) throws -> Parser<B>) -> Parser<B> {
+        Parser<B> { str in
+            guard let (a, str) = try self.parse(str) else { return nil }
+            return try transform(a).parse(str)
         }
     }
 
@@ -153,7 +152,7 @@ extension Parser {
 extension Parser {
     /// Matches the given parser zero or more times.
     var zeroOrMore: Parser<[A]> {
-        Parser<[A]> { str -> ([A], Substring)? in
+        Parser<[A]> { str in
             var str = str
             var matches = [A]()
             while let (match, newStr) = try self.parse(str) {
