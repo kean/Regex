@@ -2,7 +2,7 @@
 
 Open source regular expression implementation.
 
-> Created primarily for learning purposes, not meant for production.
+> See [**Let's Build a Regex Engine**](https://kean.github.io/post/lets-build-regex) series to learn how this project came to be.
 
 # Usage
 

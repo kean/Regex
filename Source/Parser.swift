@@ -91,13 +91,7 @@ extension Parser: ExpressibleByStringLiteral, ExpressibleByUnicodeScalarLiteral,
 
 /// Matches only if both of the given parsers produced a result.
 func zip<A, B>(_ a: Parser<A>, _ b: Parser<B>) -> Parser<(A, B)> {
-    return Parser<(A, B)> { str -> ((A, B), Substring)? in
-        guard let (matchA, strA) = try a.parse(str),
-            let (matchB, strB) = try b.parse(strA) else {
-                return nil
-        }
-        return ((matchA, matchB), strB)
-    }
+    a.flatMap { matchA in b.map { matchB in (matchA, matchB) } }
 }
 
 func zip<A, B, C>(_ a: Parser<A>, _ b: Parser<B>, _ c: Parser<C>) -> Parser<(A, B, C)> {
@@ -129,8 +123,7 @@ extension Parser {
     func map<B>(_ transform: @escaping (A) throws -> B?) -> Parser<B> {
         flatMap { match in
             Parser<B> { str in
-                guard let value = try transform(match) else { return nil }
-                return (value, str)
+                (try transform(match)).map { ($0, str) }
             }
         }
     }
@@ -177,7 +170,7 @@ extension Parser {
 // MARK: - Parser (Optional)
 
 func optional<A>(_ parser: Parser<A>) -> Parser<A?> {
-    Parser<A?> { str -> (A?, Substring)? in // yes, double-optional, zip unwraps it
+    Parser<A?> { str -> (A?, Substring)? in
           guard let match = try parser.parse(str) else {
               return (nil, str) // Return empty match without consuming any characters
           }
