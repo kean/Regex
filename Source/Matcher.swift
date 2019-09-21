@@ -219,13 +219,15 @@ final class RegularMatcher: Matching {
                     switch result {
                     case .rejected:
                         break // Do nothing
-                    case .epsilon:
-                        stack.append(transition.end.index) // Continue walking the graph
                     case let .accepted(count):
-                        newReachableStates.insert(transition.end.index)
-                        // The state is going to be reachable until index T+count is reached
-                        if count > 1 {
-                            reachableUntil[transition.end.index] = cursor.index(cursor.index, offsetBy: count, isLimited: true)
+                        if count > 0 { // Consumed characters
+                            newReachableStates.insert(transition.end.index)
+                            // The state is going to be reachable until index T+count is reached
+                            if count > 1 {
+                                reachableUntil[transition.end.index] = cursor.index(cursor.index, offsetBy: count, isLimited: true)
+                            }
+                        } else {
+                            stack.append(transition.end.index) // Espilon, continue walking the graph
                         }
                     }
 
@@ -233,7 +235,6 @@ final class RegularMatcher: Matching {
                     let message: String
                     switch result {
                     case .rejected: message = "State NOT reachable"
-                    case .epsilon: message = "State reachable via epsilon"
                     case let .accepted(count): message = "State reachable consuming \(count)"
                     }
                     if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: \(message) \(symbols.description(for: transition.end))") }
@@ -432,10 +433,10 @@ final class BacktrackingMatcher: Matching {
                 #endif
 
                 continue
-            case .epsilon:
-                break // Continue, don't advance cursor
             case let .accepted(count):
-                cursor.advance(by: count) // Consume as many characters as need (zero for epsilon transitions)
+                if count > 0 {
+                    cursor.advance(by: count) // Consume as many characters as need (zero for epsilon transitions)
+                }
             }
 
             if let match = firstMatchBacktracking(cursor, groupsStartIndexes, states[transition.end.index].index) {

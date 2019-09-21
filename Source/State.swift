@@ -71,10 +71,8 @@ protocol Condition {
 
 enum ConditionResult {
     /// A transition can be performed and it consumes `count` characters.
+    /// Espilon transition consumes `0` characters.
     case accepted(count: Int = 1)
-
-    /// A transition can be performed but it doesn't consume any characters.
-    case epsilon
 
     /// Transitions can't be performed for the given input.
     case rejected
@@ -89,8 +87,8 @@ struct Epsilon: Condition {
 
     func canPerformTransition(_ cursor: Cursor) -> ConditionResult {
         if let predicate = predicate {
-            return predicate(cursor) ? .epsilon : .rejected
+            return predicate(cursor) ? .accepted(count: 0) : .rejected
         }
-        return .epsilon
+        return .accepted(count: 0)
     }
 }
