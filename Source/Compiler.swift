@@ -76,65 +76,77 @@ private extension Compiler {
 
     func _compile(_ unit: Unit) throws -> FSM {
         switch unit {
-        case let expression as ImplicitGroup:
-            return .concatenate(try expression.children.map(compile))
+        case let expression as ImplicitGroup: return try compile(expression)
+        case let group as Group: return try compile(group)
+        case let backreference as Backreference: return try compile(backreference)
+        case let alternation as Alternation: return try compile(alternation)
+        case let anchor as Anchor: return try compile(anchor)
+        case let quantifiedExpression as QuantifiedExpression: return try compile(quantifiedExpression)
+        case let match as Match: return try compile(match)
+        default: fatalError("Unsupported unit \(unit)")
+        }
+    }
 
-        // TODO: split into separate methods
-        case let group as Group:
-            // TODO: tidy up
-            let fsms = try group.children.map(compile)
-            let fsm = FSM.group(.concatenate(fsms))
-            if group.isCapturing { // Remember the computed groups
-                captureGroups.append(IRCaptureGroup(index: group.index!, start: fsm.start, end: fsm.end))
-            }
-            return fsm
+    func compile(_ expression: ImplicitGroup) throws -> FSM {
+        return .concatenate(try expression.children.map(compile))
+    }
 
-        case let backreference as Backreference:
-            backreferences.append(backreference)
-            return .backreference(backreference.index)
+    func compile(_ group: Group) throws -> FSM {
+        // TODO: tidy up
+        let fsms = try group.children.map(compile)
+        let fsm = FSM.group(.concatenate(fsms))
+        if group.isCapturing { // Remember the computed groups
+            captureGroups.append(IRCaptureGroup(index: group.index!, start: fsm.start, end: fsm.end))
+        }
+        return fsm
+    }
 
-        case let alternation as Alternation:
-            return .alternate(try alternation.children.map(compile))
+    func compile(_ backreference: Backreference) throws -> FSM {
+        backreferences.append(backreference)
+        return .backreference(backreference.index)
+    }
 
-        case let anchor as Anchor:
-            switch anchor {
-            case .startOfString: return options.contains(.multiline) ? .startOfString : .startOfStringOnly
-            case .startOfStringOnly: return .startOfStringOnly
-            case .endOfString: return options.contains(.multiline) ? .endOfString : .endOfStringOnly
-            case .endOfStringOnly: return .endOfStringOnly
-            case .endOfStringOnlyNotNewline: return .endOfStringOnlyNotNewline
-            case .wordBoundary: return .wordBoundary
-            case .nonWordBoundary: return .nonWordBoundary
-            case .previousMatchEnd: return .previousMatchEnd
-            }
+    func compile(_ alternation: Alternation) throws -> FSM {
+        return .alternate(try alternation.children.map(compile))
+    }
 
-        case let quantifiedExpression as QuantifiedExpression:
-            let expression = quantifiedExpression.expression
-            let isLazy = quantifiedExpression.quantifier.isLazy
-            if isLazy {
-                containsLazyQuantifiers = true
-            }
-            switch quantifiedExpression.quantifier.type {
-            case .zeroOrMore: return .zeroOrMore(try compile(expression), isLazy)
-            case .oneOrMore: return .oneOrMore(try compile(expression), isLazy)
-            case .zeroOrOne: return .zeroOrOne(try compile(expression), isLazy)
-            case let .range(range): return try compile(expression, range, isLazy)
-            }
+    func compile(_ anchor: Anchor) throws -> FSM {
+        switch anchor {
+        case .startOfString: return options.contains(.multiline) ? .startOfString : .startOfStringOnly
+        case .startOfStringOnly: return .startOfStringOnly
+        case .endOfString: return options.contains(.multiline) ? .endOfString : .endOfStringOnly
+        case .endOfStringOnly: return .endOfStringOnly
+        case .endOfStringOnlyNotNewline: return .endOfStringOnlyNotNewline
+        case .wordBoundary: return .wordBoundary
+        case .nonWordBoundary: return .nonWordBoundary
+        case .previousMatchEnd: return .previousMatchEnd
+        }
+    }
 
-        case let match as Match:
-            let isCaseInsensitive = options.contains(.caseInsensitive)
-            let dotMatchesLineSeparators = options.contains(.dotMatchesLineSeparators)
-            switch match {
-            case let .character(c): return .character(c, isCaseInsensitive)
-            case let .string(s): return .string(s
-                , isCaseInsensitive)
-            case .anyCharacter: return .anyCharacter(includingNewline: dotMatchesLineSeparators)
-            case let .set(set): return .characterSet(set, isCaseInsensitive, false)
-            case let .group(group): return .characterGroup(group, isCaseInsensitive)
-            }
+    func compile(_ quantifiedExpression: QuantifiedExpression) throws -> FSM {
+        let expression = quantifiedExpression.expression
+        let isLazy = quantifiedExpression.quantifier.isLazy
+        if isLazy {
+            containsLazyQuantifiers = true
+        }
+        switch quantifiedExpression.quantifier.type {
+        case .zeroOrMore: return .zeroOrMore(try compile(expression), isLazy)
+        case .oneOrMore: return .oneOrMore(try compile(expression), isLazy)
+        case .zeroOrOne: return .zeroOrOne(try compile(expression), isLazy)
+        case let .range(range): return try compile(expression, range, isLazy)
+        }
+    }
 
-        default:
-            fatalError("Unsupported unit \(unit)")
+    func compile(_ match: Match) throws -> FSM {
+        let isCaseInsensitive = options.contains(.caseInsensitive)
+        let dotMatchesLineSeparators = options.contains(.dotMatchesLineSeparators)
+        switch match {
+        case let .character(c): return .character(c, isCaseInsensitive)
+        case let .string(s): return .string(s
+            , isCaseInsensitive)
+        case .anyCharacter: return .anyCharacter(includingNewline: dotMatchesLineSeparators)
+        case let .set(set): return .characterSet(set, isCaseInsensitive, false)
+        case let .group(group): return .characterGroup(group, isCaseInsensitive)
         }
     }
 
