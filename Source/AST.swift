@@ -43,7 +43,7 @@ struct Backreference: Unit {
 }
 
 // "\b", "\G" etc
-enum Anchor: Unit {
+enum Anchor: String, Unit {
     case startOfString
     case endOfString
     case wordBoundary
@@ -138,7 +138,7 @@ extension Alternation: CustomStringConvertible {
 
 extension Anchor: CustomStringConvertible {
     var description: String {
-        return "Anchor.\(self)"
+        return "Anchor.\(rawValue)"
     }
 }
 
