@@ -23,7 +23,7 @@ final class RegularMatcher: Matching {
     private let string: String
     private let regex: CompiledRegex
     private let options: Regex.Options
-    private let states: ContiguousArray<State>
+    private let transitions: ContiguousArray<ContiguousArray<CompiledTransition>>
 
     #if DEBUG
     private var symbols: Symbols { regex.symbols }
@@ -39,22 +39,22 @@ final class RegularMatcher: Matching {
 
     // Reuse allocated buffers across different invocations to avoid deallocating
     // and allocating them again every time.
-    private var reachableStates = MicroSet<State.Index>(0)
-    private var reachableUntil = [State.Index: String.Index]() // some transitions jump multiple indices
+    private var reachableStates = MicroSet<CompiledState>(0)
+    private var reachableUntil = [CompiledState: String.Index]() // some transitions jump multiple indices
     private var potentialMatch: Cursor?
-    private var groupsStartIndexes = [State.Index: String.Index]()
-    private var stack = ContiguousArray<State.Index>()
+    private var groupsStartIndexes = [CompiledState: String.Index]()
+    private var stack = ContiguousArray<CompiledState>()
     private var encountered: ContiguousArray<Bool>
 
     init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
         self.string = string
         self.regex = regex
-        self.states = regex.states
+        self.transitions = regex.fsm.transitions
         self.options = options
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
         self.cursor = Cursor(string: string)
-        self.encountered = ContiguousArray(repeating: false, count: regex.states.count)
+        self.encountered = ContiguousArray(repeating: false, count: transitions.count)
     }
 
     func nextMatch() -> Regex.Match? {
@@ -110,14 +110,14 @@ final class RegularMatcher: Matching {
             reachableStates = newReachableStates
 
             #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: << Reachable \(reachableStates.map { symbols.description(for: states[$0]) })") }
+            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: << Reachable \(reachableStates.map { symbols.description(for: $0) })") }
             #endif
 
             if reachableStates.isEmpty && potentialMatch == nil && !isStartingFromStartIndex {
                 // Failed to find matches, restart from the initial state
                 
                 #if DEBUG
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: states[$0]) })") }
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: $0) })") }
                 #endif
 
                 if let index = retryIndex {
@@ -162,11 +162,11 @@ final class RegularMatcher: Matching {
     /// As it enters states, it also captures groups, and collects potential matches.
     /// It doesn't stop on the first found match and tries to find the longest
     /// match instead (aka "greedy").
-    private func findNextReachableStates() -> MicroSet<State.Index> {
-        var newReachableStates = MicroSet<State.Index>()
+    private func findNextReachableStates() -> MicroSet<CompiledState> {
+        var newReachableStates = MicroSet<CompiledState>()
 
         #if DEBUG
-        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map { symbols.description(for: states[$0]) })") }
+        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map { symbols.description(for: $0) })") }
         #endif
 
         // The array works great where there are not a lot of states which
@@ -183,7 +183,7 @@ final class RegularMatcher: Matching {
                     encountered[state] = true
 
                     #if DEBUG
-                    if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Still reachable for this index, re-add \(symbols.description(for: states[state]))") }
+                    if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Still reachable for this index, re-add \(symbols.description(for: state))") }
                     #endif
 
                     continue
@@ -199,7 +199,7 @@ final class RegularMatcher: Matching {
                 encountered[state] = true
 
                 #if DEBUG
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: states[state])))") }
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))") }
                 #endif
 
                 // Capture a group if needed or update group start indexes
@@ -209,25 +209,25 @@ final class RegularMatcher: Matching {
 
                 /// Reached the end state, remember the potential match. There might be multiple
                 /// ways to reach the end state that's why it is not stopping on the first match.
-                guard !states[state].isEnd else {
+                guard !transitions[state].isEmpty else { // End state
                     updatePotentialMatch(state)
                     continue
                 }
 
-                for transition in states[state].transitions {
+                for transition in transitions[state] {
                     let result = transition.condition.canPerformTransition(cursor)
                     switch result {
                     case .rejected:
                         break // Do nothing
                     case let .accepted(count):
                         if count > 0 { // Consumed characters
-                            newReachableStates.insert(transition.end.index)
+                            newReachableStates.insert(transition.end)
                             // The state is going to be reachable until index T+count is reached
                             if count > 1 {
-                                reachableUntil[transition.end.index] = cursor.index(cursor.index, offsetBy: count, isLimited: true)
+                                reachableUntil[transition.end] = cursor.index(cursor.index, offsetBy: count, isLimited: true)
                             }
                         } else {
-                            stack.append(transition.end.index) // Espilon, continue walking the graph
+                            stack.append(transition.end) // Espilon, continue walking the graph
                         }
                     }
 
@@ -247,7 +247,7 @@ final class RegularMatcher: Matching {
     }
 
     /// Update capture groups when entering a state.
-    private func updateCaptureGroups(enteredState state: State.Index) {
+    private func updateCaptureGroups(enteredState state: CompiledState) {
         if let captureGroup = regex.captureGroups.first(where: { $0.end == state }),
             // Capture a group
             let startIndex = groupsStartIndexes[captureGroup.start] {
@@ -263,7 +263,7 @@ final class RegularMatcher: Matching {
         }
     }
 
-    private func updatePotentialMatch(_ state: State.Index) {
+    private func updatePotentialMatch(_ state: CompiledState) {
         guard potentialMatch == nil || cursor.index > potentialMatch!.index else {
             return
         }
@@ -271,7 +271,7 @@ final class RegularMatcher: Matching {
         potentialMatch = cursor // Found a match!
 
         #if DEBUG
-        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: states[state]))") }
+        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: state))") }
         #endif
     }
 }
@@ -293,7 +293,7 @@ final class BacktrackingMatcher: Matching {
     //   %1249 = index_addr %1248 : $*State, %753 : $Builtin.Word // user: %1250
     //   %1250 = load %1249 : $*State                  // users: %1251, %1252
     //   strong_retain %1250 : $State                  // id: %1251
-    private let states: ContiguousArray<State>
+    private let transitions: ContiguousArray<ContiguousArray<CompiledTransition>>
 
     #if DEBUG
     private var symbols: Symbols { regex.symbols }
@@ -310,7 +310,7 @@ final class BacktrackingMatcher: Matching {
     init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
         self.string = string
         self.regex = regex
-        self.states = regex.states
+        self.transitions = regex.fsm.transitions
         self.options = options
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
@@ -387,7 +387,7 @@ final class BacktrackingMatcher: Matching {
     /// e.g. whether greedy or lazy quantifiers were used.
     ///
     /// - warning: The backtracking matcher hasn't been optimized in any way yet
-    func firstMatchBacktracking(_ cursor: Cursor, _ groupsStartIndexes: [State.Index: String.Index], _ state: State.Index) -> Regex.Match? {
+    func firstMatchBacktracking(_ cursor: Cursor, _ groupsStartIndexes: [CompiledState: String.Index], _ state: CompiledState) -> Regex.Match? {
         var cursor = cursor
         var groupsStartIndexes = groupsStartIndexes
 
@@ -406,7 +406,7 @@ final class BacktrackingMatcher: Matching {
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))") }
         #endif
 
-        if states[state].isEnd { // Found a match
+        if transitions[state].isEmpty { // Found a match
             let match = Regex.Match(cursor, !regex.captureGroups.isEmpty)
             #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match) ✅") }
@@ -415,12 +415,12 @@ final class BacktrackingMatcher: Matching {
         }
 
         var counter = 0
-        for transition in states[state].transitions {
+        for transition in transitions[state] {
             counter += 1
 
             #if DEBUG
-            if states[state].transitions.count > 1 {
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(states[state].transitions.count)") }
+            if transitions[state].count > 1 {
+                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(transitions[state].count)") }
             }
             #endif
 
@@ -439,7 +439,7 @@ final class BacktrackingMatcher: Matching {
                 }
             }
 
-            if let match = firstMatchBacktracking(cursor, groupsStartIndexes, states[transition.end.index].index) {
+            if let match = firstMatchBacktracking(cursor, groupsStartIndexes, transition.end) {
                 return match
             }
         }

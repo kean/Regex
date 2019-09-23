@@ -21,23 +21,40 @@ final class Compiler {
     func compile() throws -> CompiledRegex {
         let fsm = try compile(ast.root)
         optimize(fsm)
+        try validateBackreferences()
+        return preprocess(fsm)
+    }
 
-        // Assign indices to each state/
+    /// Creates a `CompiledRegex` instance with the given state machine.
+    ///
+    /// Maps a `FSM` (which is convenient for creating and combining state machines
+    /// but which incurs some ARC overhead) into an array of `CompiledTransition` which
+    /// state is no longer a class (reference type) but simply an index in the array.
+    ///
+    /// Assembles all the needed metadata and the debug symbols.
+    func preprocess(_ fsm: FSM) -> CompiledRegex {
         let states = fsm.allStates()
         var indices = [State: Int]()
         for (state, index) in zip(states, states.indices) {
-            state.index = index
             indices[state] = index
         }
 
         let captureGroups = self.captureGroups.map {
-            CaptureGroup(index: $0.index, start: indices[$0.start]!, end: indices[$0.end]!)
+            CompiledCaptureGroup(index: $0.index, start: indices[$0.start]!, end: indices[$0.end]!)
         }
 
-        try validateBackreferences()
+        let transitions = ContiguousArray(states.map { state in
+            ContiguousArray(state.transitions.map {
+                CompiledTransition(end: indices[$0.end]!, condition: $0.condition)
+            })
+        })
 
+        // Make sure states are deallocated by breaking all potential cycles.
+        states.forEach { $0.transitions.removeAll() }
+
+        // Collect all the needed debug symbols.
         #if DEBUG
-        var details = [State.Index: Symbols.Details]()
+        var details = [CompiledState: Symbols.Details]()
         for (key, value) in map {
             if let index = indices[key] {
                 details[index] = value
@@ -49,7 +66,7 @@ final class Compiler {
         #endif
 
         return CompiledRegex(
-            states: states,
+            fsm: CompiledStateMachine(transitions: transitions),
             captureGroups: captureGroups,
             isRegular: !containsLazyQuantifiers && backreferences.isEmpty,
             isFromStartOfString: ast.isFromStartOfString,
@@ -241,11 +258,15 @@ private extension Compiler {
 // MARK: - CompiledRegex
 
 final class CompiledRegex {
-    /// All states in the state machine.
-    let states: ContiguousArray<State>
+    // MARK: State Machine
+
+    /// All possible transitions between all states of the state machine.
+    let fsm: CompiledStateMachine
+
+    // MARK: Metadata
 
     /// All the capture groups with their indexes.
-    let captureGroups: ContiguousArray<CaptureGroup>
+    let captureGroups: ContiguousArray<CompiledCaptureGroup>
 
     /// `true` if the regex doesn't contain any of the features which can't be
     /// simulated solely by NFA and require backtracking.
@@ -256,8 +277,8 @@ final class CompiledRegex {
 
     let symbols: Symbols
 
-    init(states: [State], captureGroups: [CaptureGroup], isRegular: Bool, isFromStartOfString: Bool, symbols: Symbols) {
-        self.states = ContiguousArray(states)
+    init(fsm: CompiledStateMachine, captureGroups: [CompiledCaptureGroup], isRegular: Bool, isFromStartOfString: Bool, symbols: Symbols) {
+        self.fsm = fsm
         self.captureGroups = ContiguousArray(captureGroups)
         self.isRegular = isRegular
         self.isFromStartOfString = isFromStartOfString
@@ -265,10 +286,21 @@ final class CompiledRegex {
     }
 }
 
-struct CaptureGroup {
+typealias CompiledState = Int
+
+struct CompiledStateMachine {
+    let transitions: ContiguousArray<ContiguousArray<CompiledTransition>>
+}
+
+struct CompiledTransition {
+    let end: CompiledState
+    let condition: Condition
+}
+
+struct CompiledCaptureGroup {
     let index: Int
-    let start: State.Index
-    let end: State.Index
+    let start: CompiledState
+    let end: CompiledState
 }
 
 // MARK: - Symbols
@@ -285,7 +317,7 @@ private struct IRCaptureGroup {
 struct Symbols {
     #if DEBUG
     let ast: AST
-    fileprivate(set) var map = [State.Index: Details]()
+    fileprivate(set) var map = [CompiledState: Details]()
     #endif
 
     struct Details {
@@ -293,7 +325,7 @@ struct Symbols {
         let isEnd: Bool
     }
 
-    func description(for state: State.Index) -> String {
+    func description(for state: CompiledState) -> String {
         #if DEBUG
         let details = map[state]
 
@@ -305,9 +337,5 @@ struct Symbols {
         #else
         return "\(state) [<symbol missing>]"
         #endif
-    }
-
-    func description(for state: State) -> String {
-        return description(for: state.index)
     }
 }

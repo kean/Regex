@@ -8,11 +8,7 @@ import Foundation
 
 /// A state of a state machine.
 final class State: Hashable {
-    typealias Index = Int
-
-    var index: Index = 0
     var transitions = ContiguousArray<Transition>()
-    var isEnd: Bool { transitions.isEmpty }
 
     // MARK: Hashable
 
@@ -23,10 +19,6 @@ final class State: Hashable {
     static func == (lhs: State, rhs: State) -> Bool {
         ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
     }
-}
-
-extension State: CustomStringConvertible {
-    var description: String { "State(\(index))" }
 }
 
 // MARK: - Transition
