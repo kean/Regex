@@ -101,7 +101,7 @@ struct MicroSet<Element: Hashable>: Hashable, Sequence {
             e1 = element
             count += 1
         case 1:
-            guard e2 != element else { return }
+            guard e1 != element else { return }
             e2 = element
             count += 1
         default:
