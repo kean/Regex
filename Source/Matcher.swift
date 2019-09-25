@@ -14,11 +14,8 @@ protocol Matching {
 
 // MARK: - RegularMatcher
 
-/// Executes the regex using an efficient algorithm where each state of NFA
-/// is evaluated at the same time at given cursor.
-///
-/// Handles large inputs with easy and the amount of memory that it uses is limited
-/// by the number of states in the state machine, it doesn't on the size of input string.
+/// A [BFS-based algorithm](https://kean.github.io/post/regex-matcher#bfs) which
+/// guarantees linear complexity to the length of the input string.
 final class RegularMatcher: Matching {
     private let string: String
     private let regex: CompiledRegex
@@ -37,10 +34,10 @@ final class RegularMatcher: Matching {
     private var cursor: Cursor
     private var isFinished = false
 
-    // Reuse allocated buffers across different invocations to avoid deallocating
-    // and allocating them again every time.
+    // Reuse allocated buffers across different invocations to avoid re-creating
+    // them over and over again.
     private var reachableStates = MicroSet<CompiledState>(0)
-    private var reachableUntil = [CompiledState: String.Index]() // some transitions jump multiple indices
+    private var reachableUntil = [CompiledState: String.Index]() // [Optimization] Some transitions jump multiple indices at a time
     private var potentialMatch: Cursor?
     private var groupsStartIndexes = [CompiledState: String.Index]()
     private var stack = ContiguousArray<CompiledState>()
@@ -63,7 +60,7 @@ final class RegularMatcher: Matching {
         }
 
         guard let match = _nextMatch() else {
-            isFinished = true // Failed to find a match and there can be no more matches
+            isFinished = true // Failed to find a match, there can be no more matches
             return nil
         }
 
@@ -102,7 +99,8 @@ final class RegularMatcher: Matching {
             }
 
             // [Optimization] The iteration produced the same set of reachable
-            // states as the current on, it's possible to skip checking this index again
+            // states as before. It means that if the match fails, we can skip
+            // checking this section again.
             if reachableStates == newReachableStates {
                 retryIndex = cursor.index
             }
@@ -120,6 +118,8 @@ final class RegularMatcher: Matching {
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: $0) })") }
                 #endif
 
+                // [Optimization] Skip portions of the input string which were
+                // already tested and we know can't produce a different result.
                 if let index = retryIndex {
                     cursor.startAt(index)
                     retryIndex = nil
@@ -132,7 +132,7 @@ final class RegularMatcher: Matching {
             } else {
                 // Advance the cursor
                 if reachableUntil.count > 0 && reachableUntil.count == newReachableStates.count {
-                    // Jump multiple indices at a time without checking condition again
+                    // [Optimization] Jump multiple indices at a time without checking condition again
                     cursor.advance(to: reachableUntil.values.min()!)
                 } else {
                     cursor.advance(by: 1)
@@ -140,7 +140,7 @@ final class RegularMatcher: Matching {
             }
         }
 
-        if let cursor = potentialMatch {
+        if let cursor = potentialMatch { // Found a match
             let match = Regex.Match(cursor, isCapturingGroups)
             #if DEBUG
             if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found match \(match)") }
@@ -169,12 +169,8 @@ final class RegularMatcher: Matching {
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map { symbols.description(for: $0) })") }
         #endif
 
-        // The array works great where there are not a lot of states which
-        // isn't the case with patterns like a{24,42}
         for index in encountered.indices { encountered[index] = false }
 
-        // For each state check if there are any reachable states – states which
-        // accept the next character from the input string.
         for state in reachableStates {
             // [Optimization] Support for Match.string
             if let index = reachableUntil[state] {
@@ -192,7 +188,7 @@ final class RegularMatcher: Matching {
                 }
             }
 
-            // Go throught the graph of states using depth-first search.
+            // Go throught the graph of states using breadth-first search (BFS).
             stack.append(state)
             while let state = stack.popLast() {
                 guard !encountered[state] else { continue }
@@ -278,21 +274,11 @@ final class RegularMatcher: Matching {
 
 /// MARK: - BacktrackingMatcher
 ///
-/// An backtracking implementation which is only used when specific constructs
-/// like backreferences are used which are non-regular and cannot be implemented
-/// only using NFA (and efficiently executed as NFA).
+/// A [DFS-based (Backtracking) algorithm])(https://kean.github.io/post/regex-matcher#dfs-backtracking).
 final class BacktrackingMatcher: Matching {
     private let string: String
     private let regex: CompiledRegex
     private let options: Regex.Options
-
-    // Indexing `ContiguousArray` doesn't introduce strong_retain calls unlike
-    // indexing `Array` which does. It might be a temporary limitation of ARC
-    // optimizer https://github.com/apple/swift/blob/master/docs/ARCOptimization.rst
-    //
-    //   %1249 = index_addr %1248 : $*State, %753 : $Builtin.Word // user: %1250
-    //   %1250 = load %1249 : $*State                  // users: %1251, %1252
-    //   strong_retain %1250 : $State                  // id: %1251
     private let transitions: ContiguousArray<ContiguousArray<CompiledTransition>>
 
     #if DEBUG
