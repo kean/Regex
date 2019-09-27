@@ -339,35 +339,6 @@ final class BacktrackingMatcher: Matching {
         return match
     }
 
-    /// - parameter closure: Return `false` to stop.
-    func forMatchBacktracking(_ string: String, _ closure: (Regex.Match) -> Bool) {
-        // Include end index in the search to make sure matches runs for empty
-        // strings, and also that it find all possible matches.
-        var cursor = Cursor(string: string)
-        while true {
-            // TODO: tidy up
-            let match = firstMatchBacktracking(cursor, [:], 0)
-
-            guard match == nil || closure(match!) else {
-                return
-            }
-            guard !regex.isFromStartOfString else {
-                return
-            }
-            guard cursor.index < cursor.endIndex else {
-                return
-            }
-            let index = match.map {
-                $0.fullMatch.isEmpty ? cursor.index(after: $0.endIndex) : $0.endIndex
-            } ?? cursor.index(after: cursor.index)
-
-            cursor.startAt(index)
-            if let match = match {
-                cursor.previousMatchIndex = match.fullMatch.endIndex
-            }
-        }
-    }
-
     /// Evaluates the state machine against if finds the first possible match.
     /// The type of the match found is going to depend on the type of pattern,
     /// e.g. whether greedy or lazy quantifiers were used.

@@ -27,6 +27,17 @@ class RegexTests: XCTestCase {
             }
         }
     }
+
+    // We expect DFS to perform slightly better in this scenario.
+    func testGreedyQuantifiers() throws {
+        let regex = try Regex("a*")
+
+        measure {
+            for _ in 0...100 {
+                _ = regex.isMatch(String(repeating: "a", count: 1_000))
+            }
+        }
+    }
 }
 
 // From https://digitalfortress.tech/tricks/top-15-commonly-used-regex/
