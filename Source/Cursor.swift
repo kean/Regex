@@ -108,6 +108,6 @@ extension Cursor {
 extension Cursor: CustomStringConvertible {
     var description: String {
           let char = String(character ?? "∅")
-          return "\(string.offset(for: index)), \(char == "\n" ? "\\n" : char)"
+          return "\(string.distance(from: string.startIndex, to: index)), \(char == "\n" ? "\\n" : char)"
       }
 }

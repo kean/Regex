@@ -36,32 +36,6 @@ extension Character {
     }
 }
 
-// MARK: - String
-
-extension String {
-    /// Returns a substring with the given range. The indexes are automatically
-    /// calculated by offsetting the existing indexes.
-    func substring(_ range: Range<Int>) -> Substring {
-        return self[index(startIndex, offsetBy: range.lowerBound)..<index(startIndex, offsetBy: range.upperBound)]
-    }
-
-    func offset(for index: String.Index) -> Int {
-        return distance(from: startIndex, to: index)
-    }
-}
-
-extension Substring {
-    /// Returns a substring with the given range. The indexes are automatically
-    /// calculated by offsetting the existing indexes.
-    func substring(_ range: Range<Int>) -> Substring {
-        return self[index(startIndex, offsetBy: range.lowerBound)..<index(startIndex, offsetBy: range.upperBound)]
-    }
-
-    func offset(for index: String.Index) -> Int {
-        return distance(from: startIndex, to: index)
-    }
-}
-
 // MARK: - OSLog
 
 extension OSLog {
