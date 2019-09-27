@@ -36,7 +36,7 @@ final class RegularMatcher: Matching {
 
     // Reuse allocated buffers across different invocations to avoid re-creating
     // them over and over again.
-    private var reachableStates = MicroSet<CompiledState>(0)
+    private var reachableStates = SmallSet<CompiledState>(0)
     private var reachableUntil = [CompiledState: String.Index]() // [Optimization] Some transitions jump multiple indices at a time
     private var potentialMatch: Cursor?
     private var groupsStartIndexes = [CompiledState: String.Index]()
@@ -85,7 +85,7 @@ final class RegularMatcher: Matching {
 
     private func _nextMatch() -> Regex.Match? {
         var retryIndex: String.Index?
-        reachableStates = MicroSet(0)
+        reachableStates = SmallSet(0)
         reachableUntil.removeAll()
         potentialMatch = nil
         if isCapturingGroups { groupsStartIndexes.removeAll() }
@@ -128,7 +128,7 @@ final class RegularMatcher: Matching {
                 }
 
                 if isCapturingGroups { groupsStartIndexes.removeAll() }
-                reachableStates = MicroSet(0)
+                reachableStates = SmallSet(0)
             } else {
                 // Advance the cursor
                 if reachableUntil.count > 0 && reachableUntil.count == newReachableStates.count {
@@ -162,8 +162,8 @@ final class RegularMatcher: Matching {
     /// As it enters states, it also captures groups, and collects potential matches.
     /// It doesn't stop on the first found match and tries to find the longest
     /// match instead (aka "greedy").
-    private func findNextReachableStates() -> MicroSet<CompiledState> {
-        var newReachableStates = MicroSet<CompiledState>()
+    private func findNextReachableStates() -> SmallSet<CompiledState> {
+        var newReachableStates = SmallSet<CompiledState>()
 
         #if DEBUG
         if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map { symbols.description(for: $0) })") }

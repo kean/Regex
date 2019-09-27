@@ -71,23 +71,23 @@ extension OSLog {
     }
 }
 
-// MARK: - MicroSet
+// MARK: - SmallSet
 
-// Abuses the following two facts:
+// A set which inlines the first couple of elements and avoid any heap allocations.
 //
-// - In most regexes there are only up to two states reachable at any given time
-// - The order in which states are inserted is deterministic
-struct MicroSet<Element: Hashable>: Hashable, Sequence {
+// This is epsecially useful when executing a BFS algorithm. In most cases,
+// there are only up to two states reachable at any given time
+struct SmallSet<Element: Hashable>: Hashable, Sequence {
     private(set) var count: Int = 0
-    // Inlinable
+
+    // Inlined elements
     private var e1: Element?
     private var e2: Element?
 
-    var isEmpty: Bool {
-        count == 0
-    }
-
+    // The remaining elements (allocated lazily)
     private var set: ContiguousArray<Element>?
+
+    var isEmpty: Bool { count == 0 }
 
     init() {}
 
@@ -137,15 +137,15 @@ struct MicroSet<Element: Hashable>: Hashable, Sequence {
         }
     }
 
-    __consuming func makeIterator() -> MicroSet<Element>.Iterator {
+    __consuming func makeIterator() -> SmallSet<Element>.Iterator {
         Iterator(set: self)
     }
 
     struct Iterator: IteratorProtocol {
-        private let set: MicroSet
+        private let set: SmallSet
         private var index: Int = 0
 
-        init(set: MicroSet) {
+        init(set: SmallSet) {
             self.set = set
         }
 
