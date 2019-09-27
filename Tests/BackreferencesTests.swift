@@ -17,6 +17,16 @@ class BackreferencesTests: XCTestCase {
         XCTAssertEqual(matches, ["aa"])
     }
 
+    func testBackreferenceWithGreedyQnatifiers() throws {
+        let pattern = #"(a+)\1"#
+        let string = "aaaaaa"
+
+        let regex = try Regex(pattern)
+        let matches = regex.matches(in: string).map { $0.fullMatch }
+
+        XCTAssertEqual(matches, ["aaaaaa"])
+    }
+
     func testReturnsNumberOfCapturingGroups() throws {
         let pattern = #"(\w)\1"#
         let string = "trellis seerlatter summer hoarse lesser aardvark stunned"
