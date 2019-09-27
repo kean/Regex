@@ -1,6 +1,6 @@
 # Regex
 
-Open source regular expression implementation.
+Open source regex engine.
 
 > **Warning.** Not meant to be used in production, created for learning purposes! <br/> See [**Let's Build a Regex Engine**](https://kean.github.io/post/lets-build-regex) series to learn how this project came to be.
 
