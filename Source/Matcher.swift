@@ -60,25 +60,11 @@ final class RegularMatcher: Matching {
         }
 
         guard let match = findNextMatch() else {
-            isFinished = true // Failed to find a match, there can be no more matches
+            isFinished = true
             return nil
         }
 
-        guard match.endIndex <= cursor.endIndex && !isStartingFromStartIndex else {
-            isFinished = true
-            return match
-        }
-
-        if match.fullMatch.isEmpty {
-            if match.endIndex < cursor.endIndex {
-                cursor.startAt(cursor.index(after: match.endIndex))
-            } else {
-                isFinished = true
-            }
-        } else {
-            cursor.startAt(match.endIndex)
-        }
-        cursor.previousMatchIndex = match.fullMatch.endIndex
+        isFinished = !cursor.advance(toEndOfMatch: match) && !isStartingFromStartIndex
 
         return match
     }
@@ -308,25 +294,12 @@ final class BacktrackingMatcher: Matching {
             return nil
         }
 
-        if isStartingFromStartIndex {
-            isFinished = true // Only give the matcher one shot at finding a match
-        }
-
         guard let match = findNextMatch() else {
             isFinished = true
             return nil
         }
 
-        if match.fullMatch.isEmpty {
-            if match.endIndex < cursor.endIndex {
-                cursor.startAt(cursor.index(after: match.endIndex))
-            } else {
-                isFinished = true
-            }
-        } else {
-            cursor.startAt(match.endIndex)
-        }
-        cursor.previousMatchIndex = match.fullMatch.endIndex
+        isFinished = !cursor.advance(toEndOfMatch: match) && !isStartingFromStartIndex
 
         return match
     }

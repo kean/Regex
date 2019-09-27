@@ -48,6 +48,17 @@ extension Cursor {
     mutating func advance(by offset: Int) {
         self.index = string.index(index, offsetBy: offset)
     }
+
+    mutating func advance(toEndOfMatch match: Regex.Match) -> Bool {
+        guard let nextIndex = match.fullMatch.isEmpty ?
+            string.index(match.endIndex, offsetBy: 1, limitedBy: string.endIndex) :
+            match.endIndex else {
+                return false
+        }
+        startAt(nextIndex)
+        previousMatchIndex = match.fullMatch.endIndex
+        return true
+    }
 }
 
 // MARK: - Cursor (Characters)
