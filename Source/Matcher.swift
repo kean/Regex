@@ -59,7 +59,7 @@ final class RegularMatcher: Matching {
             return nil
         }
 
-        guard let match = _nextMatch() else {
+        guard let match = findNextMatch() else {
             isFinished = true // Failed to find a match, there can be no more matches
             return nil
         }
@@ -83,7 +83,7 @@ final class RegularMatcher: Matching {
         return match
     }
 
-    private func _nextMatch() -> Regex.Match? {
+    private func findNextMatch() -> Regex.Match? {
         var retryIndex: String.Index?
         reachableStates = SmallSet(0)
         reachableUntil.removeAll()
@@ -113,7 +113,7 @@ final class RegularMatcher: Matching {
 
             if reachableStates.isEmpty && potentialMatch == nil && !isStartingFromStartIndex {
                 // Failed to find matches, restart from the initial state
-                
+
                 #if DEBUG
                 if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: $0) })") }
                 #endif
@@ -309,20 +309,12 @@ final class BacktrackingMatcher: Matching {
         }
 
         if isStartingFromStartIndex {
-            isFinished = true
+            isFinished = true // Only give the matcher one shot at finding a match
         }
 
-        guard let match = firstMatchBacktracking(cursor, [:], 0) else {
-            // Couldn't find a match but `forMatchBacktracking` doesn't
-            // automatically restart on errors unlike `RegularMatcher` so we
-            // have to do that manually. This needs clean up.
-            if cursor.startIndex < cursor.endIndex {
-                cursor.startAt(cursor.index(after: cursor.startIndex))
-                return nextMatch()
-            } else {
-                isFinished = true
-                return nil
-            }
+        guard let match = findNextMatch() else {
+            isFinished = true
+            return nil
         }
 
         if match.fullMatch.isEmpty {
@@ -339,12 +331,24 @@ final class BacktrackingMatcher: Matching {
         return match
     }
 
+    private func findNextMatch() -> Regex.Match? {
+        while true {
+            if let match = firstMatchBacktracking(cursor, [:], 0) {
+                return match
+            }
+            guard cursor.startIndex < cursor.endIndex, !isFinished else {
+                return nil
+            }
+            cursor.startAt(cursor.index(after: cursor.startIndex))
+        }
+    }
+
     /// Evaluates the state machine against if finds the first possible match.
     /// The type of the match found is going to depend on the type of pattern,
     /// e.g. whether greedy or lazy quantifiers were used.
     ///
     /// - warning: The backtracking matcher hasn't been optimized in any way yet
-    func firstMatchBacktracking(_ cursor: Cursor, _ groupsStartIndexes: [CompiledState: String.Index], _ state: CompiledState) -> Regex.Match? {
+    private func firstMatchBacktracking(_ cursor: Cursor, _ groupsStartIndexes: [CompiledState: String.Index], _ state: CompiledState) -> Regex.Match? {
         var cursor = cursor
         var groupsStartIndexes = groupsStartIndexes
 
