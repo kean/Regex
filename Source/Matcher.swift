@@ -325,14 +325,20 @@ final class BacktrackingMatcher: Matching {
         var cursor = cursor
         var groupsStartIndexes = groupsStartIndexes
 
-        // Capture a group if needed
-        if !regex.captureGroups.isEmpty {
+        // Update capture groups
+        if isCapturingGroups {
             if let captureGroup = regex.captureGroups.first(where: { $0.end == state }),
+                // Capture a group
                 let startIndex = groupsStartIndexes[captureGroup.start] {
                 let groupIndex = captureGroup.index
                 cursor.groups[groupIndex] = startIndex..<cursor.index
             } else {
-                groupsStartIndexes[state] = cursor.index
+                // Remember where the group started
+                if regex.captureGroups.contains(where: { $0.start == state }) {
+                    if groupsStartIndexes[state] == nil {
+                        groupsStartIndexes[state] = cursor.index
+                    }
+                }
             }
         }
 
