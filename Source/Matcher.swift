@@ -14,12 +14,9 @@ protocol Matching {
 
 // MARK: - BacktrackingMatcher
 
-///
 /// A [DFS-based (Backtracking) algorithm])(https://kean.github.io/post/regex-matcher#dfs-backtracking).
 final class BacktrackingMatcher: Matching {
-    private let string: String
     private let regex: CompiledRegex
-    private let options: Regex.Options
     private let transitions: ContiguousArray<ContiguousArray<CompiledTransition>>
 
     #if DEBUG
@@ -35,10 +32,8 @@ final class BacktrackingMatcher: Matching {
     private var isFinished = false
 
     init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
-        self.string = string
         self.regex = regex
         self.transitions = regex.fsm.transitions
-        self.options = options
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
         self.cursor = Cursor(string: string)
@@ -136,15 +131,13 @@ final class BacktrackingMatcher: Matching {
     }
 }
 
-// MARK: - RegularMatcher
+// MARK: - RegularMatcher (WARNING: Work in Progress)
 
 /// A [BFS-based algorithm](https://kean.github.io/post/regex-matcher#bfs) which
 /// guarantees linear complexity to the length of the input string, but doesn't
 /// support features like backreferences or lazy quantifiers.
 final class RegularMatcher: Matching {
-    private let string: String
     private let regex: CompiledRegex
-    private let options: Regex.Options
     private let transitions: ContiguousArray<ContiguousArray<CompiledTransition>>
 
     #if DEBUG
@@ -170,10 +163,8 @@ final class RegularMatcher: Matching {
     private var retryIndex: String.Index?
 
     init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
-        self.string = string
         self.regex = regex
         self.transitions = regex.fsm.transitions
-        self.options = options
         self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
         self.cursor = Cursor(string: string)
@@ -232,7 +223,7 @@ final class RegularMatcher: Matching {
         // [Optimization] If the iteration produces the same set of reachable
         // states as before, we can skip the current index if search fails.
         if reachableStates == newReachableStates {
-            retryIndex = cursor.index
+            retryIndex = cursor.index // WARNING: not sure this is correct in all cases
         }
 
         reachableStates = newReachableStates
@@ -299,14 +290,14 @@ final class RegularMatcher: Matching {
                 guard !encountered[state] else { continue }
                 encountered[state] = true
 
-                #if DEBUG
-                os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))")
-                #endif
-
                 // Capture a group if needed or update group start indexes
                 if isCapturingGroups {
                     updateCaptureGroups(enteredState: state)
                 }
+
+                #if DEBUG
+                 os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))")
+                 #endif
 
                 /// Reached the end state, remember the potential match. There might be multiple
                 /// ways to reach the end state that's why it is not stopping on the first match.
@@ -333,12 +324,7 @@ final class RegularMatcher: Matching {
                     }
 
                     #if DEBUG
-                    let message: String
-                    switch result {
-                    case .rejected: message = "State NOT reachable"
-                    case let .accepted(count): message = "State reachable consuming \(count)"
-                    }
-                    os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: \(message) \(symbols.description(for: transition.end))")
+                    logTransition(transition, result)
                     #endif
                 }
             }
@@ -365,14 +351,23 @@ final class RegularMatcher: Matching {
     }
 
     private func updatePotentialMatch(_ state: CompiledState) {
-        guard potentialMatch == nil || cursor.index > potentialMatch!.index else {
-            return
-        }
-
         potentialMatch = cursor // Found a match!
 
         #if DEBUG
         os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: state))")
         #endif
     }
+
+    // MARK: Logging
+
+    #if DEBUG
+    private func logTransition(_ transition: CompiledTransition, _ result: ConditionResult) {
+        let message: String
+        switch result {
+        case .rejected: message = "State NOT reachable"
+        case let .accepted(count): message = "State reachable consuming \(count)"
+        }
+        os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: \(message) \(symbols.description(for: transition.end))")
+    }
+    #endif
 }
