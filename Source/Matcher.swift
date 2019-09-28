@@ -12,7 +12,8 @@ protocol Matching {
     func nextMatch() -> Regex.Match?
 }
 
-/// MARK: - BacktrackingMatcher
+// MARK: - BacktrackingMatcher
+
 ///
 /// A [DFS-based (Backtracking) algorithm])(https://kean.github.io/post/regex-matcher#dfs-backtracking).
 final class BacktrackingMatcher: Matching {

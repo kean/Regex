@@ -7,13 +7,28 @@ import os.log
 
 // MARK: - Regex
 
+/// Represens a regular expression.
+///
+/// Usage:
+///
+/// ```
+/// let regex = try Regex(#"<\/?[\w\s]*>|<.+[\W]>"#)
+/// for match in regex.matches(in: "<h1>Title</h1>\n<p>Text</p>") {
+///     print(match.value)
+///     // Prints ["<h1>", "</h1>", "<p>", "</p>"]
+/// }
+/// ```
+///
+/// `Regex` is immutable and thread-safe, a single instance can be used in
+/// matching operations on multiple threads at once.
 public final class Regex {
     private let options: Options
     private let regex: CompiledRegex
 
     #if DEBUG
-    private let log: OSLog = Regex.isDebugModeEnabled ? OSLog(subsystem: "com.github.kean.regex", category: "default") : .disabled
-    private var iterations = 0
+    private let log: OSLog = Regex.isDebugModeEnabled ?
+        OSLog(subsystem: "com.github.kean.regex", category: "default") :
+        .disabled
     #endif
 
     /// Returns the number of capture groups in the regular expression.
@@ -21,46 +36,21 @@ public final class Regex {
         regex.captureGroups.count
     }
 
-    /// Enable debug mode to enable logging.
+    /// Enable debug mode to enable logging. Disabled by default.
     public static var isDebugModeEnabled = false
 
-    public struct Options: OptionSet {
-        public let rawValue: Int
-
-        public init(rawValue: Int) {
-            self.rawValue = rawValue
-        }
-
-        /// Match letters in the pattern independent of case.
-        public static let caseInsensitive = Options(rawValue: 1 << 0) // 'i'
-
-        /// Control the behavior of "^" and "$" in a pattern. By default these
-        /// will only match at the start and end, respectively, of the input text.
-        /// If this flag is set, "^" and "$" will also match at the start and end
-        /// of each line within the input text.
-        public static let multiline = Options(rawValue: 1 << 1) // 'm'
-
-        /// Allow `.` to match any character, including line separators.
-        public static let dotMatchesLineSeparators = Options(rawValue: 1 << 2) // 's'
-    }
-
+    /// Initializes the regex with the given pattern.
+    /// - options: Options are empty by default, see `Regex.Options` to learn more.
     public init(_ pattern: String, _ options: Options = []) throws {
         do {
             let ast = try Regex.parse(pattern)
+            let optimizedAst = Optimizer().optimize(ast)
+            self.regex = try Compiler(optimizedAst, options).compile()
+            self.options = options
 
             #if DEBUG
             os_log(.default, log: self.log, "AST: \n%{PUBLIC}@", ast.description)
-            #endif
-
-            let optimizedAst = Optimizer().optimize(ast)
-
-            #if DEBUG
             os_log(.default, log: self.log, "AST (Optimized): \n%{PUBLIC}@", optimizedAst.description)
-            #endif
-
-            self.regex = try Compiler(optimizedAst, options).compile()
-            self.options = options
-            #if DEBUG
             os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.symbols.description(for: 0))
             #endif
         } catch {
@@ -82,21 +72,25 @@ public final class Regex {
             throw Regex.Error((error as! ParserError).message, 0)
         }
     }
+}
 
+// MARK: - Regex (Match)
+
+public extension Regex {
     /// Determine whether the regular expression pattern occurs in the input text.
-    public func isMatch(_ string: String) -> Bool {
+    func isMatch(_ string: String) -> Bool {
         let matcher = makeMatcher(for: string, ignoreCaptureGroups: true)
         return matcher.nextMatch() != nil
     }
 
     /// Returns first match in the given string.
-    public func firstMatch(in string: String) -> Match? {
+    func firstMatch(in string: String) -> Match? {
         let matcher = makeMatcher(for: string)
         return matcher.nextMatch()
     }
 
     /// Returns an array containing all the matches in the string.
-    public func matches(in string: String) -> [Match] {
+    func matches(in string: String) -> [Match] {
         let matcher = makeMatcher(for: string)
         var matches = [Match]()
         while let match = matcher.nextMatch() {
@@ -116,6 +110,31 @@ public final class Regex {
         } else {
             return BacktrackingMatcher(string: string, regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
         }
+    }
+}
+
+// MARK: - Regex.Options
+
+public extension Regex {
+    /// Define the regular expression options.
+    struct Options: OptionSet {
+        public let rawValue: Int
+
+        public init(rawValue: Int) {
+            self.rawValue = rawValue
+        }
+
+        /// Match letters in the pattern independent of case.
+        public static let caseInsensitive = Options(rawValue: 1 << 0) // 'i'
+
+        /// Control the behavior of "^" and "$" in a pattern. By default these
+        /// will only match at the start and end, respectively, of the input text.
+        /// If this flag is set, "^" and "$" will also match at the start and end
+        /// of each line within the input text.
+        public static let multiline = Options(rawValue: 1 << 1) // 'm'
+
+        /// Allow `.` to match any character, including line separators.
+        public static let dotMatchesLineSeparators = Options(rawValue: 1 << 2) // 's'
     }
 }
 
