@@ -167,6 +167,7 @@ final class RegularMatcher: Matching {
     private var groupsStartIndexes = [CompiledState: String.Index]()
     private var stack = ContiguousArray<CompiledState>()
     private var encountered: ContiguousArray<Bool>
+    private var retryIndex: String.Index?
 
     init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
         self.string = string
@@ -198,6 +199,7 @@ final class RegularMatcher: Matching {
         reachableStates = SmallSet(0)
         reachableUntil.removeAll()
         potentialMatch = nil
+        retryIndex = nil
         if isCapturingGroups { groupsStartIndexes.removeAll() }
 
         while !reachableStates.isEmpty {
@@ -229,7 +231,6 @@ final class RegularMatcher: Matching {
 
         // [Optimization] If the iteration produces the same set of reachable
         // states as before, we can skip the current index if search fails.
-        var retryIndex: String.Index?
         if reachableStates == newReachableStates {
             retryIndex = cursor.index
         }
@@ -247,7 +248,8 @@ final class RegularMatcher: Matching {
             os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: $0) })")
             #endif
 
-            let retryIndex = retryIndex ?? cursor.index(after: cursor.startIndex)
+            let retryIndex = self.retryIndex ?? cursor.index(after: cursor.startIndex)
+            self.retryIndex = nil
             cursor.startAt(retryIndex)
 
             if isCapturingGroups { groupsStartIndexes.removeAll() }
