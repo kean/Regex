@@ -198,7 +198,7 @@ extension FSM {
         let quantifier = FSM()
 
         quantifier.start.transitions = [
-            .epsilon(child.start), // Optimizer will take care of it
+            .epsilon(child.start) // Optimizer will take care of it
         ]
         child.start.transitions.append(
             .epsilon(quantifier.end)
@@ -239,7 +239,7 @@ extension FSM {
             quantifier.start.transitions.reverse()
         }
         child.end.transitions = [
-            .epsilon(quantifier.end), // Complete
+            .epsilon(quantifier.end) // Complete
         ]
         return quantifier
     }

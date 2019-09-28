@@ -15,7 +15,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
 
         measure {
             for _ in 0...2000 {
-                let _ = regex.matches(in: string)
+                _ = regex.matches(in: string)
             }
         }
     }
@@ -25,7 +25,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
         let string = String(repeating: "a", count: 100_000)
 
         measure {
-            let _ = regex.matches(in: string)
+            _ = regex.matches(in: string)
         }
     }
 
@@ -36,7 +36,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
         let string = String(repeating: "a", count: 75_000) + "b"
 
         measure {
-            let _ = regex.matches(in: string)
+            _ = regex.matches(in: string)
         }
     }
 
@@ -48,7 +48,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
 
         measure {
             for _ in 0...1500 {
-                let _ = regex.matches(in: string)
+                _ = regex.matches(in: string)
             }
         }
     }
@@ -61,7 +61,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
 
         measure {
             for _ in 0...1000 {
-                let _ = regex.matches(in: string)
+                _ = regex.matches(in: string)
             }
         }
     }
@@ -74,7 +74,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
 
         measure {
              for _ in 0...1000 {
-                 let _ = regex.matches(in: string)
+                 _ = regex.matches(in: string)
              }
          }
     }
@@ -89,7 +89,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
 
         measure {
             for _ in 0...1000 {
-                let _ = regex.matches(in: s)
+                _ = regex.matches(in: s)
             }
         }
     }
@@ -101,7 +101,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
         let string = String(repeating: "a", count: 5_000) + "b"
 
         measure {
-            let _ = regex.matches(in: string)
+            _ = regex.matches(in: string)
         }
     }
 
@@ -112,7 +112,7 @@ class PerformanceNearlyMatchingInputTests: XCTestCase {
         let string = String(repeating: "a", count: 3_000) + "b"
 
         measure {
-            let _ = regex.matches(in: string)
+            _ = regex.matches(in: string)
         }
     }
 }
@@ -121,7 +121,7 @@ class PerformanceParsingTests: XCTestCase {
     func testParsing() {
         measure {
             for _ in 0...500 {
-                let _ = try! Regex(#"^[-]?[0-9]+[,.]?[0-9]*([\/][0-9]+[,.]?[0-9]*)*$"#)
+                _ = try! Regex(#"^[-]?[0-9]+[,.]?[0-9]*([\/][0-9]+[,.]?[0-9]*)*$"#)
             }
         }
     }

@@ -8,7 +8,7 @@ import Regex
 class IntegrationTests: XCTestCase {
     func testDigitsWithQuantifier() throws {
         let regex = try Regex(#"\d+"#)
-        
+
         XCTAssertTrue(regex.isMatch("1"))
         XCTAssertTrue(regex.isMatch("12"))
         XCTAssertTrue(regex.isMatch("1a"))

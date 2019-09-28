@@ -159,8 +159,7 @@ private extension Compiler {
         let dotMatchesLineSeparators = options.contains(.dotMatchesLineSeparators)
         switch match {
         case let .character(c): return .character(c, isCaseInsensitive)
-        case let .string(s): return .string(s
-            , isCaseInsensitive)
+        case let .string(s): return .string(s, isCaseInsensitive)
         case .anyCharacter: return .anyCharacter(includingNewline: dotMatchesLineSeparators)
         case let .set(set): return .characterSet(set, isCaseInsensitive, false)
         case let .group(group): return .characterGroup(group, isCaseInsensitive)

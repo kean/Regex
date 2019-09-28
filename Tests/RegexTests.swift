@@ -598,7 +598,6 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
     }
 }
 
-
 class RegexCommonRegex101Tests: XCTestCase {
 
     func testMACAddressRegex() throws {

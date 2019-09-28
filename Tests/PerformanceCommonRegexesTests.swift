@@ -9,7 +9,7 @@ import Regex
 class RegexTests: XCTestCase {
     func testColorHexRegex() throws {
         let regex = try Regex("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$")
-        
+
         measure {
             for _ in 0...1500 {
                 _ = regex.isMatch("#1f1f1F")
@@ -17,7 +17,7 @@ class RegexTests: XCTestCase {
                 _ = regex.isMatch("#1AFFa1")
                 _ = regex.isMatch("#222fff")
                 _ = regex.isMatch("#F00")
-                
+
                 _ = regex.isMatch("123456") // must start with a “#” symbol
                 _ = regex.isMatch("#afafah") // 'h' is not allowed
                 _ = regex.isMatch("#123abce") // either 6 length or 3 length
@@ -42,13 +42,13 @@ class RegexTests: XCTestCase {
 
 // From https://digitalfortress.tech/tricks/top-15-commonly-used-regex/
 class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
-    
+
     // MARK: - Numbers
-    
+
     // https://www.regexpal.com/?fam=104020
     func testWholeNumber() throws {
         let regex = try Regex(#"^\d+$"#)
-        
+
         measure {
             for _ in 0...10000 {
                 _ = regex.isMatch("45")
@@ -59,11 +59,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104021
     func testDecimalNumber() throws {
         let regex = try Regex(#"^\d*\.\d+$"#)
-        
+
         measure {
             for _ in 0...5000 {
                 _ = regex.isMatch("100")
@@ -76,11 +76,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104022
     func testWholePlusDecimalNumber() throws {
         let regex = try Regex(#"^\d*(\.\d+)?$"#)
-        
+
         measure {
             for _ in 0...5000 {
                 _ = regex.isMatch("5.0")
@@ -94,11 +94,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104023
     func testNegativePositiveWholeAndDecimalNumber() throws {
         let regex = try Regex(#"^-?\d*(\.\d+)?$"#)
-        
+
         measure {
             for _ in 0...1500 {
                 _ = regex.isMatch("100")
@@ -112,11 +112,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/94462
     func testWholePlusDecimalPlusFractionNumber() throws {
         let regex = try Regex(#"^[-]?[0-9]+[,.]?[0-9]*([\/][0-9]+[,.]?[0-9]*)*$"#)
-        
+
         measure {
             for _ in 0...1000 {
                 _ = regex.isMatch("123.4")
@@ -132,11 +132,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104024
     func testAlphanumericWithoutSpace() throws {
         let regex = try Regex("^[a-zA-Z0-9]*$")
-        
+
         measure {
             for _ in 0...5000 {
                 _ = regex.isMatch("hello")
@@ -147,11 +147,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104025
     func testAlphanumericWithSpace() throws {
         let regex = try Regex("^[a-zA-Z0-9 ]*$")
-        
+
         measure {
             for _ in 0...1000 {
                 _ = regex.isMatch("hello")
@@ -167,13 +167,13 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // MARK: - Email
-    
+
     // https://www.regexpal.com/?fam=104026
     func testCommonEmail() throws {
         let regex = try Regex(#"^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$"#)
-        
+
         measure {
             for _ in 0...200 {
                 _ = regex.isMatch("email@example.com")
@@ -193,11 +193,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104027
     func testUncommonEmail() throws {
         let regex = try Regex(#"^([a-z0-9_\.\+-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$"#)
-        
+
         measure {
             for _ in 0...200 {
                 _ = regex.isMatch("email@example.com")
@@ -215,15 +215,15 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // MARK: - Passwords
-    
+
     // https://www.regexpal.com/?fam=104028
     func _testComplex() throws {
         // TODO: fails because we don't support '?=' (Zero-Width Positive Lookahead Assertions)
-        
+
         let regex = try Regex(#"(?=(.*[0-9])(?=.*[\!@#$%^&*()\\[\]{}\-_+=~`|:;"'<>,./?])(?=.*[a-z])(?=(.*[A-Z])(?=(.*).{8,}"#)
-        
+
         measure {
             _ = regex.isMatch("hello")
             _ = regex.isMatch("helloworld")
@@ -233,13 +233,13 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             _ = regex.isMatch("helloWorld555@!")
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104029
     func _testModerate() throws {
         // TODO: fails because we don't support '?=' (Zero-Width Positive Lookahead Assertions)
-        
+
         let regex = try Regex(#"(?=(.*[0-9])((?=.*[A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])^.{8,}$"#)
-        
+
         measure {
             _ = regex.isMatch("hello")
             _ = regex.isMatch("hello5")
@@ -251,11 +251,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             _ = regex.isMatch("helloWorld555@!")
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104030
     func testUsername() throws {
         let regex = try Regex(#"^[a-z0-9_-]{3,16}$"#, [.caseInsensitive])
-        
+
         measure {
             for _ in 0...1000 {
                 _ = regex.isMatch("hi")
@@ -269,13 +269,13 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // MARK: - URLs
-    
+
     // https://www.regexpal.com/?fam=104034
     func testURL() throws {
         let regex = try Regex(#"^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#()?&\/=]*)$"#)
-        
+
         measure {
             for _ in 0...100 {
                 _ = regex.isMatch("http://foo.com/blah_blah")
@@ -300,11 +300,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104035
     func testURLProtocolOptional() throws {
         let regex = try Regex(#"^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#()?&\/=]*)$"#)
-        
+
         measure {
             for _ in 0...100 {
                 _ = regex.isMatch("http://foo.com/blah_blah")
@@ -329,13 +329,13 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // MARK: - IP Addresses
-    
+
     // https://www.regexpal.com/?fam=104036
     func testIPv4Address() throws {
         let regex = try Regex(#"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"#)
-        
+
         measure {
             for _ in 0...500 {
                 _ = regex.isMatch("0.0.0.0")
@@ -358,11 +358,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104037
     func _testIPv6Address() throws {
         let regex = try Regex(#"^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$"#)
-        
+
         measure {
             _ = regex.isMatch("1200:0000:AB00:1234:0000:2552:7777:1313")
             _ = regex.isMatch("1200::AB00:1234::2552:7777:1313")
@@ -373,13 +373,13 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             _ = regex.isMatch("http://[2001:db8:0:1]:80")                   // valid, no support for IP address in a URL
         }
     }
-    
+
     // MARK: - Date Format
-    
+
     // https://www.regexpal.com/?fam=104039
     func _testValidateDateFormat() throws {
         let regex = try Regex(#"^([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$"#)
-        
+
         measure {
             _ = regex.isMatch("1900-10-23")
             _ = regex.isMatch("2002-5-5")
@@ -393,25 +393,25 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             _ = regex.isMatch("2000-10-10")
         }
     }
-    
+
     // https://regexr.com/?346hf
     func _testValidateDateFormat2() throws {
         let regex = try Regex(#"^^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02])\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2])\2)(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2])\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$"#)
-        
+
         measure {
             _ = regex.isMatch("01/01/2000")
             _ = regex.isMatch("31/01/2000")
             _ = regex.isMatch("32/01/2000")
             _ = regex.isMatch("01/1/2000")
             _ = regex.isMatch("01/1/01")
-            
+
             _ = regex.isMatch("29/02/2000")
             _ = regex.isMatch("28/02/2001")
             _ = regex.isMatch("29/02/2001")
-            
+
             _ = regex.isMatch("30/04/2000")
             _ = regex.isMatch("31/04/2000")
-            
+
             _ = regex.isMatch("31/07/2000")
             _ = regex.isMatch("31/08/2000")
             _ = regex.isMatch("31/09/2000")
@@ -419,11 +419,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             _ = regex.isMatch("01/15/2000")
         }
     }
-    
+
     // https://regexr.com/39tr1
     func _testValidateDateFormat3() throws {
         let regex = try Regex(#"^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]|(?:Jan|Mar|May|Jul|Aug|Oct|Dec))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2]|(?:Jan|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\2)(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)(?:0?2|(?:Feb)\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9]|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep)|(?:1[0-2]|(?:Oct|Nov|Dec))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$"#)
-        
+
         measure {
             _ = regex.isMatch("01/01/2000")
             _ = regex.isMatch("01/Jan/2000")
@@ -437,41 +437,41 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             _ = regex.isMatch("01/Jan/2000")
             _ = regex.isMatch("01/1/01")
             _ = regex.isMatch("01/Jan/01")
-            
+
             _ = regex.isMatch("29/02/2000")
             _ = regex.isMatch("29/Feb/2000")
             _ = regex.isMatch("28/02/2001")
             _ = regex.isMatch("28/Feb/2001")
             _ = regex.isMatch("29/02/2001")
             _ = regex.isMatch("29/Feb/2001")
-            
+
             _ = regex.isMatch("30/04/2000")
             _ = regex.isMatch("30/Apr/2000")
             _ = regex.isMatch("31/04/2000")
             _ = regex.isMatch("31/Apr/2000")
-            
+
             _ = regex.isMatch("31/07/2000")
             _ = regex.isMatch("31/Jul/2000")
-            
+
             _ = regex.isMatch("31/08/2000")
             _ = regex.isMatch("31/Aug/2000")
-            
+
             _ = regex.isMatch("31/09/2000")
             _ = regex.isMatch("31/Sep/2000")
-            
+
             _ = regex.isMatch("01/12/2000")
             _ = regex.isMatch("01/Dec/2000")
-            
+
             _ = regex.isMatch("01/15/2000")
         }
     }
-    
+
     // MARK: - Time Format
-    
+
     // https://www.regexpal.com/?fam=104040
     func testTimeFormat() throws {
         let regex = try Regex(#"^(0?[1-9]|1[0-2]):[0-5][0-9]$"#)
-        
+
         measure {
             for _ in 0...1500 {
                 _ = regex.isMatch("12:00")
@@ -488,11 +488,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104041
     func _testTimeFormat2() throws {
         let regex = try Regex("^((1[0-2]|0?[1-9]):([0-5][0-9]) ?([AaPp][Mm])$")
-        
+
         measure {
             for _ in 0...100 {
                 _ = regex.isMatch("12:00 pm")
@@ -509,11 +509,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104042
     func testTimeFormat3() throws {
         let regex = try Regex(#"^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"#)
-        
+
         measure {
             for _ in 0...1500 {
                 _ = regex.isMatch("12:00")
@@ -533,11 +533,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104043
     func testTimeFormat4() throws {
         let regex = try Regex(#"^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"#)
-        
+
         measure {
             for _ in 0...1500 {
                 _ = regex.isMatch("12:00")
@@ -557,11 +557,11 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // https://www.regexpal.com/?fam=104044
     func testTimeFormat5() throws {
         let regex = try Regex(#"(?:[01]\d|2[0123]):(?:[012345]\d):(?:[012345]\d)"#)
-        
+
         measure {
             for _ in 0...1000 {
                 _ = regex.isMatch("12:00")
@@ -581,9 +581,9 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // MARK: HTML
-    
+
     // https://www.regexpal.com/95941
     func testHTMLTags() throws {
         let pattern = #"<\/?[\w\s]*>|<.+[\W]>"#
@@ -594,7 +594,7 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         <a href="/nl/docs/MDN/Getting_started">Aan de slag</a>
         <bed el = ekf"eee>
         """
-        
+
         let regex = try Regex(pattern)
         measure {
             for _ in 0...150 {
@@ -602,9 +602,9 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             }
         }
     }
-    
+
     // MARK: JavaScript
-    
+
     // https://www.regexpal.com/?fam=104055
     func _testJavaScriptHandler() throws {
         let pattern = #"\bon\w+=\S+(?=.*>)"#
@@ -616,13 +616,13 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
             Things that are just onfoo="something" shouldn't match either, since they are outside of a tag
         </p>
         """
-        
+
         let regex = try Regex(pattern)
         measure {
             _ = regex.matches(in: string)
         }
     }
-    
+
     // https://www.regexpal.com/94641
     func _testJavaScriptHandlerWithElement() throws {
         let pattern = #"(?:<[^>]+\s)(on\S+)=["']?((?:.(?!["']?\s+(?:\S+)=|[>"'])+.)["']?"#
@@ -634,22 +634,22 @@ class RegexDiditalFortressCommonlyUsedRegexTests: XCTestCase {
         things that are just onfoo="bar" shouldn't match either, outside of a tag
         </p>
         """
-        
+
         let regex = try Regex(pattern)
-        
+
         measure {
             _ = regex.matches(in: string).map { $0.fullMatch }
         }
     }
-    
+
     // MARK: Slug
-    
+
     // https://www.regexpal.com/?fam=104056
     func testSlug() throws {
         let pattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-        
+
         let regex = try Regex(pattern, [.caseInsensitive])
-        
+
         measure {
             for _ in 0...400 {
                 _ = regex.isMatch("hello")

@@ -29,7 +29,6 @@ class QuantifierWithRangeTests: XCTestCase {
         XCTAssertFalse(regex.isMatch("ba"))
     }
 
-
     func testGreaterThanOrEqual() throws {
         let regex = try Regex("a{2,}")
 
