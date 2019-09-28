@@ -90,13 +90,13 @@ final class BacktrackingMatcher: Matching {
         }
 
         #if DEBUG
-        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))") }
+        os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(symbols.description(for: state))")
         #endif
 
         if transitions[state].isEmpty { // Found a match
             let match = Regex.Match(cursor, isCapturingGroups)
             #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match)") }
+            os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \(match)")
             #endif
             return match
         }
@@ -107,7 +107,7 @@ final class BacktrackingMatcher: Matching {
 
             #if DEBUG
             if transitions[state].count > 1 {
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(transitions[state].count)") }
+                os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] transition \(counter) / \(transitions[state].count)")
             }
             #endif
 
@@ -116,7 +116,7 @@ final class BacktrackingMatcher: Matching {
             switch transition.condition.canPerformTransition(cursor) {
             case .rejected:
                 #if DEBUG
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \("❌")") }
+                os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor.index), \(cursor.character ?? "∅")] \("Failed")")
                 #endif
 
                 continue
@@ -206,13 +206,13 @@ final class RegularMatcher: Matching {
         if let cursor = potentialMatch { // Found a match
             let match = Regex.Match(cursor, isCapturingGroups)
             #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found match \(match)") }
+            os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found match \(match)")
             #endif
             return match
         }
 
         #if DEBUG
-        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches") }
+        os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches")
         #endif
 
         return nil
@@ -236,14 +236,14 @@ final class RegularMatcher: Matching {
         reachableStates = newReachableStates
 
         #if DEBUG
-        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: << Entering reachable states: \(reachableStates.map { symbols.description(for: $0) })") }
+        os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: << Entering reachable states: \(reachableStates.map { symbols.description(for: $0) })")
         #endif
 
         if reachableStates.isEmpty && potentialMatch == nil && !isStartingFromStartIndex {
             // Failed to find matches, restart from the initial state
 
             #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: $0) })") }
+            os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: $0) })")
             #endif
 
             let retryIndex = retryIndex ?? cursor.index(after: cursor.startIndex)
@@ -273,7 +273,7 @@ final class RegularMatcher: Matching {
         var newReachableStates = SmallSet<CompiledState>()
 
         #if DEBUG
-        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map { symbols.description(for: $0) })") }
+        os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: >> Reachable \(reachableStates.map { symbols.description(for: $0) })")
         #endif
 
         for index in encountered.indices { encountered[index] = false }
@@ -297,7 +297,7 @@ final class RegularMatcher: Matching {
                 encountered[state] = true
 
                 #if DEBUG
-                if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))") }
+                os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Check reachability from \(symbols.description(for: state)))")
                 #endif
 
                 // Capture a group if needed or update group start indexes
@@ -335,7 +335,7 @@ final class RegularMatcher: Matching {
                     case .rejected: message = "State NOT reachable"
                     case let .accepted(count): message = "State reachable consuming \(count)"
                     }
-                    if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: \(message) \(symbols.description(for: transition.end))") }
+                    os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: \(message) \(symbols.description(for: transition.end))")
                     #endif
                 }
             }
@@ -369,7 +369,7 @@ final class RegularMatcher: Matching {
         potentialMatch = cursor // Found a match!
 
         #if DEBUG
-        if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: state))") }
+        os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Found a potential match \(symbols.description(for: state))")
         #endif
     }
 }

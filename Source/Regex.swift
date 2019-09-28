@@ -49,19 +49,19 @@ public final class Regex {
             let ast = try Regex.parse(pattern)
 
             #if DEBUG
-            if log.isEnabled { os_log(.default, log: self.log, "AST: \n%{PUBLIC}@", ast.description) }
+            os_log(.default, log: self.log, "AST: \n%{PUBLIC}@", ast.description)
             #endif
 
             let optimizedAst = Optimizer().optimize(ast)
 
             #if DEBUG
-            if log.isEnabled { os_log(.default, log: self.log, "AST (Optimized): \n%{PUBLIC}@", optimizedAst.description) }
+            os_log(.default, log: self.log, "AST (Optimized): \n%{PUBLIC}@", optimizedAst.description)
             #endif
 
             self.regex = try Compiler(optimizedAst, options).compile()
             self.options = options
             #if DEBUG
-            if self.log.isEnabled { os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.symbols.description(for: 0)) }
+            os_log(.default, log: self.log, "Expression: \n%{PUBLIC}@", regex.symbols.description(for: 0))
             #endif
         } catch {
             var error = error as! Error
@@ -107,15 +107,13 @@ public final class Regex {
 
     /// - paramter ignoreCaptureGroups: enables some performance optimizations
     private func makeMatcher(for string: String, ignoreCaptureGroups: Bool = false) -> Matching {
+        #if DEBUG
+        os_log(.default, log: log, "%{PUBLIC}@", "Use \(regex.isRegular ? "regular" : "backtracking") matcher")
+        #endif
+
         if regex.isRegular {
-            #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use optimized NFA simulation") }
-            #endif
             return RegularMatcher(string: string, regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
         } else {
-            #if DEBUG
-            if log.isEnabled { os_log(.default, log: log, "%{PUBLIC}@", "Use backtracking algorithm") }
-            #endif
             return BacktrackingMatcher(string: string, regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
         }
     }

@@ -36,15 +36,6 @@ extension Character {
     }
 }
 
-// MARK: - OSLog
-
-extension OSLog {
-    // Returns `true` if the default logging type enabled.
-    var isEnabled: Bool {
-        return isEnabled(type: .default)
-    }
-}
-
 // MARK: - SmallSet
 
 // A set which inlines the first couple of elements and avoid any heap allocations.
