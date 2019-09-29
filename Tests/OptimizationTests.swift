@@ -21,4 +21,11 @@ class OptimizationsTests: XCTestCase {
         let matches = regex.matches(in: string).map { $0.fullMatch }
         XCTAssertEqual(matches.map(string.range(of:)), [5..<16])
     }
+
+    func testNearlyMatchingPatternWithNestedGreedyQuantifier() throws {
+        let regex = try Regex("(a*)*c")
+        let string = "aaaaaab"
+
+        XCTAssertTrue(regex.matches(in: string).isEmpty)
+    }
 }

@@ -160,7 +160,7 @@ final class RegularMatcher: Matching {
     private var groupsStartIndexes = [CompiledState: String.Index]()
     private var stack = ContiguousArray<CompiledState>()
     private var encountered: ContiguousArray<Bool>
-    private var retryIndex: String.Index?
+    private var deadEnds: ContiguousArray<String.Index?>
 
     init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
         self.regex = regex
@@ -169,6 +169,7 @@ final class RegularMatcher: Matching {
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
         self.cursor = Cursor(string: string)
         self.encountered = ContiguousArray(repeating: false, count: transitions.count)
+        self.deadEnds = ContiguousArray(repeating: nil, count: transitions.count)
     }
 
     func nextMatch() -> Regex.Match? {
@@ -190,7 +191,6 @@ final class RegularMatcher: Matching {
         reachableStates = SmallSet(0)
         reachableUntil.removeAll()
         potentialMatch = nil
-        retryIndex = nil
         if isCapturingGroups { groupsStartIndexes.removeAll() }
 
         while !reachableStates.isEmpty {
@@ -220,12 +220,6 @@ final class RegularMatcher: Matching {
             return // The input string is empty, can stop now
         }
 
-        // [Optimization] If the iteration produces the same set of reachable
-        // states as before, we can skip the current index if search fails.
-        if reachableStates == newReachableStates {
-            retryIndex = cursor.index // WARNING: not sure this is correct in all cases
-        }
-
         reachableStates = newReachableStates
 
         #if DEBUG
@@ -239,9 +233,7 @@ final class RegularMatcher: Matching {
             os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Failed to find matches \(reachableStates.map { symbols.description(for: $0) })")
             #endif
 
-            let retryIndex = self.retryIndex ?? cursor.index(after: cursor.startIndex)
-            self.retryIndex = nil
-            cursor.startAt(retryIndex)
+            cursor.startAt(cursor.index(after: cursor.startIndex))
 
             if isCapturingGroups { groupsStartIndexes.removeAll() }
             reachableStates = SmallSet(0)
@@ -307,10 +299,19 @@ final class RegularMatcher: Matching {
                 }
 
                 for transition in transitions[state] {
+                    if let deadEndIndex = deadEnds[transition.end], cursor.index < deadEndIndex {
+                        #if DEBUG
+                        os_log(.default, log: log, "%{PUBLIC}@", "– [\(cursor)]: Reached dead end \(symbols.description(for: state)))")
+                        #endif
+                        continue // [Optimization] We reached a dead end
+                    }
+
                     let result = transition.condition.canPerformTransition(cursor)
                     switch result {
                     case .rejected:
-                        break // Do nothing
+                        // [Optimization] If we come accross this state later, we
+                        // can quit search early – it never leads to a match
+                        deadEnds[state] = cursor.index
                     case let .accepted(count):
                         if count > 0 { // Consumed characters
                             newReachableStates.insert(transition.end)
