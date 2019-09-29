@@ -79,7 +79,7 @@ public final class Regex {
 public extension Regex {
     /// Determine whether the regular expression pattern occurs in the input text.
     func isMatch(_ string: String) -> Bool {
-        let matcher = makeMatcher(for: string, ignoreCaptureGroups: true)
+        let matcher = makeMatcher(for: string, isMatchOnly: true)
         return matcher.nextMatch() != nil
     }
 
@@ -99,16 +99,16 @@ public extension Regex {
         return matches
     }
 
-    /// - paramter ignoreCaptureGroups: enables some performance optimizations
-    private func makeMatcher(for string: String, ignoreCaptureGroups: Bool = false) -> Matching {
+    /// - paramter isMatchOnly: enables some performance optimizations
+    private func makeMatcher(for string: String, isMatchOnly: Bool = false) -> Matching {
         #if DEBUG
         os_log(.default, log: log, "%{PUBLIC}@", "Use \(regex.isRegular ? "regular" : "backtracking") matcher")
         #endif
 
         if regex.isRegular {
-            return RegularMatcher(string: string, regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
+            return RegularMatcher(string: string, regex: regex, options: options, isMatchOnly: isMatchOnly)
         } else {
-            return BacktrackingMatcher(string: string, regex: regex, options: options, ignoreCaptureGroups: ignoreCaptureGroups)
+            return BacktrackingMatcher(string: string, regex: regex, options: options, isMatchOnly: isMatchOnly)
         }
     }
 }

@@ -31,10 +31,10 @@ final class BacktrackingMatcher: Matching {
     private var cursor: Cursor
     private var isFinished = false
 
-    init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
+    init(string: String, regex: CompiledRegex, options: Regex.Options, isMatchOnly: Bool) {
         self.regex = regex
         self.transitions = regex.fsm.transitions
-        self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
+        self.isCapturingGroups = !isMatchOnly && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
         self.cursor = Cursor(string: string)
     }
@@ -148,6 +148,7 @@ final class RegularMatcher: Matching {
     // If `false`, some expensive pathes that calculate capture groups can be ignored
     private let isCapturingGroups: Bool
     private let isStartingFromStartIndex: Bool
+    private let isMatchOnly: Bool
 
     private var cursor: Cursor
     private var isFinished = false
@@ -162,10 +163,14 @@ final class RegularMatcher: Matching {
     private var encountered: ContiguousArray<Bool>
     private var deadEnds: ContiguousArray<String.Index?>
 
-    init(string: String, regex: CompiledRegex, options: Regex.Options, ignoreCaptureGroups: Bool) {
+    /// - parameter isMatchOnly: If the user just wants to know if there is a match
+    /// we can skip capturing groups, stop on the first match (no need to guarantee
+    /// it's the longest one), etc.
+    init(string: String, regex: CompiledRegex, options: Regex.Options, isMatchOnly: Bool) {
         self.regex = regex
         self.transitions = regex.fsm.transitions
-        self.isCapturingGroups = !ignoreCaptureGroups && !regex.captureGroups.isEmpty
+        self.isMatchOnly = isMatchOnly
+        self.isCapturingGroups = !isMatchOnly && !regex.captureGroups.isEmpty
         self.isStartingFromStartIndex = regex.isFromStartOfString && !options.contains(.multiline)
         self.cursor = Cursor(string: string)
         self.encountered = ContiguousArray(repeating: false, count: transitions.count)
@@ -295,6 +300,9 @@ final class RegularMatcher: Matching {
                 /// ways to reach the end state that's why it is not stopping on the first match.
                 guard !transitions[state].isEmpty else { // End state
                     updatePotentialMatch(state)
+                    if isMatchOnly { // [Optimization] Stop early, we don't need to guarantee the longest match
+                        return SmallSet()
+                    }
                     continue
                 }
 
