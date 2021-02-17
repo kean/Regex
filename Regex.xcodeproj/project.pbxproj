@@ -102,6 +102,7 @@
 		0CDBED7323087A60009E1793 /* OptimizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationTests.swift; sourceTree = "<group>"; };
 		0CDBED8023093388009E1793 /* PerformanceCommonRegexesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceCommonRegexesTests.swift; sourceTree = "<group>"; };
 		0CE478DD2327B45500BFAFDF /* ParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParserTests.swift; sourceTree = "<group>"; };
+		2B08194225DDDDA300F9D522 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		FF3C36482301877600BD9513 /* Optimizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Optimizer.swift; sourceTree = "<group>"; };
 		FF3C364C23018C6900BD9513 /* Compiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compiler.swift; sourceTree = "<group>"; };
 		FF65FB0D230EC3B800B1BAF7 /* State.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = State.swift; sourceTree = "<group>"; };
@@ -137,6 +138,7 @@
 		0CB3053522FED01C0083B406 = {
 			isa = PBXGroup;
 			children = (
+				2B08194225DDDDA300F9D522 /* Package.swift */,
 				0CB3057822FED0DC0083B406 /* README.md */,
 				0CB3054022FED01C0083B406 /* Source */,
 				0CB3054D22FED02D0083B406 /* Tests */,
